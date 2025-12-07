@@ -43,16 +43,16 @@ export function useWalletAuth() {
         address: addressStr,
       });
 
-      // Create message to sign
-      const message = `Sign this message to authenticate with StudIQ Campus Store.\n\nNonce: ${nonce}`;
-      const encodedMessage = new TextEncoder().encode(message);
+      // Sign the nonce directly (not a formatted message)
+      // This is what Solana wallets expect
+      const messageToSign = new TextEncoder().encode(nonce);
 
-      // Sign message with wallet
       if (!wallet.session.signMessage) {
         throw new Error("Wallet does not support message signing");
       }
 
-      const signatureBytes = await wallet.session.signMessage(encodedMessage);
+      // Sign the message
+      const signatureBytes = await wallet.session.signMessage(messageToSign);
       const signatureBase58 = bs58.encode(signatureBytes);
 
       // Verify signature with server
@@ -60,7 +60,6 @@ export function useWalletAuth() {
         address: addressStr,
         nonce,
         signature: signatureBase58,
-        message,
       });
 
       if (!verified.ok) {

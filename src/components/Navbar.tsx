@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShoppingCart, Wallet } from "lucide-react";
+import { Search, ShoppingCart, Wallet, LayoutDashboard } from "lucide-react";
 import { useWalletConnection, useWallet, useConnectWallet, useDisconnectWallet } from "@solana/react-hooks";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useCart } from "@/store/cart";
@@ -73,8 +73,18 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Right Side - Wallet & Cart */}
+          {/* Right Side - Dashboard, Cart & Wallet */}
           <div className="flex items-center gap-3">
+            {/* Dashboard Button (only when connected) */}
+            {wallet.status === "connected" && (
+              <Link href="/dashboard" className="hidden sm:block">
+                <Button variant="ghost" size="sm">
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
+            )}
+
             {/* Cart */}
             <Link href="/cart" className="relative p-2 hover:bg-soft-gray-bg rounded-lg transition-colors">
               <ShoppingCart className="w-5 h-5 text-black" />
@@ -111,7 +121,7 @@ export default function Navbar() {
                     size="sm"
                     onClick={async () => {
                       await connect(c.id);
-                      await auth.connectAndAuth();
+                      window.location.href = "/connect";
                     }}
                   >
                     <Wallet className="w-4 h-4 mr-2" />

@@ -10,7 +10,7 @@ const slides = [
         title: "Campus Deals Extended!",
         subtitle: "Save up to 50% on electronics, books & more",
         cta: "Shop now",
-        bgColor: "from-blue-600 to-blue-800",
+        image: "/carousel_bg_1.png",
         link: "/search?category=Electronics",
     },
     {
@@ -18,7 +18,7 @@ const slides = [
         title: "Pay with Solana",
         subtitle: "Fast, secure blockchain payments on campus",
         cta: "Learn more",
-        bgColor: "from-purple-600 to-purple-800",
+        image: "/carousel_bg_2.png",
         link: "/connect",
     },
     {
@@ -26,7 +26,7 @@ const slides = [
         title: "New Arrivals",
         subtitle: "Fresh products from your favorite campus stores",
         cta: "Browse",
-        bgColor: "from-green-600 to-green-800",
+        image: "/carousel_bg_3.png",
         link: "/search",
     },
 ];
@@ -54,7 +54,7 @@ export default function HeroCarousel() {
     };
 
     return (
-        <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden rounded-2xl bg-gradient-to-br from-primary-blue to-accent-blue">
+        <div className="relative w-full h-[320px] md:h-[380px] overflow-hidden rounded-2xl">
             {/* Slides */}
             <div
                 className="flex h-full transition-transform duration-500 ease-out"
@@ -63,18 +63,38 @@ export default function HeroCarousel() {
                 {slides.map((slide) => (
                     <div
                         key={slide.id}
-                        className={`min-w-full h-full flex items-center justify-center bg-gradient-to-br ${slide.bgColor}`}
+                        className="min-w-full h-full relative flex items-center justify-center"
                     >
-                        <div className="text-center text-white px-4 max-w-3xl">
-                            <h2 className="text-4xl md:text-6xl font-bold mb-4">{slide.title}</h2>
-                            <p className="text-xl md:text-2xl mb-8 opacity-90">{slide.subtitle}</p>
-                            <Button
-                                variant="secondary"
-                                size="lg"
-                                onClick={() => (window.location.href = slide.link)}
-                            >
-                                {slide.cta}
-                            </Button>
+                        {/* Background Image */}
+                        <div className="absolute inset-0">
+                            <img
+                                src={slide.image}
+                                alt={slide.title}
+                                className="w-full h-full object-cover"
+                            />
+                            {/* Gradient Overlay for better text readability */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
+                        </div>
+
+                        {/* Content with Glassmorphism */}
+                        <div className="relative z-10 text-left px-8 md:px-16 max-w-2xl">
+                            {/* Glass Card */}
+                            <div className="backdrop-blur-md bg-white/10 rounded-2xl p-8 border border-white/20 shadow-2xl">
+                                <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white drop-shadow-lg">
+                                    {slide.title}
+                                </h2>
+                                <p className="text-lg md:text-xl mb-6 text-white/90 drop-shadow-md">
+                                    {slide.subtitle}
+                                </p>
+                                <Button
+                                    variant="secondary"
+                                    size="lg"
+                                    onClick={() => (window.location.href = slide.link)}
+                                    className="bg-white text-primary-blue hover:bg-gray-100 shadow-lg"
+                                >
+                                    {slide.cta}
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -83,15 +103,15 @@ export default function HeroCarousel() {
             {/* Navigation Arrows */}
             <button
                 onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all backdrop-blur-sm"
             >
-                <ChevronLeft className="w-6 h-6 text-black" />
+                <ChevronLeft className="w-5 h-5 text-black" />
             </button>
             <button
                 onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all backdrop-blur-sm"
             >
-                <ChevronRight className="w-6 h-6 text-black" />
+                <ChevronRight className="w-5 h-5 text-black" />
             </button>
 
             {/* Dots Indicator */}
@@ -103,7 +123,9 @@ export default function HeroCarousel() {
                             setCurrentSlide(index);
                             setIsAutoPlaying(false);
                         }}
-                        className={`w-3 h-3 rounded-full transition-all ${index === currentSlide ? "bg-white w-8" : "bg-white/50"
+                        className={`h-2 rounded-full transition-all ${index === currentSlide
+                                ? "bg-white w-8"
+                                : "bg-white/50 w-2 hover:bg-white/75"
                             }`}
                     />
                 ))}

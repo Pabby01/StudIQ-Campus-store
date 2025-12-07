@@ -5,9 +5,9 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { address, nonce, signature, message } = await req.json();
+    const { address, nonce, signature } = await req.json();
 
-    if (!address || !nonce || !signature || !message) {
+    if (!address || !nonce || !signature) {
       return Response.json(
         { ok: false, error: "Missing required fields" },
         { status: 400 }
@@ -44,8 +44,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verify signature
-    const messageBytes = new TextEncoder().encode(message);
+    // Verify signature - sign the nonce directly
+    const messageBytes = new TextEncoder().encode(nonce);
     const signatureBytes = bs58.decode(signature);
     const publicKeyBytes = bs58.decode(address);
 
