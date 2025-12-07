@@ -13,6 +13,8 @@
     "@solana/client": "^1.0.0",
     "@solana/kit": "^5.0.0",
     "@solana/react-hooks": "^1.0.1",
+    "@supabase/supabase-js": "^2.47.10",
+    "bs58": "^5.0.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -23,6 +25,7 @@
     "react-dom": "19.2.0",
     "react-hook-form": "^7.67.0",
     "swr": "^2.3.7",
+    "tweetnacl": "^1.0.3",
     "zod": "^4.1.13",
     "zustand": "^5.0.9"
   },
