@@ -34,9 +34,11 @@ export default function Home() {
     const fetchData = async () => {
       try {
         // Fetch products
-        const productsRes = await fetch("/api/product/search");
+        const productsRes = await fetch("/api/product/search?limit=20");
         const productsData = await productsRes.json();
-        setProducts(productsData);
+        if (productsData.ok && productsData.products) {
+          setProducts(productsData.products);
+        }
 
         // Fetch nearby stores
         if (navigator.geolocation) {
@@ -54,6 +56,8 @@ export default function Home() {
             }
           );
         }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
       } finally {
         setLoading(false);
       }
@@ -62,143 +66,100 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // Categorize products for different sections
-  const electronicsProducts = products.filter((p) => p.category === "Electronics");
-  const booksProducts = products.filter((p) => p.category === "Books");
-  const dealProducts = products.slice(0, 8);
-  const newArrivals = products.slice(0, 6);
-
   return (
     <div className="min-h-screen bg-soft-gray-bg">
-      {/* Hero Carousel */}
-      <div className="bg-white border-b border-border-gray">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <HeroCarousel />
-        </div>
-      </div>
-
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
-        {/* Promotional Banners Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Hero Carousel */}
+        <HeroCarousel />
+
+        {/* Promo Banners */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <PromoBanner
             title="Earn Rewards"
             subtitle="Get points on every purchase"
-            ctaText="Learn more"
+            bgColor="bg-gradient-to-r from-blue-600 to-purple-600"
+            ctaText="Learn More"
             ctaLink="/dashboard"
-            bgColor="bg-gradient-to-br from-blue-600 to-blue-800"
           />
           <PromoBanner
             title="Campus Deals"
-            subtitle="Up to 50% off"
-            ctaText="Shop now"
+            subtitle="Exclusive student discounts"
+            bgColor="bg-gradient-to-r from-purple-600 to-pink-600"
+            ctaText="Shop Deals"
             ctaLink="/search"
-            bgColor="bg-gradient-to-br from-purple-600 to-purple-800"
           />
           <PromoBanner
             title="Fast Delivery"
-            subtitle="Same-day on campus"
-            ctaText="Browse stores"
-            ctaLink="/stores"
-            bgColor="bg-gradient-to-br from-green-600 to-green-800"
+            subtitle="Same-day campus delivery"
+            bgColor="bg-gradient-to-r from-green-600 to-teal-600"
+            ctaText="Order Now"
+            ctaLink="/search"
           />
         </div>
 
-        {/* Flash Deals Section */}
-        {!loading && dealProducts.length > 0 && (
-          <div className="bg-white rounded-2xl border border-border-gray p-6 md:p-8">
-            <ProductRow
-              title="Flash Deals & More"
-              subtitle="Limited time offers - up to 50% off"
-              products={dealProducts}
-              viewAllLink="/search"
-              badgeText="DEAL"
-              badgeColor="bg-red-600"
-            />
-          </div>
-        )}
+        {/* Flash Deals */}
+        <ProductRow
+          title="⚡ Flash Deals"
+          subtitle="Limited time offers"
+          products={products.slice(0, 8).map((p) => ({ ...p, badge: "SALE" }))}
+        />
 
-        {/* Electronics Deals */}
-        {!loading && electronicsProducts.length > 0 && (
-          <div className="bg-white rounded-2xl border border-border-gray p-6 md:p-8">
-            <ProductRow
-              title="Tech Essentials"
-              subtitle="Laptops, headphones & more"
-              products={electronicsProducts}
-              viewAllLink="/search?category=Electronics"
-              badgeText="HOT"
-              badgeColor="bg-orange-600"
-            />
-          </div>
-        )}
+        {/* Tech Essentials */}
+        <ProductRow
+          title="💻 Tech Essentials"
+          subtitle="Electronics & Gadgets"
+          products={products.filter((p) => p.category === "Electronics").slice(0, 8)}
+        />
 
-        {/* Books Section */}
-        {!loading && booksProducts.length > 0 && (
-          <div className="bg-white rounded-2xl border border-border-gray p-6 md:p-8">
-            <ProductRow
-              title="Textbooks & Supplies"
-              subtitle="Everything you need for class"
-              products={booksProducts}
-              viewAllLink="/search?category=Books"
-            />
-          </div>
-        )}
+        {/* Textbooks */}
+        <ProductRow
+          title="📚 Textbooks & Study Materials"
+          subtitle="Academic resources"
+          products={products.filter((p) => p.category === "Books & Textbooks").slice(0, 8)}
+        />
 
-        {/* New Arrivals with Icons */}
-        {!loading && newArrivals.length > 0 && (
-          <section className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Sparkles className="w-6 h-6 text-primary-blue" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-black">New Arrivals</h2>
-                <p className="text-sm text-muted-text">Fresh products from campus stores</p>
-              </div>
+        {/* New Arrivals */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-black">🆕 New Arrivals</h2>
+              <p className="text-sm text-muted-text">Fresh products from campus stores</p>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {newArrivals.map((p) => (
-                <div key={p.id} className="relative">
-                  <div className="absolute top-3 right-3 z-10 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">
-                    NEW
-                  </div>
-                  <ProductCard key={p.id} p={p} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {products.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} p={product} />
+            ))}
+          </div>
+        </section>
 
         {/* Nearby Stores */}
-        {!loading && nearbyStores.length > 0 && (
-          <section className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Store className="w-6 h-6 text-primary-blue" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-black">Stores Near You</h2>
-                <p className="text-sm text-muted-text">Discover local campus shops</p>
-              </div>
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-primary-blue/10 rounded-lg">
+              <Store className="w-6 h-6 text-primary-blue" />
             </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {nearbyStores.slice(0, 6).map((s) => (
-                <StoreCard key={s.id} s={s} />
-              ))}
+            <div>
+              <h2 className="text-2xl font-bold text-black">Nearby Stores</h2>
+              <p className="text-sm text-muted-text">Shop from stores on your campus</p>
             </div>
-          </section>
-        )}
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {nearbyStores.slice(0, 6).map((store) => (
+              <StoreCard key={store.id} s={store} />
+            ))}
+          </div>
+        </section>
 
-        {/* Bottom CTA Banner */}
-        <div className="bg-gradient-to-r from-primary-blue to-accent-blue rounded-2xl p-8 md:p-12 text-center text-white">
-          <Zap className="w-12 h-12 mx-auto mb-4" />
+        {/* Bottom CTA */}
+        <div className="bg-gradient-to-r from-primary-blue to-accent-blue rounded-2xl p-8 text-center text-white">
           <h2 className="text-3xl font-bold mb-3">Start Selling on Campus</h2>
-          <p className="text-lg opacity-90 mb-6 max-w-2xl mx-auto">
-            Join hundreds of students earning with their own campus store. Set up in minutes.
+          <p className="text-lg opacity-90 mb-6">
+            Join hundreds of student entrepreneurs earning with StudIQ
           </p>
           <button
             onClick={() => (window.location.href = "/dashboard/store")}
-            className="bg-white text-primary-blue px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+            className="px-8 py-3 bg-white text-primary-blue font-semibold rounded-lg hover:bg-gray-100 transition-colors"
           >
             Create Your Store
           </button>

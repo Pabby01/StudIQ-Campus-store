@@ -2,59 +2,72 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Star, ShoppingCart, Package } from "lucide-react";
+import { Star, ShoppingCart, Minus, Plus, Loader2, Package } from "lucide-react";
 import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { useCart } from "@/store/cart";
+import { useToast } from "@/hooks/useToast";
 
 type Product = {
   id: string;
   name: string;
+  description: string;
   price: number;
-  category?: string;
   image_url?: string | null;
   rating?: number | null;
+  category?: string;
   inventory?: number;
-  description?: string;
+  store_id: string;
+  stores?: {
+    name: string;
+    owner_address: string;
+  };
 };
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const productId = params.id as string;
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const addToCart = useCart((s) => s.add);
+  const toast = useToast();
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const res = await fetch(`/api/product/${params?.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setProduct(data);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProduct();
-  }, [params?.id]);
+  }, [productId]);
+
+  const fetchProduct = async () => {
+    try {
+      const res = await fetch(`/api/product/get?id=${productId}`);
+      const data = await res.json();
+      setProduct(data);
+    } catch (error) {
+      console.error("Failed to fetch product:", error);
+      toast.error("Failed to load product");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddToCart = () => {
-    if (product) {
-      addToCart({ id: product.id, name: product.name, price: product.price }, quantity);
-      alert("Added to cart!");
-    }
+    if (!product) return;
+
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      qty: quantity,
+      storeId: product.store_id,
+    });
+
+    toast.success("Added to cart", `${quantity}x ${product.name}`);
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
-        <div className="text-center">
-          <Package className="w-12 h-12 text-muted-text mx-auto mb-3 animate-pulse" />
-          <p className="text-muted-text">Loading product...</p>
-        </div>
+        <Loader2 className="w-8 h-8 text-primary-blue animate-spin" />
       </div>
     );
   }
@@ -62,93 +75,133 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
-        <Card className="text-center py-12 max-w-md">
+        <div className="text-center">
           <Package className="w-16 h-16 text-muted-text mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-black mb-2">Product not found</h3>
-          <p className="text-muted-text">This product may have been removed</p>
-        </Card>
+          <h2 className="text-2xl font-bold text-black mb-2">Product not found</h2>
+          <p className="text-muted-text mb-6">This product may have been removed</p>
+          <Button variant="primary" onClick={() => (window.location.href = "/search")}>
+            Browse Products
+          </Button>
+        </div>
       </div>
     );
   }
 
+  const inStock = (product.inventory || 0) > 0;
+
   return (
     <div className="min-h-screen bg-soft-gray-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-8">
           {/* Product Image */}
-          <div className="bg-white rounded-xl border border-border-gray p-8">
-            {product.image_url ? (
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="w-full aspect-square object-cover rounded-lg"
-              />
-            ) : (
-              <div className="w-full aspect-square bg-soft-gray-bg rounded-lg flex items-center justify-center">
+          <div className="bg-white rounded-2xl overflow-hidden border border-border-gray">
+            <div className="aspect-square bg-soft-gray-bg flex items-center justify-center">
+              {product.image_url ? (
+                <img
+                  src={product.image_url}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
                 <Package className="w-24 h-24 text-muted-text" />
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* Product Details */}
+          {/* Product Info */}
           <div className="space-y-6">
-            <div>
-              {product.category && <Badge variant="blue">{product.category}</Badge>}
-              <h1 className="text-4xl font-bold text-black mt-3 mb-2">{product.name}</h1>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium text-black">
-                    {product.rating?.toFixed?.(1) ?? "0.0"}
-                  </span>
-                </div>
-                <span className="text-muted-text">•</span>
-                <span className="text-sm text-muted-text">
-                  {product.inventory ?? 0} in stock
+            {/* Category Badge */}
+            {product.category && (
+              <Badge variant="blue">{product.category}</Badge>
+            )}
+
+            {/* Title */}
+            <h1 className="text-3xl font-bold text-black">{product.name}</h1>
+
+            {/* Rating */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                <span className="font-semibold text-black">
+                  {product.rating?.toFixed(1) || "4.5"}
                 </span>
               </div>
+              <span className="text-sm text-muted-text">(127 reviews)</span>
             </div>
 
-            <div className="border-t border-b border-border-gray py-6">
-              <div className="text-4xl font-bold text-primary-blue">
-                ${Number(product.price).toFixed(2)}
-              </div>
+            {/* Price */}
+            <div className="flex items-baseline gap-3">
+              <span className="text-4xl font-bold text-primary-blue">
+                ${product.price.toFixed(2)}
+              </span>
             </div>
 
-            {product.description && (
-              <div>
-                <h3 className="text-lg font-semibold text-black mb-2">Description</h3>
-                <p className="text-muted-text leading-relaxed">{product.description}</p>
+            {/* Stock Status */}
+            <div>
+              {inStock ? (
+                <p className="text-green-600 font-medium">
+                  In Stock ({product.inventory} available)
+                </p>
+              ) : (
+                <p className="text-red-600 font-medium">Out of Stock</p>
+              )}
+            </div>
+
+            {/* Description */}
+            <div>
+              <h3 className="font-semibold text-black mb-2">Description</h3>
+              <p className="text-muted-text leading-relaxed">
+                {product.description || "No description available."}
+              </p>
+            </div>
+
+            {/* Store Info */}
+            {product.stores && (
+              <div className="p-4 bg-soft-gray-bg rounded-lg">
+                <p className="text-sm text-muted-text mb-1">Sold by</p>
+                <p className="font-semibold text-black">{product.stores.name}</p>
               </div>
             )}
 
-            <Card>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-black mb-2">Quantity</label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-10 h-10 flex items-center justify-center bg-soft-gray-bg hover:bg-gray-200 rounded-lg transition-colors"
-                    >
-                      −
-                    </button>
-                    <span className="w-12 text-center font-semibold text-lg">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="w-10 h-10 flex items-center justify-center bg-soft-gray-bg hover:bg-gray-200 rounded-lg transition-colors"
-                    >
-                      +
-                    </button>
-                  </div>
+            {/* Quantity Selector */}
+            {inStock && (
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">
+                  Quantity
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-10 h-10 bg-soft-gray-bg rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="w-12 text-center font-semibold text-black">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setQuantity(Math.min(product.inventory || 1, quantity + 1))
+                    }
+                    className="w-10 h-10 bg-soft-gray-bg rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
                 </div>
-
-                <Button variant="primary" className="w-full" size="lg" onClick={handleAddToCart}>
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Add to Cart
-                </Button>
               </div>
-            </Card>
+            )}
+
+            {/* Add to Cart Button */}
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full"
+              onClick={handleAddToCart}
+              disabled={!inStock}
+            >
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              {inStock ? "Add to Cart" : "Out of Stock"}
+            </Button>
           </div>
         </div>
       </div>
