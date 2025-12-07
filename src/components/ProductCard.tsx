@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star } from "lucide-react";
+import { Star, Heart } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 
@@ -10,11 +10,17 @@ type Product = Readonly<{
   image_url?: string | null;
   rating?: number | null;
   category?: string;
+  originalPrice?: number;
 }>;
 
 export default function ProductCard({ p }: { p: Product }) {
+  const hasDiscount = p.originalPrice && p.originalPrice > p.price;
+  const discountPercent = hasDiscount
+    ? Math.round(((p.originalPrice! - p.price) / p.originalPrice!) * 100)
+    : 0;
+
   return (
-    <div className="bg-white rounded-xl border border-border-gray shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden group">
+    <div className="bg-white rounded-xl border border-border-gray shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group h-full flex flex-col">
       {/* Product Image */}
       <div className="relative aspect-square bg-soft-gray-bg overflow-hidden">
         {p.image_url ? (
@@ -28,37 +34,66 @@ export default function ProductCard({ p }: { p: Product }) {
             <span className="text-muted-text text-sm">No image</span>
           </div>
         )}
-        {p.category && (
-          <div className="absolute top-3 left-3">
-            <Badge variant="blue">{p.category}</Badge>
+
+        {/* Wishlist Heart */}
+        <button className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:bg-red-50 transition-colors group/heart">
+          <Heart className="w-4 h-4 text-gray-400 group-hover/heart:text-red-500 transition-colors" />
+        </button>
+
+        {/* Discount Badge */}
+        {hasDiscount && (
+          <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+            {discountPercent}% OFF
           </div>
         )}
       </div>
 
       {/* Product Info */}
-      <div className="p-4 space-y-3">
-        <div>
-          <h3 className="font-semibold text-black text-base line-clamp-2 mb-1">
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="flex-1">
+          {p.category && (
+            <Badge variant="gray" className="mb-2">
+              {p.category}
+            </Badge>
+          )}
+          <h3 className="font-medium text-black text-sm line-clamp-2 mb-2 min-h-[40px]">
             {p.name}
           </h3>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 mb-3">
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm text-muted-text">
-              {p.rating?.toFixed?.(1) ?? "0.0"}
+            <span className="text-sm font-medium text-black">
+              {p.rating?.toFixed?.(1) ?? "4.5"}
             </span>
+            <span className="text-xs text-muted-text ml-1">(127)</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold text-primary-blue">
-            ${Number(p.price).toFixed(2)}
+        {/* Pricing */}
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-bold text-black">
+              ${Number(p.price).toFixed(2)}
+            </span>
+            {hasDiscount && (
+              <span className="text-sm text-muted-text line-through">
+                ${p.originalPrice!.toFixed(2)}
+              </span>
+            )}
           </div>
-          <Link href={`/product/${p.id}`}>
-            <Button variant="primary" size="sm">
-              View
-            </Button>
-          </Link>
+
+          {hasDiscount && (
+            <div className="text-xs text-green-600 font-medium">
+              Save ${(p.originalPrice! - p.price).toFixed(2)}
+            </div>
+          )}
         </div>
+
+        {/* Add to Cart Button */}
+        <Link href={`/product/${p.id}`} className="mt-3">
+          <Button variant="primary" size="sm" className="w-full">
+            Add to cart
+          </Button>
+        </Link>
       </div>
     </div>
   );
