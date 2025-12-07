@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function proxy(req: NextRequest) {
+export default function proxy(req: NextRequest) {
   const url = new URL(req.url);
   const cookie = req.headers.get("cookie") ?? "";
   const sid = cookie.match(/(?:^|;\s)sid=([^;]+)/)?.[1] ?? null;
@@ -16,4 +16,3 @@ export function proxy(req: NextRequest) {
 export const config = {
   matcher: ["/dashboard/:path*", "/onboarding"],
 };
-

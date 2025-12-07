@@ -5,6 +5,9 @@ export async function POST(req: Request) {
   const address = getSessionWalletFromReq(req);
   if (!address) return Response.json({ ok: false }, { status: 401 });
   const { orderId, status } = await req.json();
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return Response.json({ ok: false });
+  }
   const supabase = getSupabaseServerClient();
   const { data: o } = await supabase.from("orders").select("store_id").eq("id", orderId).single();
   if (!o) return Response.json({ ok: false }, { status: 404 });

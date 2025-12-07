@@ -5,6 +5,9 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const { address, nonce, signature } = await req.json();
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return Response.json({ ok: false }, { status: 401 });
+  }
   const supabase = getSupabaseServerClient();
   const { data } = await supabase.from("wallet_auth_nonce").select("nonce, expires_at").eq("address", address).single();
   if (!data || data.nonce !== nonce) return Response.json({ ok: false }, { status: 401 });

@@ -8,6 +8,9 @@ export async function POST(req: Request) {
   const body = await req.json();
   const parsed = checkoutCreateSchema.safeParse(body);
   if (!parsed.success) return Response.json({ ok: false }, { status: 400 });
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return Response.json({ ok: false });
+  }
   const supabase = getSupabaseServerClient();
   const items = parsed.data.items;
   const { data: prods } = await supabase.from("products").select("id, price, store_id").in("id", items.map((i) => i.productId));

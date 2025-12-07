@@ -3,8 +3,10 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const address = url.searchParams.get("address") ?? "";
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return Response.json([]);
+  }
   const supabase = getSupabaseServerClient();
   const { data } = await supabase.from("wishlists").select("*, products(*)").eq("address", address);
   return Response.json(data ?? []);
 }
-
