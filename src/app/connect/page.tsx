@@ -5,7 +5,7 @@ import { useWalletConnection, useWallet, useConnectWallet } from "@solana/react-
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { Wallet, Shield, Zap } from "lucide-react";
+import { Wallet, Shield, Zap, AlertCircle } from "lucide-react";
 
 export default function ConnectPage() {
   const { connectors } = useWalletConnection();
@@ -15,14 +15,25 @@ export default function ConnectPage() {
   const router = useRouter();
 
   async function handle(cId: string) {
-    await connect(cId);
-    const ok = await auth.connectAndAuth();
-    if (!ok) return;
-    const profileRes = await fetch(`/api/profile/get?address=${auth.address}`);
-    const profile = await profileRes.json();
-    const needsOnboarding =
-      !profile?.name || !profile?.school || !profile?.campus || !profile?.level || !profile?.phone;
-    router.push(needsOnboarding ? "/onboarding" : "/dashboard");
+    try {
+      await connect(cId);
+      const ok = await auth.connectAndAuth();
+
+      if (!ok) {
+        // Error is already set in auth.error
+        return;
+      }
+
+      // Check if user needs onboarding
+      const profileRes = await fetch(`/api/profile/get?address=${auth.address}`);
+      const profile = await profileRes.json();
+      const needsOnboarding =
+        !profile?.name || !profile?.school || !profile?.campus || !profile?.level || !profile?.phone;
+
+      router.push(needsOnboarding ? "/onboarding" : "/dashboard");
+    } catch (error) {
+      console.error("Connection error:", error);
+    }
   }
 
   return (
@@ -38,6 +49,17 @@ export default function ConnectPage() {
           </p>
         </div>
 
+        {/* Error Display */}
+        {auth.error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-900">Authentication Failed</p>
+              <p className="text-sm text-red-700 mt-1">{auth.error}</p>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3 mb-6">
           {connectors.map((c) => (
             <Button
@@ -45,15 +67,18 @@ export default function ConnectPage() {
               variant="outline"
               className="w-full justify-start"
               onClick={() => void handle(c.id)}
+              disabled={auth.isAuthenticating}
             >
               <Wallet className="w-5 h-5 mr-3" />
-              Connect {c.name}
+              {auth.isAuthenticating ? "Authenticating..." : `Connect ${c.name}`}
             </Button>
           ))}
         </div>
 
-        {wallet.status === "connected" && (
-          <div className="text-center text-sm text-green-600 mb-4">✓ Wallet Connected</div>
+        {wallet.status === "connected" && !auth.isAuthenticating && (
+          <div className="text-center text-sm text-green-600 mb-4 font-medium">
+            ✓ Wallet Connected - Signing message...
+          </div>
         )}
 
         {/* Features */}

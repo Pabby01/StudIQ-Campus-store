@@ -4,9 +4,13 @@
 import { useCart } from "@/store/cart";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useWallet } from "@solana/react-hooks";
+import { createTransferTransaction, waitForConfirmation } from "@/lib/solana";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { ShoppingCart, Trash2, Minus, Plus } from "lucide-react";
+import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { useState } from "react";
+
+type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifying" | "success" | "error";
 
 export default function CartPage() {
   const items = useCart((s) => s.items);
@@ -17,49 +21,120 @@ export default function CartPage() {
   const auth = useWalletAuth();
   const wallet = useWallet();
 
+  const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+
   async function checkout() {
     if (!auth.address) {
-      alert("Connect wallet first");
+      setError("Please connect your wallet first");
       return;
     }
-    const payload = {
-      buyer: auth.address,
-      storeId: "",
-      items: items.map((i) => ({ productId: i.id, qty: i.qty })),
-      currency: "SOL" as const,
-    };
-    const res = await fetch("/api/checkout/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      alert("Checkout failed");
-      return;
-    }
-    const data = await res.json();
+
     if (wallet.status !== "connected") {
-      alert("Wallet not connected");
+      setError("Wallet not connected");
       return;
     }
+
+    setCheckoutStatus("creating");
+    setError(null);
+
     try {
-      const txSig =
-        (await wallet.session.signTransaction?.({
-          to: data.payTo,
-          amount: total,
-          currency: data.currency,
-        } as any)) ?? "";
-      await fetch("/api/checkout/confirm", {
+      // Step 1: Create order
+      const payload = {
+        buyer: auth.address,
+        storeId: items[0]?.storeId || "",
+        items: items.map((i) => ({ productId: i.id, qty: i.qty })),
+        currency: "SOL" as const,
+      };
+
+      const createRes = await fetch("/api/checkout/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: data.orderId, txSig }),
+        body: JSON.stringify(payload),
       });
-      alert("Payment confirmed");
-      clear();
-    } catch {
-      alert("Payment failed");
+
+      if (!createRes.ok) {
+        const errorData = await createRes.json();
+        throw new Error(errorData.error || "Failed to create order");
+      }
+
+      const orderData = await createRes.json();
+      setOrderId(orderData.orderId);
+
+      // Step 2: Create Solana transaction
+      setCheckoutStatus("signing");
+      const transaction = await createTransferTransaction(
+        auth.address,
+        orderData.payTo,
+        total
+      );
+
+      // Step 3: Sign and send transaction
+      if (!wallet.session.signTransaction) {
+        throw new Error("Wallet does not support transaction signing");
+      }
+
+      const signedTx = await wallet.session.signTransaction(transaction as any);
+
+      // Send transaction
+      const signature = await wallet.session.sendTransaction?.(signedTx as any);
+
+      if (!signature) {
+        throw new Error("Failed to send transaction");
+      }
+
+      // Step 4: Wait for confirmation
+      setCheckoutStatus("confirming");
+      await waitForConfirmation(signature, 60000);
+
+      // Step 5: Verify transaction on backend
+      setCheckoutStatus("verifying");
+      const verifyRes = await fetch("/api/checkout/verify-transaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: orderData.orderId,
+          txSignature: signature,
+        }),
+      });
+
+      if (!verifyRes.ok) {
+        const errorData = await verifyRes.json();
+        throw new Error(errorData.error || "Transaction verification failed");
+      }
+
+      // Success!
+      setCheckoutStatus("success");
+      setTimeout(() => {
+        clear();
+        window.location.href = "/dashboard/orders";
+      }, 3000);
+    } catch (err) {
+      console.error("Checkout error:", err);
+      setError(err instanceof Error ? err.message : "Checkout failed");
+      setCheckoutStatus("error");
     }
   }
+
+  const getStatusMessage = () => {
+    switch (checkoutStatus) {
+      case "creating":
+        return "Creating order...";
+      case "signing":
+        return "Please sign the transaction in your wallet...";
+      case "confirming":
+        return "Confirming transaction on Solana network...";
+      case "verifying":
+        return "Verifying payment...";
+      case "success":
+        return "Payment successful! Redirecting...";
+      case "error":
+        return error || "An error occurred";
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-soft-gray-bg">
@@ -70,6 +145,36 @@ export default function CartPage() {
             {items.length} {items.length === 1 ? "item" : "items"} in your cart
           </p>
         </div>
+
+        {/* Status Messages */}
+        {checkoutStatus !== "idle" && (
+          <Card className="mb-6 p-4">
+            <div className="flex items-center gap-3">
+              {checkoutStatus === "success" ? (
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              ) : checkoutStatus === "error" ? (
+                <XCircle className="w-6 h-6 text-red-600" />
+              ) : (
+                <Loader2 className="w-6 h-6 text-primary-blue animate-spin" />
+              )}
+              <div>
+                <p
+                  className={`font-medium ${checkoutStatus === "success"
+                      ? "text-green-900"
+                      : checkoutStatus === "error"
+                        ? "text-red-900"
+                        : "text-black"
+                    }`}
+                >
+                  {getStatusMessage()}
+                </p>
+                {orderId && (
+                  <p className="text-xs text-muted-text mt-1">Order ID: {orderId}</p>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
 
         {items.length === 0 ? (
           <Card className="text-center py-16">
@@ -98,6 +203,7 @@ export default function CartPage() {
                           <button
                             onClick={() => updateQty(item.id, Math.max(1, item.qty - 1))}
                             className="p-1 hover:bg-white rounded transition-colors"
+                            disabled={checkoutStatus !== "idle"}
                           >
                             <Minus className="w-4 h-4" />
                           </button>
@@ -105,6 +211,7 @@ export default function CartPage() {
                           <button
                             onClick={() => updateQty(item.id, item.qty + 1)}
                             className="p-1 hover:bg-white rounded transition-colors"
+                            disabled={checkoutStatus !== "idle"}
                           >
                             <Plus className="w-4 h-4" />
                           </button>
@@ -112,6 +219,7 @@ export default function CartPage() {
                         <button
                           onClick={() => remove(item.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          disabled={checkoutStatus !== "idle"}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -142,7 +250,7 @@ export default function CartPage() {
                   </div>
                   <div className="border-t border-border-gray pt-3">
                     <div className="flex justify-between">
-                      <span className="font-semibold text-black">Total</span>
+                      <span className="font-semibold text-black">Total (SOL)</span>
                       <span className="text-2xl font-bold text-primary-blue">
                         ${total.toFixed(2)}
                       </span>
@@ -150,10 +258,22 @@ export default function CartPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Button variant="primary" className="w-full" onClick={() => void checkout()}>
-                    Checkout with Solana
+                  <Button
+                    variant="primary"
+                    className="w-full"
+                    onClick={() => void checkout()}
+                    disabled={checkoutStatus !== "idle" && checkoutStatus !== "error"}
+                  >
+                    {checkoutStatus === "idle" || checkoutStatus === "error"
+                      ? "Checkout with Solana"
+                      : "Processing..."}
                   </Button>
-                  <Button variant="outline" className="w-full" onClick={() => clear()}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => clear()}
+                    disabled={checkoutStatus !== "idle"}
+                  >
                     Clear Cart
                   </Button>
                 </div>

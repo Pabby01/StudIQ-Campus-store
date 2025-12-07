@@ -4,6 +4,8 @@ import "./globals.css";
 import "./scrollbar.css";
 import Providers from "@/app/providers";
 import Navbar from "@/components/Navbar";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { ToastProvider } from "@/hooks/useToast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Campus Store",
-  description: "Campus store app with Solana wallet integration",
+  title: "StudIQ Campus Store",
+  description: "Campus marketplace with Solana payments",
 };
 
 export default function RootLayout({
@@ -30,10 +32,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>
-          <Navbar />
-          {children}
-        </Providers>
+        <ErrorBoundary>
+          <ToastProvider>
+            <Providers>
+              <Navbar />
+              {children}
+            </Providers>
+          </ToastProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
