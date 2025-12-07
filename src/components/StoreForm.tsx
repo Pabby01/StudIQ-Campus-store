@@ -1,41 +1,74 @@
 "use client";
 
 import { useState } from "react";
-import UploadInput from "@/components/UploadInput";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Card from "@/components/ui/Card";
 
-export default function StoreForm() {
-  const [saving, setSaving] = useState(false);
-  const [bannerUrl, setBannerUrl] = useState("");
-  async function onSubmit(form: FormData) {
-    setSaving(true);
-    const payload = Object.fromEntries(form.entries());
-    const body = {
-      name: String(payload.name),
-      category: String(payload.category),
-      description: String(payload.description),
-      lat: Number(payload.lat),
-      lon: Number(payload.lon),
-      bannerUrl: bannerUrl || String(payload.bannerUrl || ""),
+type StoreFormProps = {
+  onSuccess?: () => void;
+};
+
+export default function StoreForm({ onSuccess }: StoreFormProps) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const payload = {
+      name: String(formData.get("name")),
+      category: String(formData.get("category")),
+      description: String(formData.get("description")),
+      lat: Number(formData.get("lat")) || 0,
+      lon: Number(formData.get("lon")) || 0,
+      bannerUrl: String(formData.get("bannerUrl")) || undefined,
     };
-    const res = await fetch("/api/store/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    setSaving(false);
-    if (res.ok) alert("Store created");
+
+    try {
+      const res = await fetch("/api/store/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        onSuccess?.();
+        e.currentTarget.reset();
+      } else {
+        alert("Failed to create store");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
+
   return (
-    <form action={onSubmit} className="space-y-3">
-      <input name="name" className="w-full rounded-md border p-2" placeholder="Store name" />
-      <input name="category" className="w-full rounded-md border p-2" placeholder="Category" />
-      <textarea name="description" className="w-full rounded-md border p-2" placeholder="Description" />
-      <div className="flex gap-2">
-        <input name="lat" type="number" className="w-full rounded-md border p-2" placeholder="Latitude" />
-        <input name="lon" type="number" className="w-full rounded-md border p-2" placeholder="Longitude" />
-      </div>
-      <input name="bannerUrl" value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} className="w-full rounded-md border p-2" placeholder="Banner URL" />
-      <div>
-        <div className="text-xs text-zinc-600">Upload banner</div>
-        <UploadInput bucket="store-banners" onUploaded={setBannerUrl} />
-      </div>
-      <button disabled={saving} className="rounded-md bg-black px-3 py-2 text-white">{saving ? "Saving..." : "Create Store"}</button>
-    </form>
+    <Card>
+      <h3 className="text-lg font-semibold text-black mb-6">Create Your Store</h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input name="name" label="Store Name" placeholder="Enter store name" required />
+        <Input name="category" label="Category" placeholder="e.g., Food, Electronics" required />
+        <div>
+          <label className="block text-sm font-medium text-black mb-2">Description</label>
+          <textarea
+            name="description"
+            className="w-full px-4 py-2.5 bg-white border border-border-gray rounded-lg text-black placeholder:text-muted-text focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all duration-200 min-h-[100px]"
+            placeholder="Describe your store..."
+            required
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Input name="lat" label="Latitude" type="number" step="any" placeholder="0.0" />
+          <Input name="lon" label="Longitude" type="number" step="any" placeholder="0.0" />
+        </div>
+        <Input name="bannerUrl" label="Banner URL (optional)" placeholder="https://..." />
+
+        <Button type="submit" variant="primary" className="w-full" disabled={loading}>
+          {loading ? "Creating..." : "Create Store"}
+        </Button>
+      </form>
+    </Card>
   );
 }

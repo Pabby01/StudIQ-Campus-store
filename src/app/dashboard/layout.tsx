@@ -1,15 +1,14 @@
-import DashboardSidebar from "@/components/DashboardSidebar";
+import Sidebar from "@/components/Sidebar";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="mx-auto max-w-6xl p-6">
-      <div className="flex gap-6">
-        <DashboardSidebar />
-        <div className="flex-1">
-          {children}
-        </div>
-      </div>
+    <div className="flex min-h-screen bg-soft-gray-bg">
+      <Sidebar />
+      <main className="flex-1">{children}</main>
     </div>
   );
 }
-

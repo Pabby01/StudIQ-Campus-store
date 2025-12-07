@@ -2,10 +2,15 @@
 
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useRouter } from "next/navigation";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Card from "@/components/ui/Card";
+import { UserCircle } from "lucide-react";
 
 export default function OnboardingPage() {
   const auth = useWalletAuth();
   const router = useRouter();
+
   async function onSubmit(form: FormData) {
     const payload = Object.fromEntries(form.entries());
     const body = {
@@ -16,21 +21,37 @@ export default function OnboardingPage() {
       level: String(payload.level),
       phone: String(payload.phone),
     };
-    const res = await fetch("/api/profile/update", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const res = await fetch("/api/profile/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
     if (res.ok) router.push("/dashboard");
   }
+
   return (
-    <div className="mx-auto max-w-md space-y-6 p-6">
-      <h1 className="text-2xl font-semibold">Onboarding</h1>
-      <form action={onSubmit} className="space-y-3">
-        <input name="name" className="w-full rounded-md border p-2" placeholder="Full name" />
-        <input name="school" className="w-full rounded-md border p-2" placeholder="School" />
-        <input name="campus" className="w-full rounded-md border p-2" placeholder="Campus" />
-        <input name="level" className="w-full rounded-md border p-2" placeholder="Level" />
-        <input name="phone" className="w-full rounded-md border p-2" placeholder="Phone" />
-        <button className="w-full rounded-md bg-black p-2 text-white" type="submit">Save</button>
-      </form>
+    <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
+      <Card className="max-w-md w-full p-8">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserCircle className="w-8 h-8 text-primary-blue" />
+          </div>
+          <h1 className="text-2xl font-bold text-black mb-2">Complete Your Profile</h1>
+          <p className="text-muted-text">Tell us a bit about yourself to get started</p>
+        </div>
+
+        <form action={onSubmit} className="space-y-4">
+          <Input name="name" label="Full Name" placeholder="John Doe" required />
+          <Input name="school" label="School" placeholder="University of Example" required />
+          <Input name="campus" label="Campus" placeholder="Main Campus" required />
+          <Input name="level" label="Level" placeholder="Undergraduate" required />
+          <Input name="phone" label="Phone Number" placeholder="+1234567890" required />
+
+          <Button type="submit" variant="primary" className="w-full mt-6">
+            Complete Setup
+          </Button>
+        </form>
+      </Card>
     </div>
   );
 }
-

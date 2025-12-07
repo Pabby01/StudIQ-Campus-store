@@ -1,24 +1,32 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { Search } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SearchBar() {
+  const [query, setQuery] = useState("");
   const router = useRouter();
-  const params = useSearchParams();
-  const q = params.get("q") ?? "";
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      router.push(`/search?q=${encodeURIComponent(query)}`);
+    }
+  };
+
   return (
-    <form
-      className="flex gap-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const form = new FormData(e.currentTarget as HTMLFormElement);
-        const qq = String(form.get("q") ?? "").trim();
-        router.push(`/search?q=${encodeURIComponent(qq)}`);
-      }}
-    >
-      <input name="q" defaultValue={q} className="w-full rounded-md border p-2" placeholder="Search products" />
-      <button className="rounded-md border px-3">Search</button>
+    <form onSubmit={handleSearch} className="w-full max-w-2xl">
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-text" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search products, stores..."
+          className="w-full pl-12 pr-4 py-3 bg-white border border-border-gray rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm"
+        />
+      </div>
     </form>
   );
 }
-
