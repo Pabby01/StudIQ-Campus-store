@@ -15,8 +15,9 @@ async function fetchProducts(q?: string, category?: string): Promise<Product[]> 
   return data as Product[];
 }
 
-export default async function SearchPage({ searchParams }: { searchParams: { q?: string; category?: string } }) {
-  const products = await fetchProducts(searchParams.q, searchParams.category);
+export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string }> }) {
+  const sp = await searchParams;
+  const products = await fetchProducts(sp.q, sp.category);
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
       <SearchBar />
