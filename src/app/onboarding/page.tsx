@@ -1,54 +1,149 @@
 "use client";
 
-import { useWalletAuth } from "@/hooks/useWalletAuth";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useWallet } from "@solana/react-hooks";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
-import { UserCircle } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
+import { Loader2 } from "lucide-react";
 
 export default function OnboardingPage() {
-  const auth = useWalletAuth();
   const router = useRouter();
+  const wallet = useWallet();
+  const toast = useToast();
+  const [loading, setLoading] = useState(false);
 
-  async function onSubmit(form: FormData) {
-    const payload = Object.fromEntries(form.entries());
-    const body = {
-      address: auth.address,
-      name: String(payload.name),
-      school: String(payload.school),
-      campus: String(payload.campus),
-      level: String(payload.level),
-      phone: String(payload.phone),
-    };
-    const res = await fetch("/api/profile/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (res.ok) router.push("/dashboard");
+  const address = wallet.status === "connected" ? wallet.session.account.address.toString() : null;
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!address) {
+      toast.error("Wallet not connected", "Please connect your wallet first");
+      router.push("/connect");
+      return;
+    }
+
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+
+    try {
+      const res = await fetch("/api/profile/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address,
+          name: formData.get("name"),
+          email: formData.get("email"),
+          school: formData.get("school"),
+          campus: formData.get("campus"),
+          level: formData.get("level"),
+          phone: formData.get("phone"),
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Welcome!", "Your profile has been created");
+        router.push("/");
+      } else {
+        const error = await res.json();
+        toast.error("Failed to save profile", error.error || "Please try again");
+      }
+    } catch (error) {
+      toast.error("Error", "Failed to save profile");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!address) {
+    return (
+      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
+        <Card className="max-w-md w-full p-8 text-center">
+          <p className="text-muted-text mb-4">Please connect your wallet first</p>
+          <Button variant="primary" onClick={() => router.push("/connect")}>
+            Connect Wallet
+          </Button>
+        </Card>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
       <Card className="max-w-md w-full p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UserCircle className="w-8 h-8 text-primary-blue" />
-          </div>
           <h1 className="text-2xl font-bold text-black mb-2">Complete Your Profile</h1>
-          <p className="text-muted-text">Tell us a bit about yourself to get started</p>
+          <p className="text-muted-text">Tell us a bit about yourself</p>
         </div>
 
-        <form action={onSubmit} className="space-y-4">
-          <Input name="name" label="Full Name" placeholder="John Doe" required />
-          <Input name="school" label="School" placeholder="University of Example" required />
-          <Input name="campus" label="Campus" placeholder="Main Campus" required />
-          <Input name="level" label="Level" placeholder="Undergraduate" required />
-          <Input name="phone" label="Phone Number" placeholder="+1234567890" required />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            name="name"
+            label="Full Name"
+            placeholder="John Doe"
+            required
+          />
+          <Input
+            name="email"
+            label="Email"
+            type="email"
+            placeholder="john@university.edu"
+            required
+          />
+          <Input
+            name="school"
+            label="University/School"
+            placeholder="University of Example"
+            required
+          />
+          <Input
+            name="campus"
+            label="Campus"
+            placeholder="Main Campus"
+            required
+          />
+          <div>
+            <label className="block text-sm font-medium text-black mb-2">
+              Level <span className="text-red-600">*</span>
+            </label>
+            <select
+              name="level"
+              required
+              className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            >
+              <option value="">Select your level</option>
+              <option value="Freshman">Freshman</option>
+              <option value="Sophomore">Sophomore</option>
+              <option value="Junior">Junior</option>
+              <option value="Senior">Senior</option>
+              <option value="Graduate">Graduate</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <Input
+            name="phone"
+            label="Phone Number"
+            type="tel"
+            placeholder="+1 (555) 123-4567"
+            required
+          />
 
-          <Button type="submit" variant="primary" className="w-full mt-6">
-            Complete Setup
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-full"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Complete Setup"
+            )}
           </Button>
         </form>
       </Card>

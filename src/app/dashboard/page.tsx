@@ -1,16 +1,46 @@
 "use client";
 
-import { useWalletAuth } from "@/hooks/useWalletAuth";
-import { usePoints } from "@/hooks/usePoints";
+import { useState, useEffect } from "react";
+import { useWallet } from "@solana/react-hooks";
 import DashboardCard from "@/components/DashboardCard";
-import { ShoppingBag, DollarSign, Award, TrendingUp } from "lucide-react";
-
-type PointLog = Readonly<{ points: number }>;
+import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
-  const auth = useWalletAuth();
-  const points = usePoints(auth.address ?? null);
-  const totalPoints = (points.history as PointLog[]).reduce((s, r) => s + r.points, 0);
+  const wallet = useWallet();
+  const [points, setPoints] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPoints();
+  }, [wallet.status]);
+
+  async function fetchPoints() {
+    if (wallet.status !== "connected") {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const address = wallet.session.account.address.toString();
+      const res = await fetch(`/api/profile/get?address=${address}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPoints(data?.profile?.points || 0);
+      }
+    } catch (error) {
+      console.error("Failed to fetch points:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary-blue animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-soft-gray-bg p-8">
@@ -37,7 +67,7 @@ export default function DashboardPage() {
           />
           <DashboardCard
             title="Reward Points"
-            value={totalPoints}
+            value={points.toString()}
             icon={Award}
           />
           <DashboardCard
@@ -59,3 +89,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

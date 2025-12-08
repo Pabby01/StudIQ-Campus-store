@@ -1,18 +1,18 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { checkoutCreateSchema } from "@/lib/validators";
-import { getSessionWalletFromReq } from "@/lib/session";
 
 export async function POST(req: Request) {
   try {
-    const address = getSessionWalletFromReq(req);
+    const body = await req.json();
+    const address = body.address;
+
     if (!address) {
       return Response.json(
-        { ok: false, error: "Unauthorized" },
+        { ok: false, error: "Wallet address required" },
         { status: 401 }
       );
     }
 
-    const body = await req.json();
     const parsed = checkoutCreateSchema.safeParse(body);
 
     if (!parsed.success) {

@@ -1,21 +1,20 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { sanitizeFilename } from "@/lib/sanitize";
 import { APIError, handleAPIError } from "@/lib/errors";
-import { getSessionWalletFromReq } from "@/lib/session";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export async function POST(req: Request) {
     try {
-        const address = getSessionWalletFromReq(req);
-        if (!address) {
-            throw new APIError(401, "UNAUTHORIZED", "Authentication required");
-        }
-
         const formData = await req.formData();
         const file = formData.get("file") as File;
         const folder = (formData.get("folder") as string) || "products";
+        const address = formData.get("address") as string;
+
+        if (!address) {
+            throw new APIError(401, "UNAUTHORIZED", "Wallet address required");
+        }
 
         if (!file) {
             throw new APIError(400, "NO_FILE", "No file provided");
@@ -58,7 +57,7 @@ export async function POST(req: Request) {
 
         if (error) {
             console.error("Upload error:", error);
-            throw new APIError(500, "UPLOAD_FAILED", "Failed to upload file");
+            throw new APIError(500, "UPLOAD_FAILED", `Failed to upload file: ${error.message}`);
         }
 
         // Get public URL
@@ -81,12 +80,12 @@ export async function POST(req: Request) {
 // Delete uploaded file
 export async function DELETE(req: Request) {
     try {
-        const address = getSessionWalletFromReq(req);
+        const { path, address } = await req.json();
+
         if (!address) {
-            throw new APIError(401, "UNAUTHORIZED", "Authentication required");
+            throw new APIError(401, "UNAUTHORIZED", "Wallet address required");
         }
 
-        const { path } = await req.json();
         if (!path) {
             throw new APIError(400, "NO_PATH", "File path required");
         }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useWallet } from "@solana/react-hooks";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
@@ -29,18 +30,27 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
   const [bannerUrl, setBannerUrl] = useState("");
   const [category, setCategory] = useState("");
   const toast = useToast();
+  const wallet = useWallet();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (wallet.status !== "connected") {
+      toast.error("Wallet not connected", "Please connect your wallet first");
+      return;
+    }
+
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
     const payload = {
+      address: wallet.session.account.address.toString(),
       name: String(formData.get("name")),
       description: String(formData.get("description")) || undefined,
       category: category || "Other",
       bannerUrl: bannerUrl || undefined,
-      location: String(formData.get("location")) || undefined,
+      lat: 0, // Default coordinates - you can add geolocation later
+      lon: 0,
     };
 
     try {
@@ -50,12 +60,12 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
         body: JSON.stringify(payload),
       });
 
-      if (res.ok) {
+      const data = await res.json();
+
+      if (res.ok && data.id) {
         toast.success("Store created!", "Your store is now live");
-        onSuccess?.();
-        e.currentTarget.reset();
-        setBannerUrl("");
-        setCategory("");
+        // Redirect to product management for the new store
+        window.location.href = `/dashboard/store/${data.id}/products`;
       } else {
         const error = await res.json();
         toast.error("Failed to create store", error.error || "Please try again");

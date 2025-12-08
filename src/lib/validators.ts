@@ -14,10 +14,11 @@ export const signinSchema = z.object({
 export const updateProfileSchema = z.object({
   address: z.string().min(32),
   name: z.string().min(2),
+  email: z.string().email().optional(),
   school: z.string().min(2),
   campus: z.string().min(2),
-  level: z.string().min(1),
-  phone: z.string().min(6),
+  level: z.string().min(1).optional(),
+  phone: z.string().min(6).optional(),
 });
 
 export const createStoreSchema = z.object({

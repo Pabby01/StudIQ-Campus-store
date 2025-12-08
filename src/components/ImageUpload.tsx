@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { Upload, X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { useWallet } from "@solana/react-hooks";
 
 interface ImageUploadProps {
     onUploadComplete: (url: string) => void;
@@ -22,10 +23,17 @@ export default function ImageUpload({
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const wallet = useWallet();
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // Check wallet connection
+        if (wallet.status !== "connected") {
+            setError("Please connect your wallet first");
+            return;
+        }
 
         // Validate file type
         if (!file.type.startsWith("image/")) {
@@ -57,6 +65,7 @@ export default function ImageUpload({
             const formData = new FormData();
             formData.append("file", file);
             formData.append("folder", folder);
+            formData.append("address", wallet.session.account.address.toString());
 
             const res = await fetch("/api/storage", {
                 method: "POST",
@@ -96,8 +105,8 @@ export default function ImageUpload({
             {/* Upload Area */}
             <div
                 className={`relative border-2 border-dashed rounded-lg transition-colors ${preview
-                        ? "border-border-gray"
-                        : "border-border-gray hover:border-primary-blue"
+                    ? "border-border-gray"
+                    : "border-border-gray hover:border-primary-blue"
                     }`}
             >
                 {preview ? (

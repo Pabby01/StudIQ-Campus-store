@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
 import ProductRow from "@/components/ProductRow";
 import PromoBanner from "@/components/PromoBanner";
+import FeaturedStores from "@/components/FeaturedStores";
 import StoreCard from "@/components/StoreCard";
 import ProductCard from "@/components/ProductCard";
 import { encodeGeohash } from "@/lib/geohash";
@@ -96,6 +97,16 @@ export default function Home() {
             ctaLink="/search"
           />
         </div>
+
+        {/* Trending Products */}
+        <ProductRow
+          title="Trending Now"
+          subtitle="Most popular items this week"
+          products={products.slice(0, 6)}
+        />
+
+        {/* Featured Stores */}
+        <FeaturedStores />
 
         {/* Flash Deals */}
         <ProductRow

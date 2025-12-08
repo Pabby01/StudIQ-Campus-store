@@ -14,6 +14,12 @@ export function getSupabaseServerClient() {
     throw new Error("supabaseUrl is required.");
   }
 
-  return createClient(url, key);
+  // Use service role key for server-side operations
+  // No session headers needed with new wallet-based auth
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    }
+  });
 }
-

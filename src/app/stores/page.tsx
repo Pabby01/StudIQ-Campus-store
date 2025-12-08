@@ -28,21 +28,13 @@ export default function StoresPage() {
   useEffect(() => {
     const fetchStores = async () => {
       try {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-              const gh = encodeGeohash(pos.coords.latitude, pos.coords.longitude, 6);
-              const res = await fetch(`/api/store/nearby?geoprefix=${gh.substring(0, 5)}`);
-              const data = await res.json();
-              setStores(data);
-            },
-            async () => {
-              const res = await fetch(`/api/store/nearby?geoprefix=`);
-              const data = await res.json();
-              setStores(data);
-            }
-          );
+        const res = await fetch("/api/store/all?limit=100");
+        if (res.ok) {
+          const data = await res.json();
+          setStores(data.stores || []);
         }
+      } catch (error) {
+        console.error("Failed to fetch stores:", error);
       } finally {
         setLoading(false);
       }
@@ -100,8 +92,8 @@ export default function StoresPage() {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat
-                      ? "bg-primary-blue text-white"
-                      : "bg-soft-gray-bg text-muted-text hover:bg-gray-200"
+                    ? "bg-primary-blue text-white"
+                    : "bg-soft-gray-bg text-muted-text hover:bg-gray-200"
                     }`}
                 >
                   {cat}

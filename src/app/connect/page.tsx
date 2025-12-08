@@ -1,39 +1,65 @@
 "use client";
 
-import { useWalletAuth } from "@/hooks/useWalletAuth";
-import { useWalletConnection, useWallet, useConnectWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/react-hooks";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { Wallet, Shield, Zap, AlertCircle } from "lucide-react";
+import { Wallet, Shield, Zap, Loader2 } from "lucide-react";
 
 export default function ConnectPage() {
-  const { connectors } = useWalletConnection();
-  const connect = useConnectWallet();
   const wallet = useWallet();
-  const auth = useWalletAuth();
   const router = useRouter();
+  const [checking, setChecking] = useState(false);
 
-  async function handle(cId: string) {
-    try {
-      await connect(cId);
-      const ok = await auth.connectAndAuth();
-
-      if (!ok) {
-        // Error is already set in auth.error
-        return;
-      }
-
-      // Check if user needs onboarding
-      const profileRes = await fetch(`/api/profile/get?address=${auth.address}`);
-      const profile = await profileRes.json();
-      const needsOnboarding =
-        !profile?.name || !profile?.school || !profile?.campus || !profile?.level || !profile?.phone;
-
-      router.push(needsOnboarding ? "/onboarding" : "/dashboard");
-    } catch (error) {
-      console.error("Connection error:", error);
+  useEffect(() => {
+    if (wallet.status === "connected" && !checking) {
+      handleConnected();
     }
+  }, [wallet.status]);
+
+  async function handleConnected() {
+    if (wallet.status !== "connected") return;
+
+    setChecking(true);
+    const address = wallet.session.account.address.toString();
+
+    try {
+      // Check if user profile exists
+      const profileRes = await fetch(`/api/profile/get?address=${address}`);
+
+      if (profileRes.ok) {
+        const profile = await profileRes.json();
+
+        // Check if user needs onboarding
+        const needsOnboarding = !profile?.name || !profile?.school || !profile?.campus;
+
+        if (needsOnboarding) {
+          router.push("/onboarding");
+        } else {
+          router.push("/");
+        }
+      } else {
+        // New user - go to onboarding
+        router.push("/onboarding");
+      }
+    } catch (error) {
+      console.error("Profile check error:", error);
+      // On error, assume new user
+      router.push("/onboarding");
+    }
+  }
+
+  if (wallet.status === "connected") {
+    return (
+      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
+        <Card className="max-w-md w-full p-8 text-center">
+          <Loader2 className="w-12 h-12 text-primary-blue animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-black mb-2">Setting up your account...</h2>
+          <p className="text-muted-text">Please wait</p>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -49,37 +75,18 @@ export default function ConnectPage() {
           </p>
         </div>
 
-        {/* Error Display */}
-        {auth.error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-red-900">Authentication Failed</p>
-              <p className="text-sm text-red-700 mt-1">{auth.error}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-3 mb-6">
-          {connectors.map((c) => (
-            <Button
-              key={c.id}
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => void handle(c.id)}
-              disabled={auth.isAuthenticating}
-            >
-              <Wallet className="w-5 h-5 mr-3" />
-              {auth.isAuthenticating ? "Authenticating..." : `Connect ${c.name}`}
-            </Button>
-          ))}
+        <div className="mb-6">
+          <p className="text-sm text-center text-muted-text mb-4">
+            Click the "Connect" button in the navbar to get started
+          </p>
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={() => router.push("/")}
+          >
+            Go to Homepage
+          </Button>
         </div>
-
-        {wallet.status === "connected" && !auth.isAuthenticating && (
-          <div className="text-center text-sm text-green-600 mb-4 font-medium">
-            ✓ Wallet Connected - Signing message...
-          </div>
-        )}
 
         {/* Features */}
         <div className="border-t border-border-gray pt-6 space-y-3">

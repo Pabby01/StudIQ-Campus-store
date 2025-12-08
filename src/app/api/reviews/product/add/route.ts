@@ -1,14 +1,42 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
-import { getSessionWalletFromReq } from "@/lib/session";
 
 export async function POST(req: Request) {
-  const address = getSessionWalletFromReq(req);
-  if (!address) return Response.json({ ok: false }, { status: 401 });
-  const { productId, rating, content } = await req.json();
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return Response.json({ ok: false });
+  const body = await req.json();
+  const address = body.address;
+  const { productId, rating, comment } = body;
+
+  if (!address) {
+    return Response.json(
+      { ok: false, error: "Wallet address required" },
+      { status: 401 }
+    );
   }
+
+  if (!productId || !rating) {
+    return Response.json(
+      { ok: false, error: "Product ID and rating required" },
+      { status: 400 }
+    );
+  }
+
   const supabase = getSupabaseServerClient();
-  await supabase.from("reviews").insert({ product_id: productId, reviewer_address: address, rating, content });
+
+  const { error } = await supabase
+    .from("reviews")
+    .insert({
+      product_id: productId,
+      reviewer_address: address,
+      rating,
+      content: comment || null,
+    });
+
+  if (error) {
+    console.error("Review add error:", error);
+    return Response.json(
+      { ok: false, error: "Failed to add review" },
+      { status: 500 }
+    );
+  }
+
   return Response.json({ ok: true });
 }

@@ -1,10 +1,23 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
-import { getSessionWalletFromReq } from "@/lib/session";
 
 export async function POST(req: Request) {
-  const address = getSessionWalletFromReq(req);
-  if (!address) return Response.json({ ok: false }, { status: 401 });
-  const { orderId, status } = await req.json();
+  const body = await req.json();
+  const address = body.address;
+  const { orderId, status } = body;
+
+  if (!address) {
+    return Response.json(
+      { ok: false, error: "Wallet address required" },
+      { status: 401 }
+    );
+  }
+
+  if (!orderId || !status) {
+    return Response.json(
+      { ok: false, error: "Order ID and status required" },
+      { status: 400 }
+    );
+  }
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return Response.json({ ok: false });
   }
