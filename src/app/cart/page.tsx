@@ -26,7 +26,9 @@ export default function CartPage() {
   const [orderId, setOrderId] = useState<string | null>(null);
 
   async function checkout() {
-    if (!auth.address) {
+    const userAddress = auth.address || (wallet.status === "connected" ? wallet.session.account.address.toString() : null);
+
+    if (!userAddress) {
       setError("Please connect your wallet first");
       return;
     }
@@ -42,7 +44,7 @@ export default function CartPage() {
     try {
       // Step 1: Create order
       const payload = {
-        buyer: auth.address,
+        buyer: userAddress,
         storeId: items[0]?.storeId || "",
         items: items.map((i) => ({ productId: i.id, qty: i.qty })),
         currency: "SOL" as const,
@@ -56,16 +58,19 @@ export default function CartPage() {
 
       if (!createRes.ok) {
         const errorData = await createRes.json();
+        console.error("Order creation failed:", errorData);
         throw new Error(errorData.error || "Failed to create order");
       }
 
       const orderData = await createRes.json();
+      console.log("Order created:", orderData);
       setOrderId(orderData.orderId);
 
       // Step 2: Create Solana transaction
       setCheckoutStatus("signing");
+      setCheckoutStatus("signing");
       const transaction = await createTransferTransaction(
-        auth.address,
+        userAddress,
         orderData.payTo,
         total
       );
@@ -75,6 +80,8 @@ export default function CartPage() {
         throw new Error("Wallet does not support transaction signing");
       }
 
+      // Use 'as any' to bypass strict type checks between legacy/versioned if needed
+      // but VersionedTransaction is generally supported by modern adapters
       const signedTx = await wallet.session.signTransaction(transaction as any);
 
       // Send transaction
@@ -160,10 +167,10 @@ export default function CartPage() {
               <div>
                 <p
                   className={`font-medium ${checkoutStatus === "success"
-                      ? "text-green-900"
-                      : checkoutStatus === "error"
-                        ? "text-red-900"
-                        : "text-black"
+                    ? "text-green-900"
+                    : checkoutStatus === "error"
+                      ? "text-red-900"
+                      : "text-black"
                     }`}
                 >
                   {getStatusMessage()}
@@ -192,7 +199,17 @@ export default function CartPage() {
               {items.map((item) => (
                 <Card key={item.id} className="p-4">
                   <div className="flex gap-4">
-                    <div className="w-24 h-24 bg-soft-gray-bg rounded-lg flex-shrink-0"></div>
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-24 h-24 object-cover rounded-lg flex-shrink-0 border border-border-gray"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 bg-soft-gray-bg rounded-lg flex-shrink-0 flex items-center justify-center text-muted-text text-xs">
+                        No image
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-black mb-1">{item.name}</h3>
                       <p className="text-lg font-bold text-primary-blue mb-3">

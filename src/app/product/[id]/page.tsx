@@ -39,7 +39,11 @@ export default function ProductDetailPage() {
 
   const fetchProduct = async () => {
     try {
-      const res = await fetch(`/api/product/get?id=${productId}`);
+      const res = await fetch(`/api/product/${productId}`);
+      if (res.status === 404) {
+        setProduct(null);
+        return;
+      }
       const data = await res.json();
       setProduct(data);
     } catch (error) {
@@ -57,9 +61,9 @@ export default function ProductDetailPage() {
       id: product.id,
       name: product.name,
       price: product.price,
-      qty: quantity,
       storeId: product.store_id,
-    });
+      imageUrl: product.image_url || undefined,
+    }, quantity);
 
     toast.success("Added to cart", `${quantity}x ${product.name}`);
   };

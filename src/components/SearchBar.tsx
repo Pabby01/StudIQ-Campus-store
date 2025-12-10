@@ -4,13 +4,19 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function SearchBar() {
+interface SearchBarProps {
+  onSearch?: (query: string) => void;
+}
+
+export default function SearchBar({ onSearch }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
+    if (onSearch) {
+      onSearch(query);
+    } else if (query.trim()) {
       router.push(`/search?q=${encodeURIComponent(query)}`);
     }
   };

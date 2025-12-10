@@ -3,7 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const prefix = url.searchParams.get("geoprefix") ?? "";
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if ((!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return Response.json([]);
   }
   const supabase = getSupabaseServerClient();

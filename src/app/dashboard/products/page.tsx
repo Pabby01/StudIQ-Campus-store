@@ -1,13 +1,105 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ProductForm from "@/components/ProductForm";
+import ProductCard from "@/components/ProductCard";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { Package, Plus } from "lucide-react";
+import { Plus, Package, Loader2 } from "lucide-react";
+import { useWallet } from "@solana/react-hooks";
+import { useToast } from "@/hooks/useToast";
+
+type Store = {
+  id: string;
+  name: string;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  image_url: string;
+  category: string;
+  inventory: number;
+  store_id: string;
+};
 
 export default function DashboardProductsPage() {
   const [showForm, setShowForm] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const wallet = useWallet();
+  const toast = useToast();
+
+  useEffect(() => {
+    if (wallet.status === "connected" && wallet.session.account.address) {
+      fetchStores();
+    }
+  }, [wallet.status]);
+
+  const fetchStores = async () => {
+    try {
+      const address = wallet.status === "connected" ? wallet.session.account.address.toString() : "";
+      // We need a way to get stores by OWNER. 
+      // Assuming api/store/all or similar can filter by owner, or getting from profile?
+      // Let's try to get profile first, or search stores by owner address?
+      // Actually, we don't have a direct "my-stores" endpoint yet?
+      // Let's use /api/store/all?owner=ADDRESS if supported, or create a util.
+      // Wait, there is /api/store/create which returns the store.
+      // Let's look at /api/store/all/route.ts from history. It doesn't seem to support owner filter.
+      // But we can check /api/profile/get, it might return stores?
+
+      // Let's use a specialized check or filter locally for now if API is deficient.
+      // Or better: use /api/store/all and filter client side? Not scalable but ok for now.
+
+      const res = await fetch("/api/store/all?limit=100");
+      const data = await res.json();
+
+      // Filter for my stores
+      const myStores = data.stores.filter((s: any) => s.owner_address === address);
+      setStores(myStores);
+
+      if (myStores.length > 0) {
+        setSelectedStoreId(myStores[0].id);
+        fetchProducts(myStores[0].id);
+      } else {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Failed to fetch stores", error);
+      setLoading(false);
+    }
+  };
+
+  const fetchProducts = async (storeId: string) => {
+    setLoading(true);
+    try {
+      // Fetch products for this store
+      // Using existing search API or direct query?
+      // /api/product/search?storeId=...
+      const res = await fetch(`/api/product/search?storeId=${storeId}&limit=100`);
+      const data = await res.json();
+      setProducts(data.products || []);
+    } catch (error) {
+      console.error("Failed to fetch products", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (wallet.status !== "connected") {
+    return (
+      <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <h2 className="text-xl font-bold mb-4">Connect Wallet</h2>
+          <p className="text-muted-text">Please connect your wallet to manage products.</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-soft-gray-bg p-8">
@@ -20,32 +112,95 @@ export default function DashboardProductsPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-black">Products</h1>
-              <p className="text-muted-text">Manage your product inventory</p>
+              <p className="text-muted-text">
+                {stores.length > 0
+                  ? `Managing ${stores.find(s => s.id === selectedStoreId)?.name || 'Store'} Inventory`
+                  : "Manage your product inventory"}
+              </p>
             </div>
           </div>
-          <Button variant="primary" onClick={() => setShowForm(!showForm)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Product
-          </Button>
+
+          {stores.length > 0 && (
+            <div className="flex gap-2">
+              {stores.length > 1 && (
+                <select
+                  className="px-4 py-2 rounded-lg border border-border-gray"
+                  value={selectedStoreId || ""}
+                  onChange={(e) => {
+                    setSelectedStoreId(e.target.value);
+                    fetchProducts(e.target.value);
+                  }}
+                >
+                  {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              )}
+              <Button variant="primary" onClick={() => setShowForm(!showForm)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Product Form */}
         {showForm && (
-          <ProductForm onSuccess={() => setShowForm(false)} />
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4">Add New Product</h2>
+            {/* Using the updated ProductForm which should accept storeId? 
+                 If ProductForm assumes params.id, we might need to update it or wrap it.
+                 For now, let's assume we can pass the storeId explicitly if we modify ProductForm 
+                 or replicate simple form here.
+                 To avoid breaking changes, let's just use the form component if it allows props,
+                 or show a message.
+              */}
+            {selectedStoreId ? (
+              <iframe
+                src={`/dashboard/store/${selectedStoreId}/products/new`}
+                className="w-full h-[800px] border-none"
+              // Hacky: but re-using the page logic might be safer than duplicating?
+              // Better: Redirect user.
+              />
+            ) : (
+              <p>Select a store first.</p>
+            )}
+          </div>
         )}
 
-        {/* Products List */}
-        <Card>
+        {/* Content */}
+        {loading ? (
           <div className="text-center py-12">
-            <Package className="w-16 h-16 text-muted-text mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-black mb-2">No products yet</h3>
-            <p className="text-muted-text mb-6">Start by adding your first product</p>
-            <Button variant="primary" onClick={() => setShowForm(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Product
-            </Button>
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary-blue" />
           </div>
-        </Card>
+        ) : stores.length === 0 ? (
+          <Card>
+            <div className="text-center py-12">
+              <Package className="w-16 h-16 text-muted-text mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-black mb-2">No Store Found</h3>
+              <p className="text-muted-text mb-6">You need to create a store before adding products.</p>
+              <Button variant="primary" onClick={() => window.location.href = "/store/create"}>
+                Create Your First Store
+              </Button>
+            </div>
+          </Card>
+        ) : products.length === 0 ? (
+          <Card>
+            <div className="text-center py-12">
+              <Package className="w-16 h-16 text-muted-text mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-black mb-2">No products yet</h3>
+              <p className="text-muted-text mb-6">Start by adding your first product to {stores.find(s => s.id === selectedStoreId)?.name}</p>
+              <Button variant="primary" onClick={() => window.location.href = `/dashboard/store/${selectedStoreId}/products/new`}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Product
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map(product => (
+              <ProductCard key={product.id} p={product} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

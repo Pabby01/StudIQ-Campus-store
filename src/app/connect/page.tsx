@@ -25,28 +25,27 @@ export default function ConnectPage() {
     const address = wallet.session.account.address.toString();
 
     try {
-      // Check if user profile exists
-      const profileRes = await fetch(`/api/profile/get?address=${address}`);
+      console.log("Checking profile for address:", address);
+      const profileRes = await fetch(`/api/profile/get?address=${address}`, {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" }
+      });
 
       if (profileRes.ok) {
         const profile = await profileRes.json();
+        console.log("Profile check result:", profile ? "Found" : "Not Found", profile);
 
-        // Check if user needs onboarding
-        const needsOnboarding = !profile?.name || !profile?.school || !profile?.campus;
-
-        if (needsOnboarding) {
-          router.push("/onboarding");
-        } else {
+        if (profile && profile.name && profile.school && profile.campus) {
+          // Existing user - go to home
           router.push("/");
+        } else {
+          // New or incomplete user - go to onboarding
+          router.push("/onboarding");
         }
-      } else {
-        // New user - go to onboarding
-        router.push("/onboarding");
       }
     } catch (error) {
       console.error("Profile check error:", error);
-      // On error, assume new user
-      router.push("/onboarding");
+      // Do not redirect to onboarding on network error
     }
   }
 

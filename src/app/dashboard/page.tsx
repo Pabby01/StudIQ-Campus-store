@@ -25,7 +25,7 @@ export default function DashboardPage() {
       const res = await fetch(`/api/profile/get?address=${address}`);
       if (res.ok) {
         const data = await res.json();
-        setPoints(data?.profile?.points || 0);
+        setPoints(data?.points || 0);
       }
     } catch (error) {
       console.error("Failed to fetch points:", error);

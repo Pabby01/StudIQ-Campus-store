@@ -5,7 +5,7 @@ const ALLOWED_BUCKETS = new Set(["product-images", "store-banners", "profile-pho
 export async function POST(req: Request) {
   const { bucket, path } = await req.json();
   if (!ALLOWED_BUCKETS.has(bucket)) return Response.json({ ok: false }, { status: 400 });
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if ((!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return Response.json({ ok: false });
   }
   const supabase = getSupabaseServerClient();

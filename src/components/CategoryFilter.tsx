@@ -14,19 +14,30 @@ const categories = [
   "Other",
 ];
 
-export default function CategoryFilter() {
+interface CategoryFilterProps {
+  selected?: string;
+  onChange?: (category: string) => void;
+}
+
+export default function CategoryFilter({ selected, onChange }: CategoryFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentCategory = searchParams?.get("category") || "All";
+  const urlCategory = searchParams?.get("category") || "All";
+
+  const currentCategory = selected !== undefined ? selected : urlCategory;
 
   const handleCategoryClick = (category: string) => {
-    const params = new URLSearchParams(searchParams?.toString());
-    if (category === "All") {
-      params.delete("category");
+    if (onChange) {
+      onChange(category);
     } else {
-      params.set("category", category);
+      const params = new URLSearchParams(searchParams?.toString());
+      if (category === "All") {
+        params.delete("category");
+      } else {
+        params.set("category", category);
+      }
+      router.push(`/search?${params.toString()}`);
     }
-    router.push(`/search?${params.toString()}`);
   };
 
   return (
@@ -38,8 +49,8 @@ export default function CategoryFilter() {
             key={category}
             onClick={() => handleCategoryClick(category)}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${isActive
-                ? "bg-primary-blue text-white shadow-sm"
-                : "bg-white text-muted-text border border-border-gray hover:border-primary-blue hover:text-primary-blue"
+              ? "bg-primary-blue text-white shadow-sm"
+              : "bg-white text-muted-text border border-border-gray hover:border-primary-blue hover:text-primary-blue"
               }`}
           >
             {category}

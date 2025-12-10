@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 export async function POST(req: Request) {
   const { address } = await req.json();
   const nonce = randomUUID();
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if ((!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return Response.json({ nonce });
   }
   const supabase = getSupabaseServerClient();

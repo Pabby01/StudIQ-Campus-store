@@ -4,14 +4,7 @@ import { checkoutCreateSchema } from "@/lib/validators";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const address = body.address;
-
-    if (!address) {
-      return Response.json(
-        { ok: false, error: "Wallet address required" },
-        { status: 401 }
-      );
-    }
+    // Removed manual legacy address check. We rely on Zod schema validation below.
 
     const parsed = checkoutCreateSchema.safeParse(body);
 
@@ -22,7 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if ((!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return Response.json(
         { ok: false, error: "Server configuration error" },
         { status: 500 }
@@ -85,7 +78,7 @@ export async function POST(req: Request) {
           {
             p_product_id: item.productId,
             p_quantity: item.qty,
-            p_reserved_by: address,
+            p_reserved_by: parsed.data.buyer,
             p_minutes: 10,
           }
         );
@@ -159,7 +152,7 @@ export async function POST(req: Request) {
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
-        buyer_address: address,
+        buyer_address: parsed.data.buyer,
         store_id: storeId,
         amount,
         fee_percent: feePercent,

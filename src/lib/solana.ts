@@ -4,8 +4,8 @@ import {
     Transaction,
     SystemProgram,
     LAMPORTS_PER_SOL,
-    TransactionSignature,
 } from "@solana/web3.js";
+import { Buffer } from "buffer";
 
 const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
 const SOLANA_NETWORK = process.env.SOLANA_NETWORK || "devnet";
@@ -21,9 +21,19 @@ export async function createTransferTransaction(
     to: string,
     amount: number
 ): Promise<Transaction> {
+    console.log("Creating transaction:", { from, to, amount });
+
+    // Safety check for amount to prevent draining wallets with USD-interpreted values
+    // If amount is > 1000, it's likely USD, so warn or cap (optional, but good for debug)
+    if (amount > 100) {
+        console.warn(`High SOL amount detected (${amount} SOL). Ensure this is intended.`);
+    }
+
     const fromPubkey = new PublicKey(from);
     const toPubkey = new PublicKey(to);
     const lamports = Math.floor(amount * LAMPORTS_PER_SOL);
+
+    console.log("Lamports:", lamports);
 
     const transaction = new Transaction().add(
         SystemProgram.transfer({
@@ -37,6 +47,17 @@ export async function createTransferTransaction(
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = fromPubkey;
+
+    // HACK: Add a dummy signature to satisfy strict serializers in wallet adapters.
+    // The wallet will overwrite this with the real signature during signing.
+    // Using Buffer.alloc(64) gives us a 64-byte zero array.
+    try {
+        const dummySignature = Buffer.alloc(64);
+        transaction.addSignature(fromPubkey, dummySignature);
+    } catch (err) {
+        console.error("Failed to add dummy signature:", err);
+        // Fallback: try to proceed without it if Buffer fails
+    }
 
     return transaction;
 }

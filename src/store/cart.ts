@@ -5,6 +5,8 @@ export type CartItem = Readonly<{
   name: string;
   price: number;
   qty: number;
+  storeId: string;
+  imageUrl?: string;
 }>;
 
 type CartState = Readonly<{
