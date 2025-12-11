@@ -1,86 +1,58 @@
-# Campus Store
+# StudiQ Campus Store
 
-Campus Store is a Next.js app router project for exploring campus stores, managing a shopping cart, and connecting a Solana wallet for payments. It includes authentication (Google + credentials), typed form validation, and a small state store for cart operations.
+A decentralized campus marketplace built on Solana and Next.js.
 
-## Features
+## 🚀 Features
 
-- Next.js App Router with React and TypeScript
-- Tailwind CSS v4 via `@tailwindcss/postcss`
-- Authentication with `next-auth` (Google + credentials)
-- Zod-based form validation for sign-in/sign-up
-- Solana wallet integration on Devnet with `@solana/react-hooks`
-- Cart state powered by `zustand`
-- Testing with `vitest`
+### For Buyers
+- **Browse Products**: Explore a wide range of campus essentials.
+- **Crypto Payments**: Securely pay with SOL or USDC via Solana Pay.
+- **Pay on Delivery (POD)**: Option to pay in cash upon receipt/pickup for verified items.
+- **Shopping Cart**: Manage items and checkout seamlessly.
+- **Receipts**: Download professional PDF receipts for all orders.
+- **Wallet Connection**: Connect Phantom or Solflare for seamless web3 integration.
 
-## Tech Stack
+### For Sellers
+- **Store Dashboard**: Manage your store, products, and incoming orders.
+- **Product Management**: 
+    - Upload multiple product images (Gallery view).
+    - Edit and Delete products.
+    - specialized categories.
+- **Order Management**: View new orders, mark as Shipped or Completed.
+- **Inventory Tracking**: Real-time stock management.
 
-- Framework: `next@16`
-- UI: Tailwind CSS v4
-- Auth: `next-auth`
-- State: `zustand`
-- Validation: `zod`
-- Wallet: `@solana/react-hooks`, `@solana/client`
-- Testing: `vitest`, `@testing-library/react`
-- Linting: `eslint`
+## 🛠 Tech Stack
+- **Framework**: Next.js 15 (App Router)
+- **Database**: Supabase (PostgreSQL)
+- **Blockchain**: Solana (Web3.js)
+- **Styling**: TailwindCSS
+- **State Management**: Zustand
+- **PDF Generation**: jsPDF + html2canvas
 
-## Getting Started
+## 📦 Installation
 
-Install dependencies and run the dev server:
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/your-repo/campus-store.git
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up Environment Variables (`.env.local`):
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+   NEXT_PUBLIC_SOLANA_RPC_URL=...
+   ```
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
-```bash
-npm install
-npm run dev
-```
-
-Open `http://localhost:3000` in your browser.
-
-### Scripts
-
-- `npm run dev` — start the development server
-- `npm run build` — build for production
-- `npm run start` — run the production build
-- `npm run lint` — run ESLint
-- `npm run test` — run Vitest
-
-## Environment Variables
-
-Authentication providers use the following variables:
-
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-
-Optional (recommended for production):
-
-- `NEXTAUTH_URL`
-- `NEXTAUTH_SECRET`
-
-The credentials provider is stubbed for demonstration; replace the authorize logic with real user lookup.
-
-## Key Paths
-
-- Pages: `src/app/`
-  - Home: `src/app/page.tsx`
-  - Stores: `src/app/stores/page.tsx`
-  - Cart: `src/app/cart/page.tsx`
-  - Profile: `src/app/profile/page.tsx`
-  - Auth: `src/app/auth/page.tsx`
-  - NextAuth API: `src/app/api/auth/[...nextauth]/route.ts`
-- Components: `src/components/WalletBar.tsx` (Solana wallet connect/disconnect)
-- Store: `src/store/cart.ts` (add/remove/update/total operations)
-- Validation: `src/lib/validators.ts` (signin/signup schemas)
-- Tests: `src/tests/` with Vitest config at `vitest.config.ts`
-
-## Testing
-
-Run unit tests:
-
-```bash
-npm run test
-```
-
-Vitest is configured to look for tests in `src/tests/**/*.test.ts` and uses a Node test environment.
-
-## Deployment
-
-This project is compatible with Vercel. See Next.js deployment docs: https://nextjs.org/docs/app/building-your-application/deploying
-
+## 📝 Recent Updates
+- **Multi-Image Support**: Products now support up to 10 images with a carousel view.
+- **Pay on Delivery**: Integrated POD availability for products and checkout flow.
+- **Order Receipts**: Automated PDF receipt validation and download page.
+- **Seller Tools**: Enhanced dashboard for order tracking and product editing.

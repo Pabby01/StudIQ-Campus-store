@@ -115,7 +115,7 @@ export default function CartPage() {
         setCheckoutStatus("success");
         setTimeout(() => {
           clear();
-          window.location.href = "/dashboard/orders";
+          window.location.href = `/checkout/success/${orderData.orderId}`;
         }, 3000);
         return;
       }
@@ -173,7 +173,7 @@ export default function CartPage() {
       setCheckoutStatus("success");
       setTimeout(() => {
         clear();
-        window.location.href = "/dashboard/orders";
+        window.location.href = `/checkout/success/${orderData.orderId}`;
       }, 3000);
     } catch (err) {
       console.error("Checkout error:", err);

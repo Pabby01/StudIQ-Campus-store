@@ -6,7 +6,7 @@ export const SOLANA_CONFIG = {
 
     // Merchant wallet (receives platform fees)
     // TODO: Replace with your actual merchant wallet address
-    merchantWallet: process.env.NEXT_PUBLIC_MERCHANT_WALLET || "YOUR_MERCHANT_WALLET_ADDRESS_HERE",
+    merchantWallet: process.env.NEXT_PUBLIC_MERCHANT_WALLET || "8HzTKc1VB4zHL5NopjhFdbsq343ZWDNaAKrvTfLCv7N5",
 
     // Platform fee (in percentage)
     platformFeePercent: 5, // 5% platform fee
@@ -17,6 +17,6 @@ export const SOLANA_CONFIG = {
 } as const;
 
 // Validate merchant wallet is set
-if (SOLANA_CONFIG.merchantWallet === "YOUR_MERCHANT_WALLET_ADDRESS_HERE") {
+if (SOLANA_CONFIG.merchantWallet === "8HzTKc1VB4zHL5NopjhFdbsq343ZWDNaAKrvTfLCv7N5") {
     console.warn("⚠️ Merchant wallet not configured! Set NEXT_PUBLIC_MERCHANT_WALLET in .env");
 }

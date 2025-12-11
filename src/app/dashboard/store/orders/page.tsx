@@ -16,17 +16,37 @@ export default function VendorOrdersPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Store Orders</h1>
       <div className="space-y-3">
-        {(data ?? []).map((o) => (
-          <div key={o.id} className="rounded-lg border p-3">
-            <div className="font-medium">Order {o.id}</div>
-            <div className="text-sm text-zinc-600">Status: {o.status}</div>
-            <div className="text-sm text-zinc-600">Amount: ${Number(o.amount).toFixed(2)}</div>
-            <div className="mt-2 flex gap-2">
-              <button className="rounded-md border px-2" onClick={() => void update(o.id, "shipped")}>Mark Shipped</button>
-              <button className="rounded-md border px-2" onClick={() => void update(o.id, "completed")}>Mark Completed</button>
-            </div>
+        {(data ?? []).length === 0 ? (
+          <div className="text-center py-12 text-muted-text border rounded-lg bg-gray-50">
+            <p>No orders found yet.</p>
           </div>
-        ))}
+        ) : (
+          (data ?? []).map((o) => (
+            <div key={o.id} className="rounded-lg border p-3 bg-white shadow-sm">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-medium text-black">Order #{o.id.slice(0, 8)}</div>
+                  <div className="text-sm text-zinc-600 mt-1">Status: <span className="font-medium capitalize">{o.status}</span></div>
+                  <div className="text-sm text-zinc-600">Amount: <span className="font-bold text-primary-blue">${Number(o.amount).toFixed(2)}</span></div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    className="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
+                    onClick={() => void update(o.id, "shipped")}
+                  >
+                    Mark Shipped
+                  </button>
+                  <button
+                    className="text-xs px-3 py-1 bg-green-50 text-green-600 rounded-md hover:bg-green-100 transition-colors"
+                    onClick={() => void update(o.id, "completed")}
+                  >
+                    Mark Completed
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
