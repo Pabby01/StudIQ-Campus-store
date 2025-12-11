@@ -14,8 +14,9 @@ export async function POST(req: Request) {
 
   const parsed = createProductSchema.safeParse(body);
   if (!parsed.success) {
+    console.error("Validation error:", parsed.error); // Log to server console
     return Response.json(
-      { ok: false, error: "Invalid input" },
+      { ok: false, error: "Invalid input", details: parsed.error.flatten() },
       { status: 400 }
     );
   }
@@ -28,7 +29,9 @@ export async function POST(req: Request) {
     category: parsed.data.category,
     price: parsed.data.price,
     inventory: parsed.data.inventory,
+    currency: parsed.data.currency,
     image_url: parsed.data.imageUrl ?? null,
+    images: parsed.data.images ?? (parsed.data.imageUrl ? [parsed.data.imageUrl] : []),
   }).select("id").single();
 
   if (error) {

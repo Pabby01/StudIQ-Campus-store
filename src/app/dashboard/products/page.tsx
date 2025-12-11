@@ -90,6 +90,37 @@ export default function DashboardProductsPage() {
     }
   };
 
+  const handleDeleteStore = async (storeId: string) => {
+    if (!confirm("Are you sure you want to delete this store? All products will be deleted.")) return;
+    try {
+      const res = await fetch(`/api/store/${storeId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Store deleted");
+        fetchStores();
+        if (selectedStoreId === storeId) setSelectedStoreId(null);
+      } else {
+        toast.error("Failed to delete store");
+      }
+    } catch (e) {
+      toast.error("Error deleting store");
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    try {
+      const res = await fetch(`/api/product/${productId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Product deleted");
+        if (selectedStoreId) fetchProducts(selectedStoreId);
+      } else {
+        toast.error("Failed to delete product");
+      }
+    } catch (e) {
+      toast.error("Error deleting product");
+    }
+  };
+
   if (wallet.status !== "connected") {
     return (
       <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
@@ -134,6 +165,11 @@ export default function DashboardProductsPage() {
                   {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               )}
+              {selectedStoreId && (
+                <Button variant="danger" onClick={() => handleDeleteStore(selectedStoreId)}>
+                  Delete Store
+                </Button>
+              )}
               <Button variant="primary" onClick={() => setShowForm(!showForm)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
@@ -146,20 +182,11 @@ export default function DashboardProductsPage() {
         {showForm && (
           <div className="mb-8">
             <h2 className="text-xl font-bold mb-4">Add New Product</h2>
-            {/* Using the updated ProductForm which should accept storeId? 
-                 If ProductForm assumes params.id, we might need to update it or wrap it.
-                 For now, let's assume we can pass the storeId explicitly if we modify ProductForm 
-                 or replicate simple form here.
-                 To avoid breaking changes, let's just use the form component if it allows props,
-                 or show a message.
-              */}
             {selectedStoreId ? (
-              <iframe
-                src={`/dashboard/store/${selectedStoreId}/products/new`}
-                className="w-full h-[800px] border-none"
-              // Hacky: but re-using the page logic might be safer than duplicating?
-              // Better: Redirect user.
-              />
+              <ProductForm storeId={selectedStoreId} onSuccess={() => {
+                setShowForm(false);
+                fetchProducts(selectedStoreId);
+              }} />
             ) : (
               <p>Select a store first.</p>
             )}
@@ -188,7 +215,7 @@ export default function DashboardProductsPage() {
               <Package className="w-16 h-16 text-muted-text mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-black mb-2">No products yet</h3>
               <p className="text-muted-text mb-6">Start by adding your first product to {stores.find(s => s.id === selectedStoreId)?.name}</p>
-              <Button variant="primary" onClick={() => window.location.href = `/dashboard/store/${selectedStoreId}/products/new`}>
+              <Button variant="primary" onClick={() => setShowForm(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Your First Product
               </Button>
@@ -197,7 +224,17 @@ export default function DashboardProductsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map(product => (
-              <ProductCard key={product.id} p={product} />
+              <div key={product.id} className="relative group">
+                <ProductCard p={product} />
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                  <Button variant="danger" size="sm" onClick={(e) => {
+                    e.preventDefault();
+                    handleDeleteProduct(product.id);
+                  }}>
+                    Delete
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         )}

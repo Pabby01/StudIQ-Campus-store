@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import ImageUpload from "@/components/ImageUpload";
 import { useToast } from "@/hooks/useToast";
+import { useWallet } from "@solana/react-hooks";
+import { X } from "lucide-react";
 
 type ProductFormProps = {
   storeId?: string;
@@ -27,23 +30,40 @@ const CATEGORIES = [
 
 export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
   const [loading, setLoading] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
+  const [images, setImages] = useState<string[]>([]);
   const [category, setCategory] = useState("");
+  const router = useRouter();
   const toast = useToast();
+  const wallet = useWallet();
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
+    if (wallet.status !== "connected" || !wallet.session?.account?.address) {
+      toast.error("Error", "Please connect your wallet first");
+      return;
+    }
 
+    setLoading(true);
     const formData = new FormData(e.currentTarget);
+
+    // Validate images
+    if (images.length === 0) {
+      toast.error("Error", "At least one image is required");
+      setLoading(false);
+      return;
+    }
+
     const payload = {
+      address: wallet.session.account.address.toString(),
       storeId: storeId || String(formData.get("storeId")),
-      name: String(formData.get("name")),
+      name: formData.get("name"),
       description: String(formData.get("description")) || undefined,
-      category: category || "Other",
+      category: formData.get("category"),
       price: Number(formData.get("price")),
+      currency: formData.get("currency"),
       inventory: Number(formData.get("inventory")),
-      imageUrl: imageUrl || undefined,
+      imageUrl: images[0], // Main image for backward compatibility
+      images: images,      // All images
     };
 
     try {
@@ -57,7 +77,7 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
         toast.success("Product created!", "Your product is now live");
         onSuccess?.();
         e.currentTarget.reset();
-        setImageUrl("");
+        setImages([]);
         setCategory("");
       } else {
         const error = await res.json();
@@ -77,13 +97,35 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
         {/* Product Image */}
         <div>
           <label className="block text-sm font-medium text-black mb-2">
-            Product Image
+            Product Images (Max 10)
           </label>
-          <ImageUpload
-            onUploadComplete={setImageUrl}
-            folder="products"
-            currentImage={imageUrl}
-          />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {images.map((url, index) => (
+              <div key={index} className="relative group aspect-square">
+                <img src={url} alt={`Product ${index + 1}`} className="w-full h-full object-cover rounded-lg border border-border-gray" />
+                <button
+                  type="button"
+                  onClick={() => setImages(images.filter((_, i) => i !== index))}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+
+            {images.length < 10 && (
+              <div className="aspect-square">
+                <ImageUpload
+                  key={images.length}
+                  onUploadComplete={(url) => setImages([...images, url])}
+                  folder="products"
+                />
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-muted-text mt-2">
+            Add at least one image. The first image will be the main product photo.
+          </p>
         </div>
 
         {/* Product Name */}
@@ -100,6 +142,7 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
             Category <span className="text-red-600">*</span>
           </label>
           <select
+            name="category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             required
@@ -127,15 +170,32 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
           />
         </div>
 
-        {/* Price */}
-        <Input
-          name="price"
-          label="Price (SOL)"
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          required
-        />
+        {/* Price & Currency */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-2">
+            <Input
+              name="price"
+              label="Price"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-black mb-2">
+              Currency
+            </label>
+            <select
+              name="currency"
+              defaultValue="SOL"
+              className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            >
+              <option value="SOL">SOL</option>
+              <option value="USDC">USDC</option>
+            </select>
+          </div>
+        </div>
 
         {/* Inventory */}
         <Input

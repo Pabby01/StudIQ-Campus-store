@@ -7,7 +7,8 @@ import { useWallet } from "@solana/react-hooks";
 import { createTransferTransaction, waitForConfirmation } from "@/lib/solana";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle } from "lucide-react";
+import Input from "@/components/ui/Input";
+import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin } from "lucide-react";
 import { useState } from "react";
 
 type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifying" | "success" | "error";
@@ -25,6 +26,14 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
 
+  const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup">("shipping");
+  const [deliveryDetails, setDeliveryDetails] = useState({
+    name: "",
+    address: "",
+    city: "",
+    zip: "",
+  });
+
   async function checkout() {
     const userAddress = auth.address || (wallet.status === "connected" ? wallet.session.account.address.toString() : null);
 
@@ -38,6 +47,16 @@ export default function CartPage() {
       return;
     }
 
+    // Validate Delivery Info
+    if (!deliveryDetails.name) {
+      setError("Please enter recipient name");
+      return;
+    }
+    if (deliveryMethod === "shipping" && (!deliveryDetails.address || !deliveryDetails.city || !deliveryDetails.zip)) {
+      setError("Please fill in all shipping details");
+      return;
+    }
+
     setCheckoutStatus("creating");
     setError(null);
 
@@ -47,7 +66,9 @@ export default function CartPage() {
         buyer: userAddress,
         storeId: items[0]?.storeId || "",
         items: items.map((i) => ({ productId: i.id, qty: i.qty })),
-        currency: "SOL" as const,
+        currency: "SOL" as const, // TODO: This should come from the cart items if we mix currencies, or enforce single currency
+        deliveryMethod,
+        deliveryDetails,
       };
 
       const createRes = await fetch("/api/checkout/create", {
@@ -194,62 +215,129 @@ export default function CartPage() {
           </Card>
         ) : (
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-4">
-              {items.map((item) => (
-                <Card key={item.id} className="p-4">
-                  <div className="flex gap-4">
-                    {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        className="w-24 h-24 object-cover rounded-lg flex-shrink-0 border border-border-gray"
-                      />
-                    ) : (
-                      <div className="w-24 h-24 bg-soft-gray-bg rounded-lg flex-shrink-0 flex items-center justify-center text-muted-text text-xs">
-                        No image
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-black mb-1">{item.name}</h3>
-                      <p className="text-lg font-bold text-primary-blue mb-3">
-                        ${item.price.toFixed(2)}
-                      </p>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-soft-gray-bg rounded-lg p-1">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Cart Items */}
+              <div className="space-y-4">
+                {items.map((item) => (
+                  <Card key={item.id} className="p-4">
+                    <div className="flex gap-4">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-24 h-24 object-cover rounded-lg flex-shrink-0 border border-border-gray"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 bg-soft-gray-bg rounded-lg flex-shrink-0 flex items-center justify-center text-muted-text text-xs">
+                          No image
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-black mb-1">{item.name}</h3>
+                        <p className="text-lg font-bold text-primary-blue mb-3">
+                          ${item.price.toFixed(2)}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 bg-soft-gray-bg rounded-lg p-1">
+                            <button
+                              onClick={() => updateQty(item.id, Math.max(1, item.qty - 1))}
+                              className="p-1 hover:bg-white rounded transition-colors"
+                              disabled={checkoutStatus !== "idle"}
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <span className="w-8 text-center font-medium">{item.qty}</span>
+                            <button
+                              onClick={() => updateQty(item.id, item.qty + 1)}
+                              className="p-1 hover:bg-white rounded transition-colors"
+                              disabled={checkoutStatus !== "idle"}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
                           <button
-                            onClick={() => updateQty(item.id, Math.max(1, item.qty - 1))}
-                            className="p-1 hover:bg-white rounded transition-colors"
+                            onClick={() => remove(item.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             disabled={checkoutStatus !== "idle"}
                           >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <span className="w-8 text-center font-medium">{item.qty}</span>
-                          <button
-                            onClick={() => updateQty(item.id, item.qty + 1)}
-                            className="p-1 hover:bg-white rounded transition-colors"
-                            disabled={checkoutStatus !== "idle"}
-                          >
-                            <Plus className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                        <button
-                          onClick={() => remove(item.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          disabled={checkoutStatus !== "idle"}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-black">
+                          ${(item.price * item.qty).toFixed(2)}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-black">
-                        ${(item.price * item.qty).toFixed(2)}
-                      </p>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Delivery Options */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-black mb-4">Delivery Method</h3>
+                <div className="flex gap-4 mb-6">
+                  <button
+                    onClick={() => setDeliveryMethod("shipping")}
+                    className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${deliveryMethod === "shipping"
+                      ? "border-primary-blue bg-blue-50 text-primary-blue"
+                      : "border-border-gray hover:bg-gray-50"
+                      }`}
+                  >
+                    <Truck className="w-5 h-5" />
+                    <span className="font-medium">Shipping</span>
+                  </button>
+                  <button
+                    onClick={() => setDeliveryMethod("pickup")}
+                    className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${deliveryMethod === "pickup"
+                      ? "border-primary-blue bg-blue-50 text-primary-blue"
+                      : "border-border-gray hover:bg-gray-50"
+                      }`}
+                  >
+                    <MapPin className="w-5 h-5" />
+                    <span className="font-medium">Pickup</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <Input
+                    label="Recipient Name"
+                    placeholder="Full Name"
+                    value={deliveryDetails.name}
+                    onChange={(e) => setDeliveryDetails({ ...deliveryDetails, name: e.target.value })}
+                  />
+                  {deliveryMethod === "shipping" && (
+                    <>
+                      <Input
+                        label="Street Address"
+                        placeholder="123 Campus Dr"
+                        value={deliveryDetails.address}
+                        onChange={(e) => setDeliveryDetails({ ...deliveryDetails, address: e.target.value })}
+                      />
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input
+                          label="City"
+                          placeholder="San Francisco"
+                          value={deliveryDetails.city}
+                          onChange={(e) => setDeliveryDetails({ ...deliveryDetails, city: e.target.value })}
+                        />
+                        <Input
+                          label="Zip Code"
+                          placeholder="94105"
+                          value={deliveryDetails.zip}
+                          onChange={(e) => setDeliveryDetails({ ...deliveryDetails, zip: e.target.value })}
+                        />
+                      </div>
+                    </>
+                  )}
+                  {deliveryMethod === "pickup" && (
+                    <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm">
+                      You will pick up this order directly from the seller at the store location or agreed meeting point.
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  )}
+                </div>
+              </Card>
             </div>
 
             {/* Order Summary */}
@@ -265,6 +353,12 @@ export default function CartPage() {
                     <span className="text-muted-text">Platform Fee</span>
                     <span className="font-medium text-black">$0.00</span>
                   </div>
+                  {deliveryMethod === "shipping" && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-text">Shipping</span>
+                      <span className="font-medium text-green-600">Free</span>
+                    </div>
+                  )}
                   <div className="border-t border-border-gray pt-3">
                     <div className="flex justify-between">
                       <span className="font-semibold text-black">Total (SOL)</span>

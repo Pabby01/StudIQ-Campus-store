@@ -37,8 +37,10 @@ export const createProductSchema = z.object({
   name: z.string().min(2),
   category: z.string().min(2),
   price: z.number().positive(),
+  currency: z.enum(["SOL", "USDC"]).default("SOL"),
   inventory: z.number().int().nonnegative(),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().url().optional(), // Keep for backward compatibility
+  images: z.array(z.string().url()).min(0).max(10).optional(),
 });
 
 export const updateProductSchema = createProductSchema.extend({ id: z.string().min(1) });

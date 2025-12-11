@@ -159,6 +159,9 @@ export async function POST(req: Request) {
         fee_amount: feeAmount,
         vendor_earnings: vendorEarnings,
         status: "pending",
+        currency: parsed.data.currency,
+        delivery_method: parsed.data.deliveryMethod,
+        delivery_info: parsed.data.deliveryDetails,
       })
       .select("id")
       .single();
