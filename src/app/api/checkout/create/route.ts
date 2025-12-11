@@ -207,6 +207,7 @@ export async function POST(req: Request) {
       currency: parsed.data.currency,
       payTo: store.owner_address,
       total: amount,
+      paymentMethod: parsed.data.paymentMethod,
     });
   } catch (error) {
     console.error("Checkout creation error:", error);

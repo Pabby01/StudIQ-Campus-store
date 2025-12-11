@@ -26,12 +26,14 @@ export async function POST(req: Request) {
   const { data, error } = await supabase.from("products").insert({
     store_id: parsed.data.storeId,
     name: parsed.data.name,
+    description: parsed.data.description,
     category: parsed.data.category,
     price: parsed.data.price,
     inventory: parsed.data.inventory,
     currency: parsed.data.currency,
     image_url: parsed.data.imageUrl ?? null,
     images: parsed.data.images ?? (parsed.data.imageUrl ? [parsed.data.imageUrl] : []),
+    is_pod_enabled: parsed.data.isPodEnabled,
   }).select("id").single();
 
   if (error) {

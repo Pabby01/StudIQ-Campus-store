@@ -7,6 +7,7 @@ export type CartItem = Readonly<{
   qty: number;
   storeId: string;
   imageUrl?: string;
+  isPodEnabled?: boolean;
 }>;
 
 type CartState = Readonly<{

@@ -17,6 +17,7 @@ type Product = {
   currency?: "SOL" | "USDC";
   image_url?: string | null;
   images?: string[];
+  is_pod_enabled?: boolean;
   rating?: number | null;
   category?: string;
   inventory?: number;
@@ -36,7 +37,7 @@ export default function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const addToCart = useCart((s) => s.add);
-  const { toast } = useToast();
+  const toast = useToast();
 
   useEffect(() => {
     fetchProduct();
@@ -68,6 +69,7 @@ export default function ProductDetailPage() {
       price: product.price,
       storeId: product.store_id,
       imageUrl: product.image_url || undefined,
+      isPodEnabled: product.is_pod_enabled,
     }, quantity);
 
     toast.success("Added to cart", `${quantity}x ${product.name}`);
@@ -186,8 +188,13 @@ export default function ProductDetailPage() {
             {/* Price */}
             <div className="flex items-baseline gap-3">
               <span className="text-4xl font-bold text-primary-blue">
-                {product.currency === "USDC" ? "USDC" : "$"} {product.price.toFixed(2)}
+                {product.currency === "USDC" ? "USDC" : "SOL"} {product.price.toFixed(2)}
               </span>
+              {product.is_pod_enabled && (
+                <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
+                  Cash on Delivery Available
+                </div>
+              )}
             </div>
 
             {/* Stock Status */}

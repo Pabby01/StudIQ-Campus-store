@@ -136,6 +136,19 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
           required
         />
 
+        <div className="flex items-center gap-2 mt-4">
+          <input
+            type="checkbox"
+            id="isPodEnabled"
+            name="isPodEnabled"
+            value="true"
+            className="w-4 h-4 text-primary-blue border-gray-300 rounded focus:ring-primary-blue"
+          />
+          <label htmlFor="isPodEnabled" className="text-sm font-medium text-black">
+            Accept Pay on Delivery
+          </label>
+        </div>
+
         {/* Category Dropdown */}
         <div>
           <label className="block text-sm font-medium text-black mb-2">

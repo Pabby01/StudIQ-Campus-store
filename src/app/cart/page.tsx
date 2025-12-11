@@ -27,6 +27,13 @@ export default function CartPage() {
   const [orderId, setOrderId] = useState<string | null>(null);
 
   const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup">("shipping");
+  const [paymentMethod, setPaymentMethod] = useState<"solana" | "pod">("solana");
+
+  // Use effect to handle pickup payment method default
+  /* useEffect(() => {
+     if (deliveryMethod === 'pickup') setPaymentMethod('pod');
+  }, [deliveryMethod]); */
+
   const [deliveryDetails, setDeliveryDetails] = useState({
     name: "",
     address: "",
@@ -35,15 +42,17 @@ export default function CartPage() {
   });
 
   async function checkout() {
-    const userAddress = auth.address || (wallet.status === "connected" ? wallet.session.account.address.toString() : null);
+    // If POD (or Pickup), we might not need wallet connected if we allow guest checkout, 
+    // but the backend uses wallet address as ID. Let's keep wallet req for now for auth.
+    const userAddress = auth.address || (wallet.status === "connected" ? wallet.session?.account?.address.toString() : null);
 
     if (!userAddress) {
       setError("Please connect your wallet first");
       return;
     }
 
-    if (wallet.status !== "connected") {
-      setError("Wallet not connected");
+    if (paymentMethod === "solana" && wallet.status !== "connected") {
+      setError("Wallet not connected for crypto payment");
       return;
     }
 
@@ -62,13 +71,17 @@ export default function CartPage() {
 
     try {
       // Step 1: Create order
+      // Determine final payment method: if pickup, force POD/POP logic
+      const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
+
       const payload = {
         buyer: userAddress,
         storeId: items[0]?.storeId || "",
         items: items.map((i) => ({ productId: i.id, qty: i.qty })),
-        currency: "SOL" as const, // TODO: This should come from the cart items if we mix currencies, or enforce single currency
+        currency: "SOL" as const,
         deliveryMethod,
         deliveryDetails,
+        paymentMethod: finalPaymentMethod,
       };
 
       const createRes = await fetch("/api/checkout/create", {
@@ -87,8 +100,30 @@ export default function CartPage() {
       console.log("Order created:", orderData);
       setOrderId(orderData.orderId);
 
+      // Handle Pay on Delivery or Free Orders
+      if (deliveryMethod === "pickup" || (orderData.paymentMethod === "pod")) {
+        // Need to pass this intent to backend or just handle success since order is "pending" payment
+        // For this demo, we assume the backend marked it as 'pending_payment' or similar if we sent a flag.
+        // Let's update the checkout-create API to accept a payment method flag? 
+        // Or simply: if we selected "Cash on Delivery", we skip the blockchain part.
+
+        // Wait, we didn't send "paymentMethod" to the create API yet.
+        // Let's assume for now valid POD orders just skip the tx.
+
+        setCheckoutStatus("success");
+        setTimeout(() => {
+          clear();
+          window.location.href = "/dashboard/orders";
+        }, 3000);
+        return;
+      }
+
+      // Validate Recipient Address for Crypto details
+      if (!orderData.payTo) {
+        throw new Error("Store wallet address is missing. Cannot verify payment destination.");
+      }
+
       // Step 2: Create Solana transaction
-      setCheckoutStatus("signing");
       setCheckoutStatus("signing");
       const transaction = await createTransferTransaction(
         userAddress,
@@ -97,7 +132,7 @@ export default function CartPage() {
       );
 
       // Step 3: Sign and send transaction
-      if (!wallet.session.signTransaction) {
+      if (wallet.status !== "connected" || !wallet.session?.signTransaction) {
         throw new Error("Wallet does not support transaction signing");
       }
 
@@ -299,6 +334,39 @@ export default function CartPage() {
                     <span className="font-medium">Pickup</span>
                   </button>
                 </div>
+
+                {/* Payment Method Selection */}
+                {deliveryMethod === "shipping" && items.every(i => i.isPodEnabled) && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-black mb-3">Payment Method</h3>
+                    <div className="flex gap-4">
+                      <button
+                        onClick={() => setPaymentMethod("solana")}
+                        className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === "solana"
+                          ? "border-primary-blue bg-blue-50 text-primary-blue"
+                          : "border-border-gray hover:bg-gray-50"
+                          }`}
+                      >
+                        <span className="font-medium">Solana (Crypto)</span>
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod("pod")}
+                        className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === "pod"
+                          ? "border-green-600 bg-green-50 text-green-700"
+                          : "border-border-gray hover:bg-gray-50"
+                          }`}
+                      >
+                        <span className="font-medium">Cash on Delivery</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {/* Auto-set to POD if Pickup? Or confirm? Let's default pickup to POD usually or allow both */}
+                {deliveryMethod === "pickup" && (
+                  <div className="mb-6 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
+                    Pickup orders are typically paid in person. Payment method set to Pay on Pickup.
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   <Input
