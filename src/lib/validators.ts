@@ -57,6 +57,7 @@ export const checkoutCreateSchema = z.object({
   deliveryMethod: z.enum(["shipping", "pickup"]),
   deliveryDetails: z.object({ name: z.string(), address: z.string(), city: z.string(), zip: z.string() }),
   paymentMethod: z.enum(["solana", "pod"]).optional(),
+  buyerEmail: z.string().email(),
 });
 
 export const awardPointsSchema = z.object({ address: z.string().min(32), points: z.number().int().positive(), reason: z.string().min(2) });

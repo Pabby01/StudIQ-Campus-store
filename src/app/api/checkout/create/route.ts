@@ -162,6 +162,8 @@ export async function POST(req: Request) {
         currency: parsed.data.currency,
         delivery_method: parsed.data.deliveryMethod,
         delivery_info: parsed.data.deliveryDetails,
+        payment_method: parsed.data.paymentMethod, // Ensure DB has this column too if we want to query it later, or just rely on 'status' logic
+        buyer_email: parsed.data.buyerEmail,
       })
       .select("id")
       .single();

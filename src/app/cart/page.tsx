@@ -36,6 +36,7 @@ export default function CartPage() {
 
   const [deliveryDetails, setDeliveryDetails] = useState({
     name: "",
+    email: "", // Added email state
     address: "",
     city: "",
     zip: "",
@@ -57,8 +58,8 @@ export default function CartPage() {
     }
 
     // Validate Delivery Info
-    if (!deliveryDetails.name) {
-      setError("Please enter recipient name");
+    if (!deliveryDetails.name || !deliveryDetails.email) {
+      setError("Please enter recipient name and email");
       return;
     }
     if (deliveryMethod === "shipping" && (!deliveryDetails.address || !deliveryDetails.city || !deliveryDetails.zip)) {
@@ -82,6 +83,7 @@ export default function CartPage() {
         deliveryMethod,
         deliveryDetails,
         paymentMethod: finalPaymentMethod,
+        buyerEmail: deliveryDetails.email,
       };
 
       const createRes = await fetch("/api/checkout/create", {
@@ -369,6 +371,13 @@ export default function CartPage() {
                 )}
 
                 <div className="space-y-4">
+                  <Input
+                    label="Email Address"
+                    placeholder="john@example.com"
+                    type="email"
+                    value={deliveryDetails.email}
+                    onChange={(e) => setDeliveryDetails({ ...deliveryDetails, email: e.target.value })}
+                  />
                   <Input
                     label="Recipient Name"
                     placeholder="Full Name"
