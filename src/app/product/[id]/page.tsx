@@ -70,6 +70,7 @@ export default function ProductDetailPage() {
       storeId: product.store_id,
       imageUrl: product.image_url || undefined,
       isPodEnabled: product.is_pod_enabled,
+      currency: product.currency || "SOL",
     }, quantity);
 
     toast.success("Added to cart", `${quantity}x ${product.name}`);

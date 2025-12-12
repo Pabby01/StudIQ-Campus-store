@@ -23,7 +23,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
     const [submitting, setSubmitting] = useState(false);
 
     const wallet = useWallet();
-    const { toast } = useToast();
+    const { success, error } = useToast();
 
     useEffect(() => {
         fetchReviews();
@@ -44,7 +44,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (wallet.status !== "connected") {
-            toast({ title: "Error", description: "Please connect wallet to review", type: "error" });
+            error("Error", "Please connect wallet to review");
             return;
         }
 
@@ -62,7 +62,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
             });
 
             if (res.ok) {
-                toast({ title: "Review submitted", description: "Thanks for your feedback!", type: "success" });
+                success("Review submitted", "Thanks for your feedback!");
                 setContent("");
                 setRating(5);
                 fetchReviews();
@@ -70,7 +70,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
                 throw new Error("Failed to submit");
             }
         } catch (e) {
-            toast({ title: "Error", description: "Failed to submit review", type: "error" });
+            error("Error", "Failed to submit review");
         } finally {
             setSubmitting(false);
         }

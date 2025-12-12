@@ -79,7 +79,7 @@ export default function CartPage() {
         buyer: userAddress,
         storeId: items[0]?.storeId || "",
         items: items.map((i) => ({ productId: i.id, qty: i.qty })),
-        currency: "SOL" as const,
+        currency: (items[0]?.currency || "SOL") as "SOL" | "USDC",
         deliveryMethod,
         deliveryDetails,
         paymentMethod: finalPaymentMethod,
@@ -130,7 +130,8 @@ export default function CartPage() {
       const transaction = await createTransferTransaction(
         userAddress,
         orderData.payTo,
-        total
+        total,
+        orderData.currency === "USDC" ? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" : undefined
       );
 
       // Step 3: Sign and send transaction

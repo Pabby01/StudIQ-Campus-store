@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import ProductCard from "@/components/ProductCard";
 import SearchBar from "@/components/SearchBar";
 import CategoryFilter from "@/components/CategoryFilter";
@@ -16,7 +16,8 @@ type Product = Readonly<{
   category?: string;
 }>;
 
-export default function SearchPage() {
+// Internal component containing the logic
+function SearchPageContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -157,5 +158,18 @@ export default function SearchPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Wrapper component with Suspense
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-blue" />
+      </div>
+    }>
+      <SearchPageContent />
+    </Suspense>
   );
 }

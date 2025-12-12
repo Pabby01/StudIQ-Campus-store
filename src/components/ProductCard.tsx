@@ -39,6 +39,7 @@ export default function ProductCard({ p }: { p: Product }) {
       price: p.price,
       storeId: p.store_id || "",
       imageUrl: p.image_url || undefined,
+      currency: "SOL", // Default to SOL for now if not in Product type in ProductCard
     });
 
     toast.success("Added to cart", p.name);

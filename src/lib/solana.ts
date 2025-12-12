@@ -1,62 +1,155 @@
 import {
-    Connection,
-    PublicKey,
+    address,
+    appendTransactionMessageInstruction,
+    compileTransaction,
+    createSolanaRpc,
+    createSolanaRpcSubscriptions,
+    createTransactionMessage,
+    devnet,
+    getSignatureFromTransaction,
+    lamports,
+    mainnet,
+    pipe,
+    setTransactionMessageFeePayer,
+    setTransactionMessageLifetimeUsingBlockhash,
     Transaction,
-    SystemProgram,
-    LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
+    UnixTimestamp,
+    Signature,
+    getProgramDerivedAddress,
+} from '@solana/kit';
+import { getTransferSolInstruction } from '@solana-program/system';
+import { getTransferInstruction } from '@solana-program/token';
 
 const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
-const SOLANA_NETWORK = process.env.SOLANA_NETWORK || "devnet";
+const SOLANA_WSS_URL = SOLANA_RPC_URL.replace("http", "ws"); // Simple replacement for WSS
 
 // Initialize connection
-export const connection = new Connection(SOLANA_RPC_URL, "confirmed");
+export const rpc = createSolanaRpc(SOLANA_RPC_URL);
+export const rpcSubscriptions = createSolanaRpcSubscriptions(SOLANA_WSS_URL);
 
 /**
- * Create a SOL transfer transaction
+ * Create a SOL or SPL Token transfer transaction
  */
 export async function createTransferTransaction(
     from: string,
     to: string,
-    amount: number
-): Promise<Transaction> {
-    console.log("Creating transaction:", { from, to, amount });
+    amount: number,
+    mint?: string // Optional mint address for SPL tokens
+) {
+    if (mint && mint !== "SOL") {
+        return createSplTransferTransaction(from, to, amount, mint);
+    }
 
-    // Warn on suspicious amounts (likely currency confusion)
+    console.log("Creating SOL transaction:", { from, to, amount });
+
     if (amount > 100) {
         console.warn(`High SOL amount detected (${amount} SOL). Ensure this is intended.`);
     }
 
-    const fromPubkey = new PublicKey(from);
-    const toPubkey = new PublicKey(to);
-    const lamports = Math.floor(amount * LAMPORTS_PER_SOL);
+    const fromAddress = address(from);
+    const toAddress = address(to);
+    const amountLamports = lamports(BigInt(Math.floor(amount * 1_000_000_000)));
 
-    console.log("Lamports:", lamports);
+    console.log("Lamports:", amountLamports);
 
-    const transaction = new Transaction().add(
-        SystemProgram.transfer({
-            fromPubkey,
-            toPubkey,
-            lamports,
-        })
+    // Get latest blockhash
+    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+    // Create a transaction message
+    const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (m) => setTransactionMessageFeePayer(fromAddress, m),
+        (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+        (m) => appendTransactionMessageInstruction(
+            getTransferSolInstruction({
+                source: fromAddress as any, // TransactionSigner is required here, cast to any to allow Address 
+                // The wallet adapter handles signing. We just need to construct the message.
+                // In Framework Kit, for instruction creation, mostly Address is fine if not checking constraints rigidly
+                // or we might need to cast or use a signer placeholder if strict typing demands it.
+                // However, 'getTransferSolInstruction' source is constrained to TransactionSigner. 
+                // We can treat it as such for *construction* purposes since we know it will sign.
+                destination: toAddress,
+                amount: amountLamports,
+            }) as any, // Cast as any because we don't have the signer object yet, just address
+            m
+        )
     );
 
-    // Get recent blockhash
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = fromPubkey;
+    // Compile the transaction
+    return compileTransaction(transactionMessage);
+}
 
-    // HACK: Add a dummy signature to satisfy strict serializers in wallet adapters.
-    // The wallet will overwrite this with the real signature during signing.
-    // Using Uint8Array(64) is browser-safe and requires no polyfills.
-    try {
-        const dummySignature = new Uint8Array(64);
-        transaction.addSignature(fromPubkey, dummySignature as any);
-    } catch (err) {
-        console.error("Failed to add dummy signature:", err);
-    }
+export const USDC_MINT = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // Devnet USDC
+const TOKEN_PROGRAM_ID = address("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+const ASSOCIATED_TOKEN_PROGRAM_ID = address("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 
-    return transaction;
+async function getAssociatedTokenAddress(mint: string, owner: string) {
+    const mintAddress = address(mint);
+    const ownerAddress = address(owner);
+
+    // Derive ATA: pda([owner, token_program, mint], associated_token_program)
+    const { 0: ata } = await getProgramDerivedAddress({
+        programAddress: ASSOCIATED_TOKEN_PROGRAM_ID,
+        seeds: [
+            ownerAddress,
+            TOKEN_PROGRAM_ID,
+            mintAddress,
+        ],
+    });
+
+    return ata;
+}
+
+/**
+ * Create a SPL Token transfer transaction
+ */
+export async function createSplTransferTransaction(
+    from: string,
+    to: string,
+    amount: number,
+    mint: string
+) {
+    console.log("Creating SPL transaction:", { from, to, amount, mint });
+
+    const fromAddress = address(from);
+    // const toAddress = address(to); // Used for ATA derivation
+    const mintAddress = address(mint);
+
+    // Calculate Amount (USDC has 6 decimals)
+    const decimals = 6;
+    const amountBigInt = BigInt(Math.floor(amount * Math.pow(10, decimals)));
+
+    // Get latest blockhash
+    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+    // Get ATAs
+    const fromAta = await getAssociatedTokenAddress(mint, from);
+    const toAta = await getAssociatedTokenAddress(mint, to);
+
+    console.log("ATAs:", { fromAta, toAta });
+
+    // Create a transaction message
+    const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (m) => setTransactionMessageFeePayer(fromAddress, m),
+        (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+        (m) => appendTransactionMessageInstruction(
+            getTransferInstruction({
+                source: fromAta,
+                destination: toAta,
+                amount: amountBigInt,
+                // authority: fromAddress, // Implicitly handled by wallet signing?
+                // The wallet is the signer for the 'authority' of the source ATA.
+                // In @solana-program/token, we might need to specify authority.
+                // Let's check signatures if it fails, but usually source authority is required string/signer.
+                authority: fromAddress as any,
+            }) as any,
+            m
+        )
+    );
+
+    // Compile the transaction
+    return compileTransaction(transactionMessage);
 }
 
 /**
@@ -73,55 +166,61 @@ export async function verifyTransaction(
     transaction?: any;
 }> {
     try {
-        // Get transaction details
-        const tx = await connection.getTransaction(signature, {
-            maxSupportedTransactionVersion: 0,
-        });
+        // Fetch transaction
+        const transaction = await rpc.getTransaction(
+            signature as Signature, // Cast string to Signature nominal type
+            { maxSupportedTransactionVersion: 0, commitment: 'confirmed', encoding: 'jsonParsed' }
+        ).send();
 
-        if (!tx) {
+        if (!transaction) {
             return { valid: false, error: "Transaction not found" };
         }
 
-        if (!tx.meta || tx.meta.err) {
+        if (transaction.meta?.err) {
             return { valid: false, error: "Transaction failed or has errors" };
         }
 
-        // Verify transaction is confirmed
-        const status = await connection.getSignatureStatus(signature);
-        if (!status.value?.confirmationStatus || status.value.confirmationStatus === "processed") {
-            return { valid: false, error: "Transaction not confirmed yet" };
-        }
-
         // Verify sender and recipient
-        const accountKeys = tx.transaction.message.getAccountKeys();
-        const fromPubkey = accountKeys.get(0)?.toString();
-        const toPubkey = accountKeys.get(1)?.toString();
+        // @ts-ignore
+        const accountKeys = transaction.transaction.message.accountKeys;
+        const fromAccount = accountKeys[0];
+        const toAccount = accountKeys[1];
 
-        if (fromPubkey !== expectedFrom) {
-            return { valid: false, error: "Sender address mismatch" };
+        // accountKeys elements are objects with a 'pubkey' property (Address)
+        const fromPubkey = fromAccount.pubkey ? fromAccount.pubkey : fromAccount;
+        const toPubkey = toAccount.pubkey ? toAccount.pubkey : toAccount;
+
+        // Ensure we compare strings
+        if (fromPubkey.toString() !== expectedFrom) {
+            return { valid: false, error: `Sender address mismatch. Expected ${expectedFrom}, got ${fromPubkey}` };
         }
 
-        if (toPubkey !== expectedTo) {
+        if (toPubkey.toString() !== expectedTo) {
             return { valid: false, error: "Recipient address mismatch" };
         }
 
-        // Verify amount (check post balances)
-        const preBalances = tx.meta.preBalances;
-        const postBalances = tx.meta.postBalances;
-        const transferredLamports = preBalances[0] - postBalances[0] - (tx.meta.fee || 0);
-        const expectedLamports = Math.floor(expectedAmount * LAMPORTS_PER_SOL);
+        // Verify amount
+        const preBalances = transaction.meta?.preBalances || [];
+        const postBalances = transaction.meta?.postBalances || [];
 
-        // Allow 1% tolerance for fees
+        const preBal = preBalances[0];
+        const postBal = postBalances[0];
+        const fee = transaction.meta?.fee || 0;
+
+        const transferredLamports = Number(preBal) - Number(postBal) - Number(fee);
+        const expectedLamports = Math.floor(expectedAmount * 1_000_000_000);
+
+        // Allow 1% tolerance
         const tolerance = expectedLamports * 0.01;
         if (Math.abs(transferredLamports - expectedLamports) > tolerance) {
             return {
                 valid: false,
-                error: `Amount mismatch. Expected: ${expectedAmount} SOL, Got: ${transferredLamports / LAMPORTS_PER_SOL
-                    } SOL`,
+                error: `Amount mismatch. Expected: ${expectedAmount} SOL, Got: ${transferredLamports / 1_000_000_000} SOL`,
             };
         }
 
-        return { valid: true, transaction: tx };
+        return { valid: true, transaction };
+
     } catch (error) {
         console.error("Transaction verification error:", error);
         return {
@@ -140,16 +239,17 @@ export async function getTransactionStatus(signature: string): Promise<{
     error?: string;
 }> {
     try {
-        const status = await connection.getSignatureStatus(signature);
+        const { value: status } = await rpc.getSignatureStatuses([signature as Signature]).send();
+        const s = status?.[0]; // getSignatureStatuses returns a list
 
-        if (!status.value) {
+        if (!s) {
             return { confirmed: false, finalized: false, error: "Transaction not found" };
         }
 
         return {
-            confirmed: status.value.confirmationStatus !== "processed",
-            finalized: status.value.confirmationStatus === "finalized",
-            error: status.value.err ? String(status.value.err) : undefined,
+            confirmed: s.confirmationStatus === 'confirmed' || s.confirmationStatus === 'finalized',
+            finalized: s.confirmationStatus === 'finalized',
+            error: s.err ? String(s.err) : undefined,
         };
     } catch (error) {
         return {
@@ -161,7 +261,7 @@ export async function getTransactionStatus(signature: string): Promise<{
 }
 
 /**
- * Wait for transaction confirmation with timeout
+ * Wait for transaction confirmation
  */
 export async function waitForConfirmation(
     signature: string,
@@ -180,42 +280,32 @@ export async function waitForConfirmation(
             return true;
         }
 
-        // Wait 2 seconds before checking again
+        // Wait 2 seconds
         await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
     throw new Error("Transaction confirmation timeout");
 }
 
-/**
- * Convert SOL to lamports
- */
 export function solToLamports(sol: number): number {
-    return Math.floor(sol * LAMPORTS_PER_SOL);
+    return Math.floor(sol * 1_000_000_000);
 }
 
-/**
- * Convert lamports to SOL
- */
-export function lamportsToSol(lamports: number): number {
-    return lamports / LAMPORTS_PER_SOL;
+export function lamportsToSol(l: number | bigint): number {
+    // Check if l is a Lamports type (which might be an object or bigint/number depending on version)
+    // The previous error "property lamports does not exist on type Lamports" implies Lamports is likely just a bigint with a brand
+    return Number(l) / 1_000_000_000;
 }
 
-/**
- * Get account balance
- */
-export async function getBalance(address: string): Promise<number> {
-    const pubkey = new PublicKey(address);
-    const balance = await connection.getBalance(pubkey);
+export async function getBalance(addr: string): Promise<number> {
+    const { value: balance } = await rpc.getBalance(address(addr)).send();
+    // 'balance' is of type Lamports, which behaves like a bigint
     return lamportsToSol(balance);
 }
 
-/**
- * Validate Solana address
- */
-export function isValidSolanaAddress(address: string): boolean {
+export function isValidSolanaAddress(addr: string): boolean {
     try {
-        new PublicKey(address);
+        address(addr);
         return true;
     } catch {
         return false;

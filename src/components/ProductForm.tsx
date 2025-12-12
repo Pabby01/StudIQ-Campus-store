@@ -12,6 +12,7 @@ import { X } from "lucide-react";
 
 type ProductFormProps = {
   storeId?: string;
+  initial?: any; // Using any for flexibility, but ideally should be Product type
   onSuccess?: () => void;
 };
 
@@ -28,10 +29,10 @@ const CATEGORIES = [
   "Other",
 ];
 
-export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
+export default function ProductForm({ storeId, initial, onSuccess }: ProductFormProps) {
   const [loading, setLoading] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
-  const [category, setCategory] = useState("");
+  const [images, setImages] = useState<string[]>(initial?.images || (initial?.imageUrl ? [initial.imageUrl] : []));
+  const [category, setCategory] = useState(initial?.category || "");
   const router = useRouter();
   const toast = useToast();
   const wallet = useWallet();
@@ -92,7 +93,7 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
 
   return (
     <Card>
-      <h3 className="text-lg font-semibold text-black mb-6">Add New Product</h3>
+      <h3 className="text-lg font-semibold text-black mb-6">{initial ? "Edit Product" : "Add New Product"}</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Product Image */}
         <div>
@@ -133,6 +134,7 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
           name="name"
           label="Product Name"
           placeholder="Enter product name"
+          defaultValue={initial?.name}
           required
         />
 
@@ -142,6 +144,7 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
             id="isPodEnabled"
             name="isPodEnabled"
             value="true"
+            defaultChecked={initial?.is_pod_enabled}
             className="w-4 h-4 text-primary-blue border-gray-300 rounded focus:ring-primary-blue"
           />
           <label htmlFor="isPodEnabled" className="text-sm font-medium text-black">
@@ -178,6 +181,7 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
           <textarea
             name="description"
             placeholder="Describe your product..."
+            defaultValue={initial?.description}
             rows={4}
             className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue resize-none"
           />
@@ -192,6 +196,7 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
               type="number"
               step="0.01"
               placeholder="0.00"
+              defaultValue={initial?.price}
               required
             />
           </div>
@@ -201,7 +206,7 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
             </label>
             <select
               name="currency"
-              defaultValue="SOL"
+              defaultValue={initial?.currency || "SOL"}
               className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
             >
               <option value="SOL">SOL</option>
@@ -216,6 +221,7 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
           label="Inventory"
           type="number"
           placeholder="Available quantity"
+          defaultValue={initial?.inventory}
           required
         />
 
@@ -226,7 +232,7 @@ export default function ProductForm({ storeId, onSuccess }: ProductFormProps) {
           className="w-full"
           disabled={loading}
         >
-          {loading ? "Creating..." : "Create Product"}
+          {loading ? (initial ? "Updating..." : "Creating...") : (initial ? "Update Product" : "Create Product")}
         </Button>
       </form>
     </Card>

@@ -8,6 +8,7 @@ export type CartItem = Readonly<{
   storeId: string;
   imageUrl?: string;
   isPodEnabled?: boolean;
+  currency?: "SOL" | "USDC";
 }>;
 
 type CartState = Readonly<{
