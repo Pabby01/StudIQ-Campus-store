@@ -4,6 +4,7 @@ import "./globals.css";
 import "./scrollbar.css";
 import Providers from "@/app/providers";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ToastProvider } from "@/hooks/useToast";
 
@@ -37,6 +38,7 @@ export default function RootLayout({
             <Providers>
               <Navbar />
               {children}
+              <Footer />
             </Providers>
           </ToastProvider>
         </ErrorBoundary>

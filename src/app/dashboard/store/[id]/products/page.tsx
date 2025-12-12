@@ -83,8 +83,11 @@ export default function StoreProductsPage() {
                 {products.length === 0 && (
                     <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
                         <div className="p-6">
-                            <h3 className="text-lg font-bold text-black mb-2">
-                                🎉 Welcome! Let's add your first product
+                            <h3 className="text-lg font-bold text-black mb-2 flex items-center gap-2">
+                                <span className="bg-yellow-100 p-1 rounded-md">
+                                    <Package className="w-5 h-5 text-yellow-600" />
+                                </span>
+                                Welcome! Let's add your first product
                             </h3>
                             <p className="text-muted-text mb-4">
                                 Start selling by adding products to your store. You can add images, set prices, and manage inventory.

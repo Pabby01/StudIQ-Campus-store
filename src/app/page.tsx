@@ -8,7 +8,7 @@ import FeaturedStores from "@/components/FeaturedStores";
 import StoreCard from "@/components/StoreCard";
 import ProductCard from "@/components/ProductCard";
 import { encodeGeohash } from "@/lib/geohash";
-import { Store, TrendingUp, Sparkles, Zap } from "lucide-react";
+import { Store, TrendingUp, Sparkles, Zap, Laptop, BookOpen } from "lucide-react";
 
 type Product = Readonly<{
   id: string;
@@ -110,21 +110,24 @@ export default function Home() {
 
         {/* Flash Deals */}
         <ProductRow
-          title="⚡ Flash Deals"
+          title="Flash Deals"
+          icon={Zap}
           subtitle="Limited time offers"
           products={products.slice(0, 8).map((p) => ({ ...p, badge: "SALE" }))}
         />
 
         {/* Tech Essentials */}
         <ProductRow
-          title="💻 Tech Essentials"
+          title="Tech Essentials"
+          icon={Laptop}
           subtitle="Electronics & Gadgets"
           products={products.filter((p) => p.category === "Electronics").slice(0, 8)}
         />
 
         {/* Textbooks */}
         <ProductRow
-          title="📚 Textbooks & Study Materials"
+          title="Textbooks & Study Materials"
+          icon={BookOpen}
           subtitle="Academic resources"
           products={products.filter((p) => p.category === "Books & Textbooks").slice(0, 8)}
         />
@@ -132,9 +135,14 @@ export default function Home() {
         {/* New Arrivals */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-black">🆕 New Arrivals</h2>
-              <p className="text-sm text-muted-text">Fresh products from campus stores</p>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <Sparkles className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-black">New Arrivals</h2>
+                <p className="text-sm text-muted-text">Fresh products from campus stores</p>
+              </div>
             </div>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

@@ -81,6 +81,7 @@ export function useWalletAuth() {
     address: address?.toString() || null,
     connectAndAuth,
     isAuthenticating,
+    loading: wallet.status === "connecting",
     error,
   };
 }

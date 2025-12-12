@@ -13,6 +13,7 @@ export async function GET(req: Request) {
     const order = searchParams.get("order") || "desc";
     const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
     const offset = parseInt(searchParams.get("offset") || "0");
+    const storeId = searchParams.get("storeId");
 
     const supabase = getSupabaseServerClient();
 
@@ -20,6 +21,11 @@ export async function GET(req: Request) {
     let dbQuery = supabase
       .from("products")
       .select("*, stores(name, category)", { count: "exact" });
+
+    // Store filter
+    if (storeId) {
+      dbQuery = dbQuery.eq("store_id", storeId);
+    }
 
     // Search filter
     if (query) {

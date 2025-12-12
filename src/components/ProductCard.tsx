@@ -5,7 +5,10 @@ import { Star, Heart } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { useCart } from "@/store/cart";
+import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useToast } from "@/hooks/useToast";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Product = Readonly<{
   id: string;
@@ -41,25 +44,56 @@ export default function ProductCard({ p }: { p: Product }) {
     toast.success("Added to cart", p.name);
   };
 
-  return (
-    <div className="bg-white rounded-xl border border-border-gray shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group h-full flex flex-col">
-      {/* Product Image */}
-      <div className="relative aspect-square bg-soft-gray-bg overflow-hidden">
-        {p.image_url ? (
-          <img
-            src={p.image_url}
-            alt={p.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-muted-text text-sm">No image</span>
-          </div>
-        )}
+  const { address } = useWalletAuth(); // Use the hook to get address
 
-        {/* Wishlist Heart */}
-        <button className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:bg-red-50 transition-colors group/heart">
-          <Heart className="w-4 h-4 text-gray-400 group-hover/heart:text-red-500 transition-colors" />
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const router = useRouter();
+
+  const toggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!address) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    // Optimistic update
+    const previousState = isWishlisted;
+    setIsWishlisted(!previousState);
+
+    try {
+      if (!previousState) {
+        // Add to wishlist
+        await fetch('/api/wishlist', {
+          method: 'POST',
+          body: JSON.stringify({ address, productId: p.id })
+        });
+        toast.success("Added to wishlist");
+      } else {
+        // Remove from wishlist
+        await fetch(`/api/wishlist?address=${address}&productId=${p.id}`, {
+          method: 'DELETE'
+        });
+        toast.success("Removed from wishlist");
+      }
+    } catch (error) {
+      // Revert on error
+      setIsWishlisted(previousState);
+      toast.error("Failed to update wishlist");
+    }
+  };
+
+  return (
+    <Link href={`/product/${p.id}`} className="block h-full">
+      <div className="bg-white rounded-xl border border-border-gray overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative">
+
+        {/* Wishlist Button */}
+        <button
+          onClick={toggleWishlist}
+          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all shadow-sm"
+        >
+          <Heart className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500 hover:text-red-500'}`} />
         </button>
 
         {/* Discount Badge */}
@@ -68,11 +102,25 @@ export default function ProductCard({ p }: { p: Product }) {
             {discountPercent}% OFF
           </div>
         )}
-      </div>
 
-      {/* Product Info */}
-      <div className="p-4 flex-1 flex flex-col">
-        <Link href={`/product/${p.id}`} className="flex-1 block">
+        {/* Product Image */}
+        <div className="relative aspect-square bg-soft-gray-bg overflow-hidden">
+          {p.image_url ? (
+            <img
+              src={p.image_url}
+              alt={p.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-muted-text text-sm">No image</span>
+            </div>
+          )}
+        </div>
+
+
+        {/* Product Info */}
+        <div className="p-4 flex-1 flex flex-col">
           {p.category && (
             <Badge variant="gray" className="mb-2">
               {p.category}
@@ -108,20 +156,20 @@ export default function ProductCard({ p }: { p: Product }) {
               </div>
             )}
           </div>
-        </Link>
 
-        {/* Add to Cart Button */}
-        <div className="mt-3">
-          <Button
-            variant="primary"
-            size="sm"
-            className="w-full"
-            onClick={handleAddToCart}
-          >
-            Add to cart
-          </Button>
+          {/* Add to Cart Button */}
+          <div className="mt-3">
+            <Button
+              variant="primary"
+              size="sm"
+              className="w-full"
+              onClick={handleAddToCart}
+            >
+              Add to cart
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
