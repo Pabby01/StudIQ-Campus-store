@@ -16,6 +16,7 @@ import {
     UnixTimestamp,
     Signature,
     getProgramDerivedAddress,
+    getBase64EncodedWireTransaction,
 } from '@solana/kit';
 import { getTransferSolInstruction } from '@solana-program/system';
 import { getTransferInstruction } from '@solana-program/token';
@@ -227,6 +228,41 @@ export async function verifyTransaction(
             valid: false,
             error: error instanceof Error ? error.message : "Verification failed",
         };
+    }
+}
+
+/**
+ * Broadcast a signed transaction to the network
+ */
+export async function broadcastTransaction(signedTransaction: any) {
+    try {
+        // Framework Kit 'rpc.sendTransaction' takes a base64 string
+        // The wallet adapter 'signTransaction' usually returns a Transaction object (legacy or versioned)
+        // We need to serialize it to bytes, then base64 encode it.
+
+        let serializedTx: Uint8Array;
+
+        if ('serialize' in signedTransaction) {
+            // Legacy Transaction or VersionedTransaction
+            serializedTx = signedTransaction.serialize();
+        } else {
+            // Fallback if it's already bytes (unlikely from adapter but possible)
+            serializedTx = signedTransaction;
+        }
+
+        // Convert to base64
+        const base64Tx = Buffer.from(serializedTx).toString('base64');
+
+        // Send (cast to any to bypass Base64EncodedWireTransaction branded type)
+        const signature = await rpc.sendTransaction(base64Tx as any, {
+            encoding: 'base64',
+            preflightCommitment: 'confirmed'
+        }).send();
+
+        return signature;
+    } catch (error) {
+        console.error("Broadcast failed:", error);
+        throw error;
     }
 }
 

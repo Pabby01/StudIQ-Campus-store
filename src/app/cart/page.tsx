@@ -4,7 +4,7 @@
 import { useCart } from "@/store/cart";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useWallet } from "@solana/react-hooks";
-import { createTransferTransaction, waitForConfirmation } from "@/lib/solana";
+import { createTransferTransaction, waitForConfirmation, broadcastTransaction } from "@/lib/solana";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -143,8 +143,8 @@ export default function CartPage() {
       // but VersionedTransaction is generally supported by modern adapters
       const signedTx = await wallet.session.signTransaction(transaction as any);
 
-      // Send transaction
-      const signature = await wallet.session.sendTransaction?.(signedTx as any);
+      // Send transaction using our RPC connection to ensure devnet consistency
+      const signature = await broadcastTransaction(signedTx);
 
       if (!signature) {
         throw new Error("Failed to send transaction");
