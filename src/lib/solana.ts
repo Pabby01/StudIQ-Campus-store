@@ -237,27 +237,29 @@ export async function verifyTransaction(
 export async function broadcastTransaction(signedTransaction: any) {
     try {
         // Framework Kit 'rpc.sendTransaction' takes a base64 string
-        // The wallet adapter 'signTransaction' usually returns a Transaction object (legacy or versioned)
-        // We need to serialize it to bytes, then base64 encode it.
+        // The wallet adapter 'signTransaction' returns a compiled transaction object
 
-        let serializedTx: Uint8Array;
+        let base64Tx: string;
 
-        if ('serialize' in signedTransaction) {
-            // Legacy Transaction or VersionedTransaction
-            serializedTx = signedTransaction.serialize();
+        if ('serialize' in signedTransaction && typeof signedTransaction.serialize === 'function') {
+            // Legacy Transaction or VersionedTransaction from old wallet adapters
+            const serialized = signedTransaction.serialize();
+            base64Tx = Buffer.from(serialized).toString('base64');
         } else {
-            // Fallback if it's already bytes (unlikely from adapter but possible)
-            serializedTx = signedTransaction;
+            // Framework Kit Transaction (compiled transaction object)
+            // Use the helper to serialize it properly
+            base64Tx = getBase64EncodedWireTransaction(signedTransaction) as string;
         }
 
-        // Convert to base64
-        const base64Tx = Buffer.from(serializedTx).toString('base64');
+        console.log("Broadcasting transaction...");
 
         // Send (cast to any to bypass Base64EncodedWireTransaction branded type)
         const signature = await rpc.sendTransaction(base64Tx as any, {
             encoding: 'base64',
             preflightCommitment: 'confirmed'
         }).send();
+
+        console.log("Transaction sent:", signature);
 
         return signature;
     } catch (error) {
@@ -303,21 +305,28 @@ export async function waitForConfirmation(
     signature: string,
     timeoutMs: number = 60000
 ): Promise<boolean> {
+    console.log("Waiting for confirmation:", signature);
     const startTime = Date.now();
+
+    // Give the transaction some time to propagate before first check
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     while (Date.now() - startTime < timeoutMs) {
         const status = await getTransactionStatus(signature);
 
-        if (status.error) {
+        // Only throw error if transaction actually failed, not if it's just not found yet
+        if (status.error && status.error !== "Transaction not found") {
             throw new Error(status.error);
         }
 
         if (status.confirmed) {
+            console.log("Transaction confirmed!");
             return true;
         }
 
-        // Wait 2 seconds
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        console.log("Transaction pending, checking again in 3 seconds...");
+        // Wait 3 seconds between checks
+        await new Promise((resolve) => setTimeout(resolve, 3000));
     }
 
     throw new Error("Transaction confirmation timeout");

@@ -273,7 +273,10 @@ export default function CartPage() {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-black mb-1">{item.name}</h3>
                         <p className="text-lg font-bold text-primary-blue mb-3">
-                          ${item.price.toFixed(2)}
+                          {item.currency === "SOL"
+                            ? `${item.price.toFixed(2)} SOL`
+                            : `$${item.price.toFixed(2)}`
+                          }
                         </p>
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2 bg-soft-gray-bg rounded-lg p-1">
@@ -304,7 +307,10 @@ export default function CartPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-black">
-                          ${(item.price * item.qty).toFixed(2)}
+                          {item.currency === "SOL"
+                            ? `${(item.price * item.qty).toFixed(2)} SOL`
+                            : `$${(item.price * item.qty).toFixed(2)}`
+                          }
                         </p>
                       </div>
                     </div>
@@ -425,11 +431,18 @@ export default function CartPage() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-text">Subtotal</span>
-                    <span className="font-medium text-black">${total.toFixed(2)}</span>
+                    <span className="font-medium text-black">
+                      {items[0]?.currency === "SOL"
+                        ? `${total.toFixed(2)} SOL`
+                        : `$${total.toFixed(2)}`
+                      }
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-text">Platform Fee</span>
-                    <span className="font-medium text-black">$0.00</span>
+                    <span className="font-medium text-black">
+                      {items[0]?.currency === "SOL" ? "0.00 SOL" : "$0.00"}
+                    </span>
                   </div>
                   {deliveryMethod === "shipping" && (
                     <div className="flex justify-between text-sm">
@@ -439,9 +452,14 @@ export default function CartPage() {
                   )}
                   <div className="border-t border-border-gray pt-3">
                     <div className="flex justify-between">
-                      <span className="font-semibold text-black">Total (SOL)</span>
+                      <span className="font-semibold text-black">
+                        Total ({items[0]?.currency || "SOL"})
+                      </span>
                       <span className="text-2xl font-bold text-primary-blue">
-                        ${total.toFixed(2)}
+                        {items[0]?.currency === "SOL"
+                          ? `${total.toFixed(2)} SOL`
+                          : `$${total.toFixed(2)}`
+                        }
                       </span>
                     </div>
                   </div>

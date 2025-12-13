@@ -45,8 +45,13 @@ export default function StoreDetailPage() {
         const productsRes = await fetch(`/api/product/search?storeId=${params?.id}`);
         if (productsRes.ok) {
           const productsData = await productsRes.json();
-          setProducts(productsData);
+          // Extract products array from the response
+          setProducts(productsData.products || []);
+        } else {
+          console.error("Failed to fetch products:", await productsRes.text());
         }
+      } catch (error) {
+        console.error("Error fetching store data:", error);
       } finally {
         setLoading(false);
       }

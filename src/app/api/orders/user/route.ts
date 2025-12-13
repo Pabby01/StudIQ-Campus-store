@@ -18,20 +18,39 @@ export async function GET(req: Request) {
       status,
       amount,
       currency,
-      items:order_items(
-        id,
+      order_items(
+        product_id,
         price,
         qty,
-        product:products(name, image_url)
+        products(name, image_url)
       ),
-      store:stores(name)
+      stores(name)
     `)
         .eq("buyer_address", address)
         .order("created_at", { ascending: false });
 
     if (error) {
+        console.error("Failed to fetch user orders:", error);
         return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ orders });
+    // Transform the response to match expected format
+    const transformedOrders = orders?.map(order => ({
+        ...order,
+        items: order.order_items?.map((item: any) => ({
+            id: item.product_id, // Use product_id as id
+            price: item.price,
+            qty: item.qty,
+            product: item.products
+        })) || [],
+        store: order.stores
+    })) || [];
+
+    // Clean up
+    transformedOrders.forEach(order => {
+        delete (order as any).order_items;
+        delete (order as any).stores;
+    });
+
+    return Response.json({ orders: transformedOrders });
 }

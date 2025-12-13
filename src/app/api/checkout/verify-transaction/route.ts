@@ -18,7 +18,7 @@ export async function POST(req: Request) {
         // Get order details
         const { data: order, error: orderError } = await supabase
             .from("orders")
-            .select("*, stores(owner)")
+            .select("*, stores(owner_address)")
             .eq("id", orderId)
             .single();
 
@@ -39,9 +39,9 @@ export async function POST(req: Request) {
         // Verify transaction on Solana network
         const verification = await verifyTransaction(
             txSignature,
-            order.buyer,
-            order.stores.owner,
-            order.total_amount
+            order.buyer_address,
+            order.stores.owner_address,
+            order.amount
         );
 
         if (!verification.valid) {
@@ -80,9 +80,9 @@ export async function POST(req: Request) {
         }
 
         // Award points to buyer (5% of purchase)
-        const pointsToAward = Math.floor(order.total_amount * 0.05);
+        const pointsToAward = Math.floor(order.amount * 0.05);
         await supabase.from("point_logs").insert({
-            address: order.buyer,
+            address: order.buyer_address,
             points: pointsToAward,
             reason: `Purchase order ${orderId}`,
         });

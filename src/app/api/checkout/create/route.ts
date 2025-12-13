@@ -163,7 +163,7 @@ export async function POST(req: Request) {
         delivery_method: parsed.data.deliveryMethod,
         delivery_info: parsed.data.deliveryDetails,
         payment_method: parsed.data.paymentMethod,
-        // buyer_email: parsed.data.buyerEmail, // Commented out until migration is applied
+        buyer_email: parsed.data.buyerEmail,
       })
       .select("id")
       .single();

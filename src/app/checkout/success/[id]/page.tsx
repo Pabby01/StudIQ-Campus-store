@@ -2,11 +2,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CheckCircle, Download, ArrowLeft, Loader2, ShoppingBag } from "lucide-react";
+import { CheckCircle, Download, ArrowLeft, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import "../print.css";
 
 type OrderDetails = {
     id: string;
@@ -61,32 +59,8 @@ export default function OrderSuccessPage() {
         }
     };
 
-    const downloadReceipt = async () => {
-        if (!receiptRef.current) return;
-
-        try {
-            const canvas = await html2canvas(receiptRef.current, {
-                scale: 2,
-                logging: false,
-                useCORS: true,
-                backgroundColor: "#ffffff"
-            });
-
-            const imgData = canvas.toDataURL("image/png");
-            const pdf = new jsPDF({
-                orientation: "portrait",
-                unit: "mm",
-                format: "a4",
-            });
-
-            const imgWidth = 210;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-            pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-            pdf.save(`Receipt-${order?.id.slice(0, 8)}.pdf`);
-        } catch (err) {
-            console.error("Receipt generation failed", err);
-        }
+    const downloadReceipt = () => {
+        window.print();
     };
 
     if (loading) {
@@ -112,10 +86,10 @@ export default function OrderSuccessPage() {
         <div className="min-h-screen bg-soft-gray-bg py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto space-y-8">
 
-                {/* Success Header */}
-                <div className="text-center space-y-4">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                        <CheckCircle className="w-10 h-10 text-green-600" />
+                {/* Success Header - Hidden on print */}
+                <div className="text-center space-y-4 no-print">
+                    <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                        <CheckCircle className="w-10 h-10 text-white" />
                     </div>
                     <h1 className="text-3xl font-bold text-black">Order Placed Successfully!</h1>
                     <p className="text-muted-text max-w-md mx-auto">
@@ -132,101 +106,141 @@ export default function OrderSuccessPage() {
                         </Button>
                         <Button variant="primary" onClick={downloadReceipt}>
                             <Download className="w-4 h-4 mr-2" />
-                            Download Receipt
+                            Print Receipt
                         </Button>
                     </div>
                 </div>
 
-                {/* Receipt Preview (Hidden from view only if needed, but here we show it card style) */}
+                {/* Receipt - This will be the only thing that prints */}
                 <div className="flex justify-center">
-                    <div ref={receiptRef} className="bg-white p-8 rounded-xl shadow-sm border border-border-gray w-full max-w-2xl">
-                        {/* Receipt Header */}
-                        <div className="border-b border-border-gray pb-6 mb-6 flex justify-between items-start">
-                            <div>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                                        <span className="text-white font-bold text-xs">S</span>
+                    <div id="receipt-container" ref={receiptRef} className="bg-white p-10 rounded-2xl shadow-lg border-2 border-gray-100 w-full max-w-2xl">
+
+                        {/* Modern Receipt Header with gradient */}
+                        <div className="border-b-2 border-gray-200 pb-8 mb-8">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-400 rounded-xl flex items-center justify-center shadow-md">
+                                            <span className="text-white font-bold text-xl">S</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-2xl font-bold text-gray-900">StudiQ Store</span>
+                                            <p className="text-sm text-gray-500">Campus Marketplace</p>
+                                        </div>
                                     </div>
-                                    <span className="text-xl font-bold text-black">StudiQ Store</span>
                                 </div>
-                                <p className="text-sm text-muted-text">Campus Marketplace</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm text-muted-text uppercase tracking-wider mb-1">Receipt</p>
-                                <p className="font-mono font-medium text-black">#{order.id.slice(0, 8).toUpperCase()}</p>
-                                <p className="text-sm text-muted-text mt-1">{new Date(order.created_at).toLocaleDateString()}</p>
+                                <div className="text-right">
+                                    <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                                        <p className="text-xs text-blue-600 uppercase tracking-wider font-bold mb-1">Receipt</p>
+                                        <p className="font-mono font-bold text-gray-900 text-lg">#{order.id.slice(0, 8).toUpperCase()}</p>
+                                    </div>
+                                    <p className="text-sm text-gray-500 mt-2">{new Date(order.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Customer Info */}
-                        <div className="grid grid-cols-2 gap-8 mb-8">
-                            <div>
-                                <p className="text-xs text-muted-text uppercase font-bold mb-2">Billed To</p>
-                                <p className="font-medium text-black">{order.delivery_info.name}</p>
-                                <p className="text-sm text-muted-text">{order.buyer_email}</p>
+                        {/* Customer Info with improved design */}
+                        <div className="grid grid-cols-2 gap-8 mb-10">
+                            <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
+                                <p className="text-xs text-gray-500 uppercase font-bold mb-3 tracking-wide">Billed To</p>
+                                <p className="font-semibold text-gray-900 text-lg">{order.delivery_info.name}</p>
+                                <p className="text-sm text-gray-600 mt-1">{order.buyer_email}</p>
                                 {order.delivery_method === 'shipping' && (
-                                    <p className="text-sm text-muted-text mt-1">{order.delivery_info.address}, {order.delivery_info.city}</p>
+                                    <p className="text-sm text-gray-600 mt-2">
+                                        {order.delivery_info.address}<br />
+                                        {order.delivery_info.city}, {order.delivery_info.zip}
+                                    </p>
                                 )}
                             </div>
-                            <div>
-                                <p className="text-xs text-muted-text uppercase font-bold mb-2">Payment Details</p>
-                                <p className="text-sm text-black">
-                                    <span className="text-muted-text">Method:</span> {order.payment_method === 'solana' ? 'Crypto (SOL)' : 'Cash on Delivery'}
-                                </p>
-                                <p className="text-sm text-black">
-                                    <span className="text-muted-text">Status:</span> {order.status.toUpperCase()}
-                                </p>
+                            <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
+                                <p className="text-xs text-gray-500 uppercase font-bold mb-3 tracking-wide">Payment Details</p>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-gray-500">Method:</span>
+                                        <span className="text-sm font-semibold text-gray-900 print-brand-color">
+                                            {order.payment_method === 'solana' ? 'Crypto (SOL)' : 'Cash on Delivery'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-gray-500">Status:</span>
+                                        <span className={`text-sm font-bold px-3 py-1 rounded-full ${order.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                            }`}>
+                                            {order.status.toUpperCase()}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Items */}
-                        <div className="mb-8">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-border-gray">
-                                        <th className="text-left py-2 text-xs text-muted-text uppercase font-bold">Item</th>
-                                        <th className="text-center py-2 text-xs text-muted-text uppercase font-bold">Qty</th>
-                                        <th className="text-right py-2 text-xs text-muted-text uppercase font-bold">Price</th>
-                                        <th className="text-right py-2 text-xs text-muted-text uppercase font-bold">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border-gray">
-                                    {order.items.map((item) => (
-                                        <tr key={item.id}>
-                                            <td className="py-3 text-sm text-black font-medium">{item.product.name}</td>
-                                            <td className="py-3 text-center text-sm text-muted-text">{item.qty}</td>
-                                            <td className="py-3 text-right text-sm text-muted-text">
-                                                {order.currency === 'SOL' ? 'SOL' : '$'}{item.price.toFixed(2)}
-                                            </td>
-                                            <td className="py-3 text-right text-sm text-black font-medium">
-                                                {order.currency === 'SOL' ? 'SOL' : '$'}{(item.price * item.qty).toFixed(2)}
-                                            </td>
+                        {/* Items with enhanced table design */}
+                        <div className="mb-10">
+                            <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-t-xl overflow-hidden">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr>
+                                            <th className="text-left py-4 px-4 text-xs uppercase font-bold tracking-wide">Item</th>
+                                            <th className="text-center py-4 px-4 text-xs uppercase font-bold tracking-wide">Qty</th>
+                                            <th className="text-right py-4 px-4 text-xs uppercase font-bold tracking-wide">Price</th>
+                                            <th className="text-right py-4 px-4 text-xs uppercase font-bold tracking-wide">Total</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                </table>
+                            </div>
+                            <div className="border-x-2 border-b-2 border-gray-200 rounded-b-xl overflow-hidden">
+                                <table className="w-full">
+                                    <tbody className="divide-y divide-gray-100">
+                                        {order.items.map((item, idx) => (
+                                            <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                <td className="py-4 px-4 text-sm text-gray-900 font-medium">{item.product.name}</td>
+                                                <td className="py-4 text-center text-sm text-gray-600 font-semibold">{item.qty}</td>
+                                                <td className="py-4 px-4 text-right text-sm text-gray-600">
+                                                    {order.currency === 'SOL' ? `${item.price.toFixed(2)} SOL` : `$${item.price.toFixed(2)}`}
+                                                </td>
+                                                <td className="py-4 px-4 text-right text-sm text-gray-900 font-semibold">
+                                                    {order.currency === 'SOL' ? `${(item.price * item.qty).toFixed(2)} SOL` : `$${(item.price * item.qty).toFixed(2)}`}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        {/* Totals */}
-                        <div className="border-t border-border-gray pt-6">
-                            <div className="flex justify-between mb-2">
-                                <span className="text-muted-text">Subtotal</span>
-                                <span className="font-medium">{order.currency === 'SOL' ? 'SOL' : '$'}{order.amount.toFixed(2)}</span>
+                        {/* Totals with enhanced styling */}
+                        <div className="border-t-2 border-gray-200 pt-8">
+                            <div className="space-y-3 mb-6">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">Subtotal</span>
+                                    <span className="font-semibold text-gray-900">
+                                        {order.currency === 'SOL' ? `${order.amount.toFixed(2)} SOL` : `$${order.amount.toFixed(2)}`}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">Shipping</span>
+                                    <span className="text-green-600 font-semibold print-success-color">
+                                        {order.delivery_method === 'pickup' ? 'Pickup' : 'Free'}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex justify-between mb-4">
-                                <span className="text-muted-text">Shipping</span>
-                                <span className="text-green-600 font-medium">{order.delivery_method === 'pickup' ? 'Pickup' : 'Free'}</span>
-                            </div>
-                            <div className="flex justify-between items-center border-t border-border-gray pt-4">
-                                <span className="font-bold text-lg text-black">Total</span>
-                                <span className="font-bold text-2xl text-primary-blue">{order.currency === 'SOL' ? 'SOL' : '$'}{order.amount.toFixed(2)}</span>
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-xl text-gray-900">Total</span>
+                                    <span className="font-bold text-3xl text-blue-600 print-brand-color">
+                                        {order.currency === 'SOL' ? `${order.amount.toFixed(2)} SOL` : `$${order.amount.toFixed(2)}`}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Footer */}
-                        <div className="mt-12 text-center pt-8 border-t border-border-gray">
-                            <p className="text-sm text-muted-text">Thank you for shopping with StudiQ Campus Store!</p>
-                            <p className="text-xs text-muted-text mt-1">If you have any questions, contact support at support@studiq.com</p>
+                        {/* Footer with thank you message */}
+                        <div className="mt-12 text-center pt-8 border-t-2 border-gray-200">
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                                <p className="text-lg font-semibold text-gray-900 mb-2">Thank you for shopping with StudiQ!</p>
+                                <p className="text-sm text-gray-600">Questions? Email us at support@studiq.com</p>
+                                <div className="mt-4 pt-4 border-t border-blue-200">
+                                    <p className="text-xs text-gray-500">This is an official receipt for your order</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

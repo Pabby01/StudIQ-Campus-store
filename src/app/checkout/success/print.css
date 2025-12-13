@@ -1,0 +1,57 @@
+/* Print Styles - Only show receipt when printing */
+@media print {
+
+    /* Hide everything except the receipt */
+    body * {
+        visibility: hidden;
+    }
+
+    #receipt-container,
+    #receipt-container * {
+        visibility: visible;
+    }
+
+    #receipt-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    /* Hide buttons and navigation when printing */
+    button,
+    nav,
+    header,
+    .no-print {
+        display: none !important;
+    }
+
+    /* Optimize receipt for printing */
+    #receipt-container {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 20mm !important;
+    }
+
+    /* Ensure good contrast for printing */
+    * {
+        background: white !important;
+        color: black !important;
+    }
+
+    /* Keep specific colors for branding */
+    .print-brand-color {
+        color: #2563eb !important;
+    }
+
+    .print-success-color {
+        color: #16a34a !important;
+    }
+
+    /* Page breaks */
+    @page {
+        margin: 0;
+        size: A4;
+    }
+}

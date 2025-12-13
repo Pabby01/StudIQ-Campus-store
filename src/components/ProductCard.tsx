@@ -14,6 +14,7 @@ type Product = Readonly<{
   id: string;
   name: string;
   price: number;
+  currency?: "SOL" | "USDC";
   image_url?: string | null;
   rating?: number | null;
   category?: string;
@@ -39,7 +40,7 @@ export default function ProductCard({ p }: { p: Product }) {
       price: p.price,
       storeId: p.store_id || "",
       imageUrl: p.image_url || undefined,
-      currency: "SOL", // Default to SOL for now if not in Product type in ProductCard
+      currency: p.currency || "SOL",
     });
 
     toast.success("Added to cart", p.name);
@@ -142,18 +143,27 @@ export default function ProductCard({ p }: { p: Product }) {
           <div className="space-y-2">
             <div className="flex items-baseline gap-2">
               <span className="text-xl font-bold text-black">
-                ${Number(p.price).toFixed(2)}
+                {p.currency === "SOL"
+                  ? `${Number(p.price).toFixed(2)} SOL`
+                  : `$${Number(p.price).toFixed(2)}`
+                }
               </span>
               {hasDiscount && (
                 <span className="text-sm text-muted-text line-through">
-                  ${p.originalPrice!.toFixed(2)}
+                  {p.currency === "SOL"
+                    ? `${p.originalPrice!.toFixed(2)} SOL`
+                    : `$${p.originalPrice!.toFixed(2)}`
+                  }
                 </span>
               )}
             </div>
 
             {hasDiscount && (
               <div className="text-xs text-green-600 font-medium">
-                Save ${(p.originalPrice! - p.price).toFixed(2)}
+                Save {p.currency === "SOL"
+                  ? `${(p.originalPrice! - p.price).toFixed(2)} SOL`
+                  : `$${(p.originalPrice! - p.price).toFixed(2)}`
+                }
               </div>
             )}
           </div>

@@ -15,11 +15,20 @@ export function getSupabaseServerClient() {
   }
 
   // Use service role key for server-side operations
-  // No session headers needed with new wallet-based auth
+  // Add custom fetch with longer timeout to prevent connection errors
   return createClient(url, key, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
-    }
+    },
+    global: {
+      fetch: (url, options = {}) => {
+        return fetch(url, {
+          ...options,
+          // Increase timeout to 30 seconds
+          signal: AbortSignal.timeout(30000),
+        });
+      },
+    },
   });
 }
