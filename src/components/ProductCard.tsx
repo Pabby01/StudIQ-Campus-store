@@ -19,7 +19,9 @@ type Product = Readonly<{
   rating?: number | null;
   category?: string;
   originalPrice?: number;
-  store_id?: string; // Optional for compatibility but preferred
+  store_id?: string;
+  inventory?: number; // Stock count
+  owner_address?: string; // Seller's address
 }>;
 
 export default function ProductCard({ p }: { p: Product }) {
@@ -30,9 +32,27 @@ export default function ProductCard({ p }: { p: Product }) {
     ? Math.round(((p.originalPrice! - p.price) / p.originalPrice!) * 100)
     : 0;
 
+  const { address } = useWalletAuth();
+
+  // Check if product is sold out
+  const isSoldOut = p.inventory !== undefined && p.inventory <= 0;
+
+  // Check if current user is the seller
+  const isOwnProduct = address && p.owner_address && address === p.owner_address;
+
   const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent Link navigation
+    e.preventDefault();
     e.stopPropagation();
+
+    if (isSoldOut) {
+      toast.error("Product is sold out");
+      return;
+    }
+
+    if (isOwnProduct) {
+      toast.error("You cannot purchase your own product");
+      return;
+    }
 
     addToCart({
       id: p.id,
@@ -46,8 +66,6 @@ export default function ProductCard({ p }: { p: Product }) {
     toast.success("Added to cart", p.name);
   };
 
-  const { address } = useWalletAuth(); // Use the hook to get address
-
   const [isWishlisted, setIsWishlisted] = useState(false);
   const router = useRouter();
 
@@ -60,27 +78,28 @@ export default function ProductCard({ p }: { p: Product }) {
       return;
     }
 
-    // Optimistic update
+    if (isOwnProduct) {
+      toast.error("Cannot wishlist your own product");
+      return;
+    }
+
     const previousState = isWishlisted;
     setIsWishlisted(!previousState);
 
     try {
       if (!previousState) {
-        // Add to wishlist
         await fetch('/api/wishlist', {
           method: 'POST',
           body: JSON.stringify({ address, productId: p.id })
         });
         toast.success("Added to wishlist");
       } else {
-        // Remove from wishlist
         await fetch(`/api/wishlist?address=${address}&productId=${p.id}`, {
           method: 'DELETE'
         });
         toast.success("Removed from wishlist");
       }
     } catch (error) {
-      // Revert on error
       setIsWishlisted(previousState);
       toast.error("Failed to update wishlist");
     }
@@ -90,23 +109,32 @@ export default function ProductCard({ p }: { p: Product }) {
     <Link href={`/product/${p.id}`} className="block h-full">
       <div className="bg-white rounded-xl border border-border-gray overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative">
 
-        {/* Wishlist Button */}
-        <button
-          onClick={toggleWishlist}
-          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all shadow-sm"
-        >
-          <Heart className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500 hover:text-red-500'}`} />
-        </button>
+        {/* Wishlist Button - Hidden for own products */}
+        {!isOwnProduct && (
+          <button
+            onClick={toggleWishlist}
+            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all shadow-sm"
+          >
+            <Heart className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500 hover:text-red-500'}`} />
+          </button>
+        )}
+
+        {/* Sold Out Badge */}
+        {isSoldOut && (
+          <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg z-10 shadow-lg">
+            SOLD OUT
+          </div>
+        )}
 
         {/* Discount Badge */}
-        {hasDiscount && (
+        {hasDiscount && !isSoldOut && (
           <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
             {discountPercent}% OFF
           </div>
         )}
 
         {/* Product Image */}
-        <div className="relative aspect-square bg-soft-gray-bg overflow-hidden">
+        <div className={`relative aspect-square bg-soft-gray-bg overflow-hidden ${isSoldOut ? 'opacity-60' : ''}`}>
           {p.image_url ? (
             <img
               src={p.image_url}
@@ -119,7 +147,6 @@ export default function ProductCard({ p }: { p: Product }) {
             </div>
           )}
         </div>
-
 
         {/* Product Info */}
         <div className="p-4 flex-1 flex flex-col">
@@ -168,16 +195,43 @@ export default function ProductCard({ p }: { p: Product }) {
             )}
           </div>
 
-          {/* Add to Cart Button */}
+          {/* Stock Count - Show for sellers */}
+          {isOwnProduct && p.inventory !== undefined && (
+            <div className="mt-2 text-xs text-muted-text">
+              Stock: {p.inventory} {p.inventory === 1 ? 'unit' : 'units'}
+            </div>
+          )}
+
+          {/* Add to Cart Button or Sold Out / Own Product Message */}
           <div className="mt-3">
-            <Button
-              variant="primary"
-              size="sm"
-              className="w-full"
-              onClick={handleAddToCart}
-            >
-              Add to cart
-            </Button>
+            {isSoldOut ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full cursor-not-allowed opacity-60"
+                disabled
+              >
+                Sold Out
+              </Button>
+            ) : isOwnProduct ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full cursor-not-allowed"
+                disabled
+              >
+                Your Product
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full"
+                onClick={handleAddToCart}
+              >
+                Add to cart
+              </Button>
+            )}
           </div>
         </div>
       </div>

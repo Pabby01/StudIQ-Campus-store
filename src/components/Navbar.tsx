@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShoppingCart, Wallet, LayoutDashboard } from "lucide-react";
+import { Search, ShoppingCart, Wallet, LayoutDashboard, PackageSearch } from "lucide-react";
 import { useWallet, useDisconnectWallet } from "@solana/react-hooks";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useCart } from "@/store/cart";
@@ -53,6 +53,24 @@ export default function Navbar() {
                   className="text-sm font-medium text-muted-text hover:text-primary-blue transition-colors"
                 >
                   Predictions
+                </Link>
+                <Link
+                  href="/track"
+                  className="text-sm font-medium text-muted-text hover:text-primary-blue transition-colors"
+                >
+                  Track Order
+                </Link>
+                <Link
+                  href="/leaderboard"
+                  className="text-sm font-medium text-muted-text hover:text-primary-blue transition-colors"
+                >
+                  Leaderboard
+                </Link>
+                <Link
+                  href="/faq"
+                  className="text-sm font-medium text-muted-text hover:text-primary-blue transition-colors"
+                >
+                  FAQ
                 </Link>
               </div>
             </div>

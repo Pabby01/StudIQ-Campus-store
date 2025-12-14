@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
   const parsed = createProductSchema.safeParse(body);
   if (!parsed.success) {
-    console.error("Validation error:", parsed.error); // Log to server console
+    console.error("Validation error:", parsed.error);
     return Response.json(
       { ok: false, error: "Invalid input", details: parsed.error.flatten() },
       { status: 400 }
@@ -44,25 +44,17 @@ export async function POST(req: Request) {
     );
   }
 
-  // Check if this is the first product and award points
+  // Award 5 points for every product listing
   try {
-    const { count } = await supabase
-      .from("products")
-      .select("*", { count: "exact", head: true })
-      .eq("store_id", parsed.data.storeId);
-
-    if (count === 1) {
-      // First product - award 25 points
-      await fetch(`${req.headers.get("origin")}/api/points/award`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          address,
-          points: 25,
-          reason: "First product added",
-        }),
-      });
-    }
+    await fetch(`${req.headers.get("origin")}/api/points/award`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        address,
+        points: 5,
+        reason: "Product listed",
+      }),
+    });
   } catch (e) {
     console.error("Points award failed:", e);
   }

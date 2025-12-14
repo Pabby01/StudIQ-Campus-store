@@ -43,18 +43,6 @@ export default function DashboardProductsPage() {
   const fetchStores = async () => {
     try {
       const address = wallet.status === "connected" ? wallet.session.account.address.toString() : "";
-      // We need a way to get stores by OWNER. 
-      // Assuming api/store/all or similar can filter by owner, or getting from profile?
-      // Let's try to get profile first, or search stores by owner address?
-      // Actually, we don't have a direct "my-stores" endpoint yet?
-      // Let's use /api/store/all?owner=ADDRESS if supported, or create a util.
-      // Wait, there is /api/store/create which returns the store.
-      // Let's look at /api/store/all/route.ts from history. It doesn't seem to support owner filter.
-      // But we can check /api/profile/get, it might return stores?
-
-      // Let's use a specialized check or filter locally for now if API is deficient.
-      // Or better: use /api/store/all and filter client side? Not scalable but ok for now.
-
       const res = await fetch("/api/store/all?limit=100");
       const data = await res.json();
 
@@ -77,9 +65,6 @@ export default function DashboardProductsPage() {
   const fetchProducts = async (storeId: string) => {
     setLoading(true);
     try {
-      // Fetch products for this store
-      // Using existing search API or direct query?
-      // /api/product/search?storeId=...
       const res = await fetch(`/api/product/search?storeId=${storeId}&limit=100`);
       const data = await res.json();
       setProducts(data.products || []);
@@ -131,6 +116,8 @@ export default function DashboardProductsPage() {
       </div>
     );
   }
+
+  const sellerAddress = wallet.status === "connected" ? wallet.session.account.address.toString() : "";
 
   return (
     <div className="min-h-screen bg-soft-gray-bg p-8">
@@ -223,19 +210,27 @@ export default function DashboardProductsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map(product => (
-              <div key={product.id} className="relative group">
-                <ProductCard p={product} />
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                  <Button variant="danger" size="sm" onClick={(e) => {
-                    e.preventDefault();
-                    handleDeleteProduct(product.id);
-                  }}>
-                    Delete
-                  </Button>
+            {products.map(product => {
+              // Pass seller's address so ProductCard knows these are their own products
+              const productWithOwner = {
+                ...product,
+                owner_address: sellerAddress
+              };
+
+              return (
+                <div key={product.id} className="relative group">
+                  <ProductCard p={productWithOwner} />
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-20">
+                    <Button variant="danger" size="sm" onClick={(e) => {
+                      e.preventDefault();
+                      handleDeleteProduct(product.id);
+                    }}>
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

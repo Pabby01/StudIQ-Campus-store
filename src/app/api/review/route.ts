@@ -48,8 +48,41 @@ export async function POST(req: Request) {
         return Response.json({ error: error.message }, { status: 500 });
     }
 
-    // Update product avg rating (simple approach)
-    // Or trigger? Let's just create review for now.
+    // Award 10 points to reviewer
+    try {
+        await fetch(`${req.headers.get("origin")}/api/points/award`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                address,
+                points: 10,
+                reason: "Product review",
+            }),
+        });
+
+        // If 5-star review, award seller 25 points
+        if (rating === 5) {
+            const { data: product } = await supabase
+                .from("products")
+                .select("store_id, stores(owner_address)")
+                .eq("id", productId)
+                .single();
+
+            if (product) {
+                await fetch(`${req.headers.get("origin")}/api/points/award`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        address: (product.stores as any).owner_address,
+                        points: 25,
+                        reason: "Received 5-star review",
+                    }),
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Points award failed:", e);
+    }
 
     return Response.json({ success: true });
 }

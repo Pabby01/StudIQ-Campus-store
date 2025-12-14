@@ -15,14 +15,14 @@ export async function POST(req: Request) {
 
     const supabase = getSupabaseServerClient();
 
-    // Check if this is a new profile
+    // Check if this is profile completion (has all required fields)
     const { data: existing } = await supabase
       .from("profiles")
-      .select("address")
+      .select("*")
       .eq("address", parsed.data.address)
       .maybeSingle();
 
-    const isNewProfile = !existing;
+    const wasIncomplete = existing && (!existing.school || !existing.campus || !existing.name);
 
     const { data, error } = await supabase
       .from("profiles")
@@ -47,8 +47,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Award 50 points for new account
-    if (isNewProfile) {
+    // Check if profile is now complete and award points
+    const isComplete = data.name && data.school && data.campus;
+
+    if (wasIncomplete && isComplete) {
       try {
         await fetch(`${req.headers.get("origin")}/api/points/award`, {
           method: "POST",
@@ -56,7 +58,7 @@ export async function POST(req: Request) {
           body: JSON.stringify({
             address: parsed.data.address,
             points: 50,
-            reason: "Account created",
+            reason: "Profile completed",
           }),
         });
       } catch (e) {
@@ -66,7 +68,7 @@ export async function POST(req: Request) {
 
     return Response.json({ ok: true, profile: data });
   } catch (error) {
-    console.error("Profile update error:", error);
+    console.error("Profile error:", error);
     return Response.json(
       { ok: false, error: "Server error" },
       { status: 500 }

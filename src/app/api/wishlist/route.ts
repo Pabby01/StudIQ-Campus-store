@@ -33,7 +33,6 @@ export async function GET(req: Request) {
         return Response.json({ error: error.message }, { status: 500 });
     }
 
-    // Flatten the response slightly for easier consumption if needed, or just return as is
     return Response.json({ wishlist: data });
 }
 
@@ -53,11 +52,25 @@ export async function POST(req: Request) {
             .insert({ user_address: address, product_id: productId });
 
         if (error) {
-            // Ignore duplicate errors silently or return specific code
-            if (error.code === '23505') { // Unique violation
+            if (error.code === '23505') {
                 return Response.json({ ok: true, message: "Already in wishlist" });
             }
             throw error;
+        }
+
+        // Award 2 points for wishlist addition
+        try {
+            await fetch(`${req.headers.get("origin")}/api/points/award`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    address,
+                    points: 2,
+                    reason: "Added to wishlist",
+                }),
+            });
+        } catch (e) {
+            console.error("Points award failed:", e);
         }
 
         return Response.json({ ok: true });
@@ -68,27 +81,26 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-    try {
-        const url = new URL(req.url);
-        const address = url.searchParams.get("address");
-        const productId = url.searchParams.get("productId");
+    const url = new URL(req.url);
+    const address = url.searchParams.get("address");
+    const productId = url.searchParams.get("productId");
 
-        if (!address || !productId) {
-            return Response.json({ error: "Missing address or productId" }, { status: 400 });
-        }
-
-        const supabase = getSupabaseServerClient();
-
-        const { error } = await supabase
-            .from("wishlist")
-            .delete()
-            .match({ user_address: address, product_id: productId });
-
-        if (error) throw error;
-
-        return Response.json({ ok: true });
-    } catch (error) {
-        console.error("Wishlist remove error:", error);
-        return Response.json({ error: "Failed to remove from wishlist" }, { status: 500 });
+    if (!address || !productId) {
+        return Response.json({ error: "Missing parameters" }, { status: 400 });
     }
+
+    const supabase = getSupabaseServerClient();
+
+    const { error } = await supabase
+        .from("wishlist")
+        .delete()
+        .eq("user_address", address)
+        .eq("product_id", productId);
+
+    if (error) {
+        console.error("Wishlist delete error:", error);
+        return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    return Response.json({ ok: true });
 }
