@@ -36,9 +36,9 @@ export async function GET(req: Request) {
             sellerOrders = data || [];
         }
 
-        // Fetch points
+        // Fetch points - FIXED TABLE NAME
         const { data: pointsData } = await supabase
-            .from("point_logs")
+            .from("points_log")
             .select("points")
             .eq("address", address);
 

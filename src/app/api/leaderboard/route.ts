@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 
         // Build query for aggregating points
         let query = supabase
-            .from("point_logs")
+            .from("points_log")
             .select("address, points");
 
         if (dateFilter) {

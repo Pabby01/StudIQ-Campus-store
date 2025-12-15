@@ -1,4 +1,4 @@
-import { HTMLAttributes, ReactNode } from "react";
+import { HTMLAttributes } from "react";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,19 +25,19 @@ export default function DashboardCard({
     return (
         <div
             className={cn(
-                "bg-white rounded-xl border border-border-gray shadow-sm p-6 hover:shadow-md transition-shadow",
+                "bg-white rounded-xl border border-border-gray shadow-sm p-4 md:p-6 hover:shadow-md transition-shadow w-full max-w-full",
                 className
             )}
             {...props}
         >
             <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-text">{title}</p>
-                    <p className="text-3xl font-bold text-black">{value}</p>
+                <div className="space-y-2 min-w-0 flex-1">
+                    <p className="text-xs md:text-sm font-medium text-muted-text truncate">{title}</p>
+                    <p className="text-2xl md:text-3xl font-bold text-black break-words">{value}</p>
                     {trend && (
                         <p
                             className={cn(
-                                "text-sm font-medium",
+                                "text-xs md:text-sm font-medium",
                                 trend.isPositive ? "text-green-600" : "text-red-600"
                             )}
                         >
@@ -45,8 +45,8 @@ export default function DashboardCard({
                         </p>
                     )}
                 </div>
-                <div className={cn("p-3 bg-blue-50 rounded-lg", iconColor)}>
-                    <Icon className="w-6 h-6" />
+                <div className={cn("p-2 md:p-3 bg-blue-50 rounded-lg shrink-0", iconColor)}>
+                    <Icon className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
             </div>
         </div>

@@ -89,7 +89,7 @@ export async function POST(req: Request) {
         const bonusPoints = isFirstPurchase ? 100 : 0;
         const totalBuyerPoints = basePoints + bonusPoints;
 
-        await supabase.from("point_logs").insert({
+        await supabase.from("points_log").insert({
             address: order.buyer_address,
             points: totalBuyerPoints,
             reason: isFirstPurchase
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
         });
 
         // Award 10 points to seller for completing order
-        await supabase.from("point_logs").insert({
+        await supabase.from("points_log").insert({
             address: (order.stores as any).owner_address,
             points: 10,
             reason: `Order completed: ${orderId}`,
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
         }
 
         if (milestonePoints > 0) {
-            await supabase.from("point_logs").insert({
+            await supabase.from("points_log").insert({
                 address: (order.stores as any).owner_address,
                 points: milestonePoints,
                 reason: milestoneReason,

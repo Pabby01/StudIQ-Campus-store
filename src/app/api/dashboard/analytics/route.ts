@@ -44,9 +44,9 @@ export async function GET(req: Request) {
             sellerOrders = data || [];
         }
 
-        // Fetch points history
+        // Fetch points history - FIXED TABLE NAME
         const { data: pointsHistory } = await supabase
-            .from("point_logs")
+            .from("points_log")
             .select("created_at, points, reason")
             .eq("address", address)
             .gte("created_at", startDate.toISOString())

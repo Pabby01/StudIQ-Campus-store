@@ -5,6 +5,7 @@ import "./scrollbar.css";
 import Providers from "@/app/providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import MobileNav from "@/components/MobileNav";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ToastProvider } from "@/hooks/useToast";
 
@@ -37,8 +38,11 @@ export default function RootLayout({
           <ToastProvider>
             <Providers>
               <Navbar />
-              {children}
+              <main className="pb-16 md:pb-0">
+                {children}
+              </main>
               <Footer />
+              <MobileNav />
             </Providers>
           </ToastProvider>
         </ErrorBoundary>
