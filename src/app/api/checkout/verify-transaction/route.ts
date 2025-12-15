@@ -1,6 +1,7 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 import { verifyTransaction } from "@/lib/solana";
+import { getPlatformFee, calculateFees, recordPlatformFee } from "@/lib/platformFees";
 
 export async function POST(req: Request) {
     try {
@@ -57,22 +58,60 @@ export async function POST(req: Request) {
             );
         }
 
-        // Update order status to processing (not completed - seller needs to ship)
+        // Get seller's platform fee percentage
+        const sellerAddress = (order.stores as any).owner_address;
+        const feePercentage = await getPlatformFee(sellerAddress);
+
+        // Calculate platform fee and seller payout
+        const { feeAmount, sellerPayout } = calculateFees(order.amount, feePercentage);
+
+        // Determine seller's plan name
+        const { data: subscription } = await supabase
+            .from("user_subscriptions")
+            .select("subscription_plans(name)")
+            .eq("user_address", sellerAddress)
+            .eq("status", "active")
+            .maybeSingle();
+
+        const sellerPlan = subscription?.subscription_plans
+            ? (subscription.subscription_plans as any).name
+            : 'free';
+
+        // Mark order as processing and store seller payout
         const { error: updateError } = await supabase
             .from("orders")
             .update({
                 status: "processing",
                 tx_signature: txSignature,
+                seller_payout: sellerPayout,
+                platform_fee: feeAmount,
                 updated_at: new Date().toISOString(),
             })
             .eq("id", orderId);
 
         if (updateError) {
-            console.error("Failed to update order:", updateError);
+            console.error("Order update error:", updateError);
             return Response.json(
-                { ok: false, error: "Failed to update order status" },
+                { ok: false, error: "Failed to update order" },
                 { status: 500 }
             );
+        }
+
+        // Record platform fee in database
+        try {
+            await recordPlatformFee({
+                orderId,
+                sellerAddress,
+                sellerPlan,
+                feePercentage,
+                feeAmount,
+                feeCurrency: order.currency || 'SOL',
+                orderAmount: order.amount,
+                sellerPayout
+            });
+        } catch (feeError) {
+            console.error("Failed to record platform fee:", feeError);
+            // Don't fail the order, just log the error
         }
 
         // Check if this is the first purchase for bonus

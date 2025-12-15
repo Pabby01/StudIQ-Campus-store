@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Star, Heart } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import PremiumBadge from "@/components/PremiumBadge";
 import { useCart } from "@/store/cart";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useToast } from "@/hooks/useToast";
@@ -22,6 +23,7 @@ type Product = Readonly<{
   store_id?: string;
   inventory?: number; // Stock count
   owner_address?: string; // Seller's address
+  isPremiumSeller?: boolean; // Whether seller has premium subscription
 }>;
 
 export default function ProductCard({ p }: { p: Product }) {
@@ -128,33 +130,39 @@ export default function ProductCard({ p }: { p: Product }) {
 
         {/* Discount Badge */}
         {hasDiscount && !isSoldOut && (
-          <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+          <Badge variant="green" className="absolute top-3 left-3 font-bold shadow-md">
             {discountPercent}% OFF
-          </div>
+          </Badge>
         )}
 
-        {/* Product Image */}
-        <div className={`relative aspect-square bg-soft-gray-bg overflow-hidden ${isSoldOut ? 'opacity-60' : ''}`}>
+        {/* Image */}
+        <div className="relative w-full pt-[100%] bg-gray-100 overflow-hidden">
           {p.image_url ? (
             <img
               src={p.image_url}
               alt={p.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-muted-text text-sm">No image</span>
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+              No Image
             </div>
           )}
         </div>
 
-        {/* Product Info */}
+        {/* Product Details */}
         <div className="p-4 flex-1 flex flex-col">
-          {p.category && (
-            <Badge variant="gray" className="mb-2">
-              {p.category}
-            </Badge>
-          )}
+          {/* Premium Badge + Category */}
+          <div className="flex items-center justify-between mb-2">
+            {p.category && (
+              <span className="text-xs text-muted-text uppercase tracking-wide">
+                {p.category}
+              </span>
+            )}
+            {p.isPremiumSeller && (
+              <PremiumBadge size="sm" />
+            )}
+          </div>
           <h3 className="font-medium text-black text-sm line-clamp-2 mb-2 min-h-[40px]">
             {p.name}
           </h3>
