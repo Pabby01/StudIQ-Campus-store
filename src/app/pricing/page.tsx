@@ -20,7 +20,9 @@ export default function PricingPage() {
             displayName: "Free",
             price: 0,
             feePercentage: 5,
+            maxStores: 1,
             features: [
+                "Create 1 store",
                 "List unlimited products",
                 "Basic analytics dashboard",
                 "Standard email support",
@@ -35,8 +37,10 @@ export default function PricingPage() {
             displayName: "Premium",
             price: 14.99,
             feePercentage: 2,
+            maxStores: 5,
             popular: true,
             features: [
+                "Create up to 5 stores",
                 "Everything in Free",
                 "Only 2% platform fee (save 3%)",
                 "Premium badge on store",
@@ -53,7 +57,9 @@ export default function PricingPage() {
             displayName: "Enterprise",
             price: 49.99,
             feePercentage: 0,
+            maxStores: 20,
             features: [
+                "Create up to 20 stores",
                 "Everything in Premium",
                 "0% platform fee (save all fees!)",
                 "Dedicated account manager",
@@ -78,7 +84,7 @@ export default function PricingPage() {
         } else if (planName === "enterprise") {
             window.location.href = "mailto:support@studiq.com?subject=Enterprise Plan Inquiry";
         } else {
-            router.push(`/dashboard/settings?upgrade=${planName}`);
+            router.push(`/pricing/checkout?plan=${planName}`);
         }
     };
 
@@ -230,6 +236,7 @@ export default function PricingPage() {
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                                 {[
+                                    { feature: "Store Limit", free: "1 store", premium: "5 stores", enterprise: "20 stores" },
                                     { feature: "Platform Fee", free: "5%", premium: "2%", enterprise: "0%" },
                                     { feature: "Product Listings", free: "Unlimited", premium: "Unlimited", enterprise: "Unlimited" },
                                     { feature: "Premium Badge", free: false, premium: true, enterprise: true },

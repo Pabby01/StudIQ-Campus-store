@@ -15,7 +15,7 @@ export default function Footer() {
                             <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
                                 <span className="text-white font-bold text-lg">S</span>
                             </div>
-                            <span className="text-xl font-bold text-black">StudiQ Store</span>
+                            <span className="text-xl font-bold text-black">StudIQ Store</span>
                         </div>
                         <p className="text-muted-text text-sm leading-relaxed">
                             The premier decentralized marketplace for students. Buy, sell, and trade campus essentials with crypto or cash.
@@ -45,6 +45,7 @@ export default function Footer() {
                             <li><Link href="/search?category=services" className="hover:text-primary-blue transition-colors">Campus Services</Link></li>
                             <li><Link href="/search?category=food" className="hover:text-primary-blue transition-colors">Food & Snacks</Link></li>
                             <li><Link href="/search" className="hover:text-primary-blue transition-colors">All Products</Link></li>
+                            <li><Link href="/pricing" className="hover:text-primary-blue transition-colors font-semibold">Pricing & Plans</Link></li>
                         </ul>
                     </div>
 
@@ -66,11 +67,11 @@ export default function Footer() {
                         <ul className="space-y-4 text-sm text-muted-text">
                             <li className="flex items-start gap-3">
                                 <MapPin className="w-5 h-5 text-primary-blue shrink-0" />
-                                <span>123 University Ave,<br />San Francisco, CA 94105</span>
+                                <span>Federal University of Agriculture<br />Ogun, Nigeria</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <Phone className="w-5 h-5 text-primary-blue shrink-0" />
-                                <span>+1 (555) 123-4567</span>
+                                <span>+234 902 025 0260</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <Mail className="w-5 h-5 text-primary-blue shrink-0" />
@@ -82,7 +83,7 @@ export default function Footer() {
 
                 {/* Bottom Bar */}
                 <div className="border-t border-border-gray pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-text">
-                    <p>&copy; {new Date().getFullYear()} StudiQ Campus Store. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} StudIQ Campus Store. All rights reserved.</p>
                     <div className="flex gap-6">
                         <Link href="#" className="hover:text-black transition-colors">Privacy Policy</Link>
                         <Link href="#" className="hover:text-black transition-colors">Terms of Service</Link>

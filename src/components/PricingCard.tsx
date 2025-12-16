@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Crown, Zap } from "lucide-react";
+import { Check, Crown, Zap, Store } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 
@@ -9,6 +9,7 @@ interface PricingCardProps {
     displayName: string;
     price: number;
     feePercentage: number;
+    maxStores?: number;
     features: string[];
     popular?: boolean;
     buttonText: string;
@@ -20,6 +21,7 @@ export default function PricingCard({
     displayName,
     price,
     feePercentage,
+    maxStores,
     features,
     popular = false,
     buttonText,
@@ -43,6 +45,15 @@ export default function PricingCard({
             )}
 
             <div className="text-center mb-6">
+                {maxStores && (
+                    <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-200">
+                        <Store className="w-5 h-5 text-primary-blue" />
+                        <span className="text-xl font-bold text-primary-blue">{maxStores}</span>
+                        <span className="text-sm font-medium text-gray-700">
+                            {maxStores === 1 ? 'Store' : 'Stores'}
+                        </span>
+                    </div>
+                )}
                 <h3 className="text-2xl font-bold text-black mb-2 flex items-center justify-center gap-2">
                     {displayName}
                     {isPremium && <Crown className="w-5 h-5 text-yellow-500" />}

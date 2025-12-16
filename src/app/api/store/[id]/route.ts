@@ -10,11 +10,11 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
     .eq("id", params.id)
     .single();
 
-  if (error) {
-    return Response.json({ error: error.message }, { status: 404 });
+  if (error || !data) {
+    return Response.json({ error: "Store not found" }, { status: 404 });
   }
 
-  return Response.json(data);
+  return Response.json({ store: data });
 }
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {

@@ -1,6 +1,7 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { createStoreSchema } from "@/lib/validators";
 import { encodeGeohash } from "@/lib/geohash";
+import { canCreateStore } from "@/lib/storeLimit";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -11,6 +12,22 @@ export async function POST(req: Request) {
     return Response.json(
       { ok: false, error: "Wallet address required" },
       { status: 401 }
+    );
+  }
+
+  // Check store creation limit
+  const limitCheck = await canCreateStore(address);
+  if (!limitCheck.allowed) {
+    return Response.json(
+      {
+        ok: false,
+        error: `Store limit reached. You can create ${limitCheck.maxAllowed} store(s) on the ${limitCheck.planName} plan.`,
+        limitReached: true,
+        currentCount: limitCheck.currentCount,
+        maxAllowed: limitCheck.maxAllowed,
+        planName: limitCheck.planName
+      },
+      { status: 403 }
     );
   }
 

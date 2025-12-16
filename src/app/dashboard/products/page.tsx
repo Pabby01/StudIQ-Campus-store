@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import ProductForm from "@/components/ProductForm";
 import ProductCard from "@/components/ProductCard";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { Plus, Package, Loader2 } from "lucide-react";
+import { Plus, Package, Loader2, Edit } from "lucide-react";
 import { useWallet } from "@solana/react-hooks";
 import { useToast } from "@/hooks/useToast";
 
@@ -26,6 +27,7 @@ type Product = {
 };
 
 export default function DashboardProductsPage() {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [stores, setStores] = useState<Store[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -221,6 +223,12 @@ export default function DashboardProductsPage() {
                 <div key={product.id} className="relative group">
                   <ProductCard p={productWithOwner} />
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-20">
+                    <Button variant="outline" size="sm" onClick={(e) => {
+                      e.preventDefault();
+                      router.push(`/dashboard/products/edit/${product.id}`);
+                    }}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
                     <Button variant="danger" size="sm" onClick={(e) => {
                       e.preventDefault();
                       handleDeleteProduct(product.id);

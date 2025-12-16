@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/react-hooks";
 import StoreForm from "@/components/StoreForm";
 import Button from "@/components/ui/Button";
@@ -8,6 +9,7 @@ import Card from "@/components/ui/Card";
 import { Store, Plus, MapPin, Edit, Loader2 } from "lucide-react";
 
 export default function DashboardStorePage() {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +107,11 @@ export default function DashboardStorePage() {
                       <span>Location: {store.lat}, {store.lon}</span>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/dashboard/store/edit/${store.id}`)}
+                  >
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
                   </Button>

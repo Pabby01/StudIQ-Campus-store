@@ -27,6 +27,8 @@ export default function DashboardSettingsPage() {
   const searchParams = useSearchParams();
   const wallet = useWallet();
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [storeLimit, setStoreLimit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null);
 
@@ -35,6 +37,8 @@ export default function DashboardSettingsPage() {
   useEffect(() => {
     if (address) {
       fetchSubscription();
+      fetchProfile();
+      fetchStoreLimit();
     }
   }, [address]);
 
@@ -56,6 +60,30 @@ export default function DashboardSettingsPage() {
       console.error("Failed to fetch subscription:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProfile = async () => {
+    if (!address) return;
+
+    try {
+      const res = await fetch(`/api/profile?address=${address}`);
+      const data = await res.json();
+      setProfile(data.profile);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    }
+  };
+
+  const fetchStoreLimit = async () => {
+    if (!address) return;
+
+    try {
+      const res = await fetch(`/api/store/check-limit?address=${address}`);
+      const data = await res.json();
+      setStoreLimit(data);
+    } catch (error) {
+      console.error("Failed to fetch store limit:", error);
     }
   };
 
@@ -194,19 +222,136 @@ export default function DashboardSettingsPage() {
           )}
         </Card>
 
+        {/* Store Management */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-black mb-4">Store Management</h3>
+          {storeLimit ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-text">Stores Created</p>
+                  <p className="text-2xl font-bold text-black">
+                    {storeLimit.currentCount} / {storeLimit.maxAllowed}
+                  </p>
+                  <p className="text-xs text-muted-text mt-1">{storeLimit.planName} Plan</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-medium mb-2">
+                    {storeLimit.percentage}% Used
+                  </div>
+                  <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${storeLimit.percentage >= 100
+                          ? "bg-red-500"
+                          : storeLimit.percentage >= 80
+                            ? "bg-yellow-500"
+                            : "bg-green-500"
+                        }`}
+                      style={{ width: `${Math.min(storeLimit.percentage, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {!storeLimit.allowed && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-900 font-medium mb-2">
+                    Store Limit Reached
+                  </p>
+                  <p className="text-sm text-amber-700 mb-3">
+                    You've created the maximum number of stores allowed on the {storeLimit.planName} plan.
+                  </p>
+                  {storeLimit.planName === "Free" && (
+                    <Button variant="primary" size="sm" onClick={() => router.push("/pricing")}>
+                      Upgrade to Create More Stores
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {storeLimit.isNearLimit && storeLimit.allowed && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-900">
+                    You're near your store limit. Consider upgrading for more capacity.
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-muted-text">Loading store information...</p>
+          )}
+        </Card>
+
         {/* Account Information */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-black mb-4">Account Information</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Wallet Address
-              </label>
-              <div className="bg-gray-50 rounded-lg p-3 font-mono text-sm break-all">
-                {address}
+          {profile ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                    {profile.name || "Not set"}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                    {profile.email || "Not set"}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">School</label>
+                  <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                    {profile.school || "Not set"}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Campus</label>
+                  <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                    {profile.campus || "Not set"}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
+                  <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                    {profile.level || "Not set"}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                    {profile.phone || "Not set"}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Wallet Address
+                </label>
+                <div className="bg-gray-50 rounded-lg p-3 font-mono text-xs break-all">
+                  {address}
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/dashboard/settings/edit-profile")}
+              >
+                Edit Profile
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Wallet Address
+                </label>
+                <div className="bg-gray-50 rounded-lg p-3 font-mono text-sm break-all">
+                  {address}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </Card>
 
         {/* Billing History (Placeholder) */}

@@ -34,11 +34,14 @@ export async function POST(req: Request) {
             );
         }
 
-        // Verify transaction (buyer sends TO seller)
+        // Platform wallet receives all payments
+        const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET || "Hx912yR4vDEwUqQNUZcaxwsjmE8B6Lq6grokrPh8a6Js";
+
+        // Verify transaction (buyer sends TO platform wallet)
         const verification = await verifyTransaction(
             txSignature,
             order.buyer_address,                   // FROM buyer
-            (order.stores as any).owner_address,   // TO seller (payTo)
+            platformWallet,                         // TO platform wallet
             order.amount
         );
 
