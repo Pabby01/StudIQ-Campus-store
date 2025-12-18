@@ -3,15 +3,16 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useWalletConnection, useConnectWallet } from "@solana/react-hooks";
-import { ExternalLink, Smartphone, Wallet } from "lucide-react";
-import { isMobileDevice, isIOS, getWalletDeepLink } from "@/lib/mobileWallet";
+import { ExternalLink, Smartphone, Wallet, AlertCircle } from "lucide-react";
+import { isMobileDevice, isIOS } from "@/lib/mobileWallet";
+import { useState } from "react";
 
 interface WalletModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-// Mobile wallet options that should always be shown on mobile
+// Mobile wallet options
 const MOBILE_WALLETS = [
     {
         id: 'phantom',
@@ -21,7 +22,16 @@ const MOBILE_WALLETS = [
             ios: 'https://apps.apple.com/app/phantom-crypto-wallet/id1598432977',
             android: 'https://play.google.com/store/apps/details?id=app.phantom'
         },
-        deepLink: 'phantom://'
+        // Phantom's universal link format for connection
+        getConnectUrl: (appUrl: string) => {
+            const params = new URLSearchParams({
+                dapp_encryption_public_key: 'temp_key',
+                cluster: 'devnet',
+                app_url: appUrl,
+                redirect_link: appUrl
+            });
+            return `https://phantom.app/ul/browse/${encodeURIComponent(appUrl)}?${params.toString()}`;
+        }
     },
     {
         id: 'solflare',
@@ -31,13 +41,17 @@ const MOBILE_WALLETS = [
             ios: 'https://apps.apple.com/app/solflare/id1580902717',
             android: 'https://play.google.com/store/apps/details?id=com.solflare.mobile'
         },
-        deepLink: 'solflare://'
+        getConnectUrl: (appUrl: string) => {
+            // Solflare's universal link for browsing
+            return `https://solflare.com/ul/browse/${encodeURIComponent(appUrl)}`;
+        }
     }
 ];
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     const { connectors } = useWalletConnection();
     const connectWallet = useConnectWallet();
+    const [showMobileInstructions, setShowMobileInstructions] = useState(false);
 
     const handleConnect = async (connectorId: string) => {
         try {
@@ -49,28 +63,77 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     };
 
     const handleMobileWalletClick = (wallet: typeof MOBILE_WALLETS[0]) => {
-        // Try to open the wallet app via deep link
-        const deepLink = wallet.deepLink + 'browse/' + encodeURIComponent(window.location.href);
+        const appUrl = window.location.origin;
+        const connectUrl = wallet.getConnectUrl(appUrl);
 
-        // Attempt to open the app
-        window.location.href = deepLink;
+        // Open wallet app with connection URL
+        window.location.href = connectUrl;
 
-        // If app doesn't open after 1.5s, redirect to install page
-        const platform = isIOS() ? 'ios' : 'android';
-        setTimeout(() => {
-            const confirmOpen = confirm(
-                `If ${wallet.name} didn't open, you may need to install it. Would you like to go to the app store?`
-            );
-            if (confirmOpen) {
-                window.location.href = wallet.installUrl[platform];
-            }
-        }, 1500);
+        // Show instructions
+        setShowMobileInstructions(true);
     };
 
     if (!isOpen) return null;
 
     const isMobile = isMobileDevice();
     const hasDetectedWallets = connectors && connectors.length > 0;
+
+    // Mobile instructions view
+    if (isMobile && showMobileInstructions) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <Card className="w-full max-w-md p-6">
+                    <div className="text-center">
+                        <Smartphone className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+                        <h2 className="text-xl font-bold text-black mb-3">Complete Connection in Wallet App</h2>
+                        <div className="space-y-3 text-left mb-6">
+                            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">1</div>
+                                <div className="text-sm">
+                                    <p className="font-semibold text-blue-900">Wallet app should have opened</p>
+                                    <p className="text-blue-700">If not, make sure the wallet is installed</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">2</div>
+                                <div className="text-sm">
+                                    <p className="font-semibold text-blue-900">Approve the connection</p>
+                                    <p className="text-blue-700">Tap "Connect" or "Approve" in your wallet</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">3</div>
+                                <div className="text-sm">
+                                    <p className="font-semibold text-blue-900">Return to browser</p>
+                                    <p className="text-blue-700">Come back to this page after connecting</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Button
+                                variant="primary"
+                                className="w-full"
+                                onClick={() => {
+                                    setShowMobileInstructions(false);
+                                    onClose();
+                                }}
+                            >
+                                I've Connected - Continue
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => setShowMobileInstructions(false)}
+                            >
+                                Try Different Wallet
+                            </Button>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -88,13 +151,16 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 </div>
 
                 {isMobile && (
-                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                         <div className="flex items-start gap-3">
-                            <Smartphone className="w-5 h-5 text-blue-600 mt-0.5" />
+                            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
                             <div className="text-sm">
-                                <p className="font-semibold text-blue-900 mb-1">Mobile Wallet Connection</p>
-                                <p className="text-blue-700">
-                                    Tap a wallet below to open the app. Make sure you have it installed first.
+                                <p className="font-semibold text-amber-900 mb-1">Mobile Wallet Connection</p>
+                                <p className="text-amber-700">
+                                    This will open your wallet app. Make sure to:<br />
+                                    • Have the wallet app installed<br />
+                                    • Approve the connection request<br />
+                                    • Return to this browser tab after
                                 </p>
                             </div>
                         </div>
@@ -151,13 +217,18 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                                     <div>
                                         <div className="font-semibold text-black">{wallet.name}</div>
                                         <div className="text-xs text-muted-text">
-                                            Tap to open app
+                                            Open app to connect
                                         </div>
                                     </div>
                                 </div>
                                 <Smartphone className="w-5 h-5 text-muted-text" />
                             </Button>
                         ))}
+
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
+                            <p className="font-semibold mb-1">Don't have a wallet installed?</p>
+                            <p>Download {MOBILE_WALLETS[0].name} or {MOBILE_WALLETS[1].name} from your app store first, then come back here to connect.</p>
+                        </div>
                     </div>
                 )}
 
@@ -197,7 +268,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 <div className="mt-6 pt-6 border-t border-gray-200">
                     <p className="text-xs text-center text-muted-text">
                         {isMobile
-                            ? "After opening your wallet app, return to this page once connected"
+                            ? "The wallet app will open in a new window"
                             : "By connecting, you agree to our Terms of Service"}
                     </p>
                 </div>
