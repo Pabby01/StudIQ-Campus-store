@@ -14,7 +14,7 @@ interface WalletModalProps {
 }
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
-    const { wallets, select, connect, connected } = useWallet();
+    const { wallets, select, connect, connected, publicKey } = useWallet();
     const { setVisible } = useWalletModal();
     const isMobile = isMobileDevice();
 
@@ -31,6 +31,45 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
             // Connect
             await connect();
+
+            // Check if profile exists and is complete
+            if (publicKey) {
+                const address = publicKey.toString();
+                console.log("[WalletModal] Checking profile for:", address);
+
+                try {
+                    const profileRes = await fetch(`/api/profile/get?address=${address}`, {
+                        cache: "no-store",
+                        headers: { "Cache-Control": "no-cache" }
+                    });
+
+                    if (profileRes.ok) {
+                        const profile = await profileRes.json();
+                        console.log("[WalletModal] Profile found:", profile);
+
+                        // Check if profile is incomplete
+                        if (!profile || !profile.name || !profile.school || !profile.campus) {
+                            console.log("[WalletModal] Incomplete profile, redirecting to onboarding");
+                            onClose();
+                            window.location.href = "/onboarding";
+                            return;
+                        }
+                    } else {
+                        // Profile doesn't exist
+                        console.log("[WalletModal] Profile not found, redirecting to onboarding");
+                        onClose();
+                        window.location.href = "/onboarding";
+                        return;
+                    }
+                } catch (error) {
+                    console.error("[WalletModal] Profile check failed:", error);
+                    // On error, redirect to onboarding to be safe
+                    onClose();
+                    window.location.href = "/onboarding";
+                    return;
+                }
+            }
+
             onClose();
         } catch (error) {
             console.error("Connection failed:", error);
