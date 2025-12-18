@@ -1,3 +1,4 @@
+
 import {
     address,
     appendTransactionMessageInstruction,
@@ -20,6 +21,7 @@ import {
 } from '@solana/kit';
 import { getTransferSolInstruction } from '@solana-program/system';
 import { getTransferInstruction } from '@solana-program/token';
+import { VersionedTransaction } from '@solana/web3.js';
 
 const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
 const SOLANA_WSS_URL = SOLANA_RPC_URL.replace("http", "ws"); // Simple replacement for WSS
@@ -77,7 +79,15 @@ export async function createTransferTransaction(
     );
 
     // Compile the transaction
-    return compileTransaction(transactionMessage);
+    const compiledTx = compileTransaction(transactionMessage);
+
+    // Convert compiled transaction to VersionedTransaction for wallet compatibility
+    // This ensures the transaction has a .serialize() method that wallets expect
+    const base64Tx = getBase64EncodedWireTransaction(compiledTx) as string;
+    const txBuffer = Buffer.from(base64Tx, 'base64');
+    const versionedTx = VersionedTransaction.deserialize(txBuffer);
+
+    return versionedTx;
 }
 
 export const USDC_MINT = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // Devnet USDC
@@ -150,7 +160,14 @@ export async function createSplTransferTransaction(
     );
 
     // Compile the transaction
-    return compileTransaction(transactionMessage);
+    const compiledTx = compileTransaction(transactionMessage);
+
+    // Convert compiled transaction to VersionedTransaction for wallet compatibility
+    const base64Tx = getBase64EncodedWireTransaction(compiledTx) as string;
+    const txBuffer = Buffer.from(base64Tx, 'base64');
+    const versionedTx = VersionedTransaction.deserialize(txBuffer);
+
+    return versionedTx;
 }
 
 /**
