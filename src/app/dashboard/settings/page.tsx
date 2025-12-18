@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/react-hooks";
 import Card from "@/components/ui/Card";
@@ -23,6 +23,14 @@ type SubscriptionData = {
 };
 
 export default function DashboardSettingsPage() {
+  return (
+    <Suspense fallback={<div>Loading settings...</div>}>
+      <SettingsContent />
+    </Suspense>
+  );
+}
+
+function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const wallet = useWallet();
@@ -242,10 +250,10 @@ export default function DashboardSettingsPage() {
                   <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className={`h-full ${storeLimit.percentage >= 100
-                          ? "bg-red-500"
-                          : storeLimit.percentage >= 80
-                            ? "bg-yellow-500"
-                            : "bg-green-500"
+                        ? "bg-red-500"
+                        : storeLimit.percentage >= 80
+                          ? "bg-yellow-500"
+                          : "bg-green-500"
                         }`}
                       style={{ width: `${Math.min(storeLimit.percentage, 100)}%` }}
                     />

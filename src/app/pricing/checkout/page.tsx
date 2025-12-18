@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/react-hooks";
 import Card from "@/components/ui/Card";
@@ -10,6 +10,14 @@ import { useToast } from "@/hooks/useToast";
 import { SUBSCRIPTION_PLANS, convertUSDtoSOL, formatSOL, formatUSD, type PlanName, type BillingCycle } from "@/lib/pricing";
 
 export default function CheckoutPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-soft-gray-bg flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+            <CheckoutContent />
+        </Suspense>
+    );
+}
+
+function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const wallet = useWallet();
@@ -126,8 +134,8 @@ export default function CheckoutPage() {
                                 onClick={() => setCycle('monthly')}
                                 disabled={processing}
                                 className={`p-4 rounded-lg border-2 transition-all ${cycle === 'monthly'
-                                    ? 'border-primary-blue bg-blue-50'
-                                    : 'border-gray-200 hover:border-gray-300'
+                                        ? 'border-primary-blue bg-blue-50'
+                                        : 'border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 <div className="font-semibold text-black">Monthly</div>
@@ -137,8 +145,8 @@ export default function CheckoutPage() {
                                 onClick={() => setCycle('yearly')}
                                 disabled={processing}
                                 className={`p-4 rounded-lg border-2 transition-all relative ${cycle === 'yearly'
-                                    ? 'border-primary-blue bg-blue-50'
-                                    : 'border-gray-200 hover:border-gray-300'
+                                        ? 'border-primary-blue bg-blue-50'
+                                        : 'border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 {planDetails.yearly < planDetails.monthly * 12 && (

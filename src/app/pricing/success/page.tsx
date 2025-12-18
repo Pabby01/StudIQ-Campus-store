@@ -1,12 +1,21 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { CheckCircle, Crown, ArrowRight } from "lucide-react";
+import { CheckCircle, Crown, ArrowRight, Loader2 } from "lucide-react";
 import { SUBSCRIPTION_PLANS, type PlanName, type BillingCycle } from "@/lib/pricing";
 
-export default function SuccessPage() {
+export default function SubscriptionSuccessPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-soft-gray-bg flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+            <SuccessContent />
+        </Suspense>
+    );
+}
+
+function SuccessContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -14,6 +23,7 @@ export default function SuccessPage() {
     const cycle = (searchParams?.get('cycle') || 'monthly') as BillingCycle;
 
     const planDetails = SUBSCRIPTION_PLANS[plan];
+    const price = planDetails[cycle];
 
     return (
         <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">

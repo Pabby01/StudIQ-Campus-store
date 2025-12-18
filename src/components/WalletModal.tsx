@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { X, ExternalLink, CheckCircle } from "lucide-react";
-import { useWalletConnection, useConnectWallet } from "@solana/react-hooks";
 import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import { useWalletConnection, useConnectWallet } from "@solana/react-hooks";
+import { ExternalLink, Smartphone, Wallet } from "lucide-react";
+import { isMobileDevice, isIOS } from "@/lib/mobileWallet";
 
 interface WalletModalProps {
     isOpen: boolean;
@@ -12,204 +13,134 @@ interface WalletModalProps {
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     const { connectors } = useWalletConnection();
-    const connect = useConnectWallet();
-    const [connecting, setConnecting] = useState<string | null>(null);
-
-    if (!isOpen) return null;
+    const connectWallet = useConnectWallet();
 
     const handleConnect = async (connectorId: string) => {
-        setConnecting(connectorId);
         try {
-            await connect(connectorId);
-            // Redirect to connect page for authentication
-            window.location.href = "/connect";
+            await connectWallet(connectorId);
+            onClose();
         } catch (error) {
             console.error("Connection failed:", error);
-            setConnecting(null);
         }
     };
 
-    // Wallet metadata (icons and info)
-    const walletInfo: Record<string, { name: string; icon: string; installUrl: string }> = {
-        phantom: {
-            name: "Phantom",
-            icon: "https://phantom.app/img/phantom-logo.svg",
-            installUrl: "https://phantom.app/download",
-        },
-        solflare: {
-            name: "Solflare",
-            icon: "https://solflare.com/assets/logo.svg",
-            installUrl: "https://solflare.com/download",
-        },
-        backpack: {
-            name: "Backpack",
-            icon: "https://www.backpack.app/favicon.ico",
-            installUrl: "https://www.backpack.app/downloads",
-        },
-        coinbase: {
-            name: "Coinbase Wallet",
-            icon: "https://www.coinbase.com/favicon.ico",
-            installUrl: "https://www.coinbase.com/wallet/downloads",
-        },
-    };
+    if (!isOpen) return null;
 
-    // Detect installed wallets
-    const installedWallets = connectors.map((c) => c.id);
+    const isMobile = isMobileDevice();
+    const hasWallets = connectors && connectors.length > 0;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-border-gray">
-                    <h2 className="text-2xl font-bold text-black">Connect Wallet</h2>
+            <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-black">
+                        {isMobile ? "Connect Mobile Wallet" : "Connect Wallet"}
+                    </h2>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-soft-gray-bg rounded-lg transition-colors"
+                        className="text-muted-text hover:text-black transition-colors"
                     >
-                        <X className="w-5 h-5 text-muted-text" />
+                        ✕
                     </button>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 space-y-3 overflow-y-auto max-h-[calc(80vh-88px)]">
-                    <p className="text-sm text-muted-text mb-4">
-                        Choose your preferred Solana wallet to connect
-                    </p>
-
-                    {/* Installed Wallets */}
-                    {connectors.length > 0 && (
-                        <div className="space-y-2">
-                            <p className="text-xs font-semibold text-muted-text uppercase mb-2">
-                                Detected Wallets
-                            </p>
-                            {connectors.map((connector) => {
-                                const info = walletInfo[connector.id.toLowerCase()] || {
-                                    name: connector.id,
-                                    icon: "",
-                                    installUrl: "",
-                                };
-
-                                return (
-                                    <button
-                                        key={connector.id}
-                                        onClick={() => handleConnect(connector.id)}
-                                        disabled={connecting !== null}
-                                        className="w-full flex items-center gap-4 p-4 bg-soft-gray-bg hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
-                                    >
-                                        {/* Wallet Icon */}
-                                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-                                            {info.icon ? (
-                                                <img
-                                                    src={info.icon}
-                                                    alt={info.name}
-                                                    className="w-6 h-6"
-                                                    onError={(e) => {
-                                                        e.currentTarget.style.display = "none";
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div className="w-6 h-6 bg-primary-blue rounded" />
-                                            )}
-                                        </div>
-
-                                        {/* Wallet Name */}
-                                        <div className="flex-1 text-left">
-                                            <p className="font-semibold text-black">{info.name}</p>
-                                            <p className="text-xs text-green-600 flex items-center gap-1">
-                                                <CheckCircle className="w-3 h-3" />
-                                                Installed
-                                            </p>
-                                        </div>
-
-                                        {/* Connecting State */}
-                                        {connecting === connector.id && (
-                                            <div className="w-5 h-5 border-2 border-primary-blue border-t-transparent rounded-full animate-spin" />
-                                        )}
-                                    </button>
-                                );
-                            })}
+                {isMobile && (
+                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-start gap-3">
+                            <Smartphone className="w-5 h-5 text-blue-600 mt-0.5" />
+                            <div className="text-sm">
+                                <p className="font-semibold text-blue-900 mb-1">Mobile Wallet Detected</p>
+                                <p className="text-blue-700">
+                                    Tap a wallet below to open the app. If you don't have a wallet installed,
+                                    we'll redirect you to download it.
+                                </p>
+                            </div>
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* Not Installed Wallets */}
-                    {Object.entries(walletInfo)
-                        .filter(([id]) => !installedWallets.includes(id))
-                        .map(([id, info]) => (
-                            <div
-                                key={id}
-                                className="w-full flex items-center gap-4 p-4 bg-soft-gray-bg rounded-xl opacity-60"
+                {!hasWallets ? (
+                    <div className="text-center py-8">
+                        <Wallet className="w-16 h-16 text-muted-text mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-black mb-2">No Wallets Found</h3>
+                        <p className="text-muted-text mb-6">
+                            {isMobile
+                                ? "Install a Solana wallet app to get started"
+                                : "Install a Solana wallet extension to get started"}
+                        </p>
+
+                        <div className="space-y-3">
+                            <a
+                                href={isIOS()
+                                    ? "https://apps.apple.com/app/phantom-crypto-wallet/id1598432977"
+                                    : isMobile
+                                        ? "https://play.google.com/store/apps/details?id=app.phantom"
+                                        : "https://phantom.app/download"
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                             >
-                                {/* Wallet Icon */}
-                                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-                                    {info.icon ? (
-                                        <img
-                                            src={info.icon}
-                                            alt={info.name}
-                                            className="w-6 h-6"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display = "none";
-                                            }}
-                                        />
-                                    ) : (
-                                        <div className="w-6 h-6 bg-gray-300 rounded" />
-                                    )}
-                                </div>
+                                <span>Get Phantom Wallet</span>
+                                <ExternalLink className="w-4 h-4" />
+                            </a>
 
-                                {/* Wallet Name */}
-                                <div className="flex-1 text-left">
-                                    <p className="font-semibold text-black">{info.name}</p>
-                                    <p className="text-xs text-muted-text">Not installed</p>
-                                </div>
-
-                                {/* Install Link */}
-                                <a
-                                    href={info.installUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary-blue hover:text-accent-blue text-sm font-medium flex items-center gap-1"
-                                >
-                                    Install
-                                    <ExternalLink className="w-3 h-3" />
-                                </a>
-                            </div>
-                        ))}
-
-                    {/* No Wallets Detected */}
-                    {connectors.length === 0 && (
-                        <div className="text-center py-8">
-                            <p className="text-muted-text mb-4">
-                                No Solana wallets detected in your browser
-                            </p>
-                            <p className="text-sm text-muted-text mb-6">
-                                Install a wallet to get started
-                            </p>
-                            <div className="space-y-2">
-                                {Object.entries(walletInfo).map(([id, info]) => (
-                                    <a
-                                        key={id}
-                                        href={info.installUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block"
-                                    >
-                                        <Button variant="outline" className="w-full">
-                                            Install {info.name}
-                                            <ExternalLink className="w-4 h-4 ml-2" />
-                                        </Button>
-                                    </a>
-                                ))}
-                            </div>
+                            <a
+                                href={isIOS()
+                                    ? "https://apps.apple.com/app/solflare/id1580902717"
+                                    : isMobile
+                                        ? "https://play.google.com/store/apps/details?id=com.solflare.mobile"
+                                        : "https://solflare.com/download"
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity"
+                            >
+                                <span>Get Solflare Wallet</span>
+                                <ExternalLink className="w-4 h-4" />
+                            </a>
                         </div>
-                    )}
-                </div>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {connectors.map((connector) => (
+                            <Button
+                                key={connector.id}
+                                variant="outline"
+                                className="w-full justify-between text-left"
+                                onClick={() => handleConnect(connector.id)}
+                            >
+                                <div className="flex items-center gap-3">
+                                    {connector.icon && (
+                                        <img
+                                            src={connector.icon}
+                                            alt={connector.name}
+                                            className="w-8 h-8"
+                                        />
+                                    )}
+                                    <div>
+                                        <div className="font-semibold text-black">{connector.name}</div>
+                                        {isMobile && (
+                                            <div className="text-xs text-muted-text">
+                                                Tap to open app
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                {isMobile && <Smartphone className="w-5 h-5 text-muted-text" />}
+                            </Button>
+                        ))}
+                    </div>
+                )}
 
-                {/* Footer */}
-                <div className="p-6 border-t border-border-gray bg-soft-gray-bg">
-                    <p className="text-xs text-muted-text text-center">
-                        By connecting your wallet, you agree to our Terms of Service
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                    <p className="text-xs text-center text-muted-text">
+                        {isMobile
+                            ? "Make sure you have the wallet app installed on your device"
+                            : "By connecting, you agree to our Terms of Service"}
                     </p>
                 </div>
-            </div>
+            </Card>
         </div>
     );
 }

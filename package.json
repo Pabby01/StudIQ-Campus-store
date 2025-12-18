@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@solana-mobile/wallet-adapter-mobile": "^2.2.5",
     "@solana/client": "^1.0.0",
     "@solana/kit": "^5.0.0",
     "@solana/react-hooks": "^1.0.1",
