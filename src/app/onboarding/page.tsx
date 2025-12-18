@@ -25,32 +25,43 @@ export default function OnboardingPage() {
       return;
     }
 
+    console.log("[Onboarding] Starting profile creation for:", address);
     setLoading(true);
     const formData = new FormData(e.currentTarget);
+
+    const profileData = {
+      address,
+      name: formData.get("name"),
+      email: formData.get("email"),
+      school: formData.get("school"),
+      campus: formData.get("campus"),
+      level: formData.get("level"),
+      phone: formData.get("phone"),
+    };
+
+    console.log("[Onboarding] Profile data:", profileData);
 
     try {
       const res = await fetch("/api/profile/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          address,
-          name: formData.get("name"),
-          email: formData.get("email"),
-          school: formData.get("school"),
-          campus: formData.get("campus"),
-          level: formData.get("level"),
-          phone: formData.get("phone"),
-        }),
+        body: JSON.stringify(profileData),
       });
 
+      console.log("[Onboarding] Profile update response status:", res.status);
+
       if (res.ok) {
+        const data = await res.json();
+        console.log("[Onboarding] Profile created successfully:", data);
         toast.success("Welcome!", "Your profile has been created");
         router.push("/");
       } else {
         const error = await res.json();
+        console.error("[Onboarding] Profile creation failed:", error);
         toast.error("Failed to save profile", error.error || "Please try again");
       }
     } catch (error) {
+      console.error("[Onboarding] Profile creation error:", error);
       toast.error("Error", "Failed to save profile");
     } finally {
       setLoading(false);
