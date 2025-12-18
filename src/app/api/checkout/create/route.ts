@@ -27,6 +27,39 @@ export async function POST(req: Request) {
     }
 
     const supabase = getSupabaseServerClient();
+
+    // Ensure buyer profile exists before creating order (foreign key constraint)
+    const { data: buyerProfile } = await supabase
+      .from("profiles")
+      .select("address")
+      .eq("address", parsed.data.buyer)
+      .maybeSingle();
+
+    if (!buyerProfile) {
+      console.log("[Checkout Create] Buyer profile not found, creating default profile for:", parsed.data.buyer);
+      // Create a minimal profile to satisfy foreign key constraint
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert({
+          address: parsed.data.buyer,
+          name: parsed.data.deliveryDetails?.name || "User",
+          email: parsed.data.buyerEmail || null,
+          school: null,
+          campus: null,
+          level: null,
+          phone: null,
+        });
+
+      if (profileError) {
+        console.error("[Checkout Create] Failed to create buyer profile:", profileError);
+        return Response.json(
+          { ok: false, error: "Failed to create user profile. Please try again." },
+          { status: 500 }
+        );
+      }
+      console.log("[Checkout Create] Buyer profile created successfully");
+    }
+
     const items = parsed.data.items;
 
     // Step 1: Fetch product details
