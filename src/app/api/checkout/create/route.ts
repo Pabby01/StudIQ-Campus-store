@@ -3,17 +3,21 @@ import { checkoutCreateSchema } from "@/lib/validators";
 
 export async function POST(req: Request) {
   try {
+    console.log("[Checkout Create] Starting checkout process");
     const body = await req.json();
-    // Removed manual legacy address check. We rely on Zod schema validation below.
+    console.log("[Checkout Create] Request body:", JSON.stringify(body, null, 2));
 
     const parsed = checkoutCreateSchema.safeParse(body);
 
     if (!parsed.success) {
+      console.error("[Checkout Create] Validation failed:", parsed.error);
       return Response.json(
         { ok: false, error: "Invalid request data", details: parsed.error },
         { status: 400 }
       );
     }
+
+    console.log("[Checkout Create] Validation passed, parsed data:", parsed.data);
 
     if ((!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return Response.json(
@@ -26,6 +30,7 @@ export async function POST(req: Request) {
     const items = parsed.data.items;
 
     // Step 1: Fetch product details
+    console.log("[Checkout Create] Fetching products:", items.map(i => i.productId));
     const { data: prods, error: prodsError } = await supabase
       .from("products")
       .select("id, price, store_id, inventory")
@@ -35,11 +40,13 @@ export async function POST(req: Request) {
       );
 
     if (prodsError || !prods || prods.length !== items.length) {
+      console.error("[Checkout Create] Product fetch error:", prodsError);
       return Response.json(
         { ok: false, error: "One or more products not found" },
         { status: 400 }
       );
     }
+    console.log("[Checkout Create] Products found:", prods.length);
 
     // Step 2: Check inventory availability
     for (const item of items) {
@@ -93,6 +100,7 @@ export async function POST(req: Request) {
         });
       }
     } catch (error) {
+      console.error("[Checkout Create] Reservation error:", error);
       // Rollback all reservations on failure
       for (const reservation of reservations) {
         await supabase.rpc("release_reservation", {
@@ -177,6 +185,7 @@ export async function POST(req: Request) {
       .single();
 
     if (orderError || !newOrder) { // Use newOrder
+      console.error("[Checkout Create] Order creation error:", orderError);
       // Release reservations
       for (const reservation of reservations) {
         await supabase.rpc("release_reservation", {
@@ -187,10 +196,11 @@ export async function POST(req: Request) {
       // The instruction's rollback logic for inventory was different,
       // but the existing reservation release is more robust for this flow.
       return Response.json(
-        { ok: false, error: "Failed to create order" },
+        { ok: false, error: "Failed to create order", details: orderError?.message },
         { status: 500 }
       );
     }
+    console.log("[Checkout Create] Order created successfully:", newOrder.id);
 
     // Step 7: Create order items
     const itemsRows = items.map((i) => {

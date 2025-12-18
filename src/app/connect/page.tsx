@@ -42,10 +42,17 @@ export default function ConnectPage() {
           // New or incomplete user - go to onboarding
           router.push("/onboarding");
         }
+      } else {
+        // Profile doesn't exist (404) or other error - redirect to onboarding
+        console.log("Profile not found or error, redirecting to onboarding");
+        router.push("/onboarding");
       }
     } catch (error) {
       console.error("Profile check error:", error);
-      // Do not redirect to onboarding on network error
+      // Network error - redirect to onboarding to be safe
+      router.push("/onboarding");
+    } finally {
+      setChecking(false);
     }
   }
 

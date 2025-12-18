@@ -39,8 +39,40 @@ export async function POST(req: Request) {
     );
   }
 
-  const geohash = encodeGeohash(parsed.data.lat, parsed.data.lon);
+  // Ensure profile exists before creating store (foreign key constraint)
   const supabase = getSupabaseServerClient();
+
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("address")
+    .eq("address", address)
+    .maybeSingle();
+
+  if (!existingProfile) {
+    console.log("[Store Create] Profile not found, creating default profile for:", address);
+    // Create a minimal profile to satisfy foreign key constraint
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert({
+        address: address,
+        name: "User", // Default name, user should complete profile later
+        email: null,
+        school: null,
+        campus: null,
+        level: null,
+        phone: null,
+      });
+
+    if (profileError) {
+      console.error("[Store Create] Failed to create profile:", profileError);
+      return Response.json(
+        { ok: false, error: "Please complete your profile first before creating a store" },
+        { status: 400 }
+      );
+    }
+  }
+
+  const geohash = encodeGeohash(parsed.data.lat, parsed.data.lon);
 
   const { data, error } = await supabase.from("stores").insert({
     owner_address: address,
