@@ -3,7 +3,7 @@
 
 import { useCart } from "@/store/cart";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { createTransferTransaction, waitForConfirmation, broadcastTransaction } from "@/lib/solana";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -45,14 +45,14 @@ export default function CartPage() {
   async function checkout() {
     // If POD (or Pickup), we might not need wallet connected if we allow guest checkout, 
     // but the backend uses wallet address as ID. Let's keep wallet req for now for auth.
-    const userAddress = auth.address || (wallet.status === "connected" ? wallet.session?.account?.address.toString() : null);
+    const userAddress = auth.address || (wallet.connected ? wallet.publicKey?.toBase58() : null);
 
     if (!userAddress) {
       setError("Please connect your wallet first");
       return;
     }
 
-    if (paymentMethod === "solana" && wallet.status !== "connected") {
+    if (paymentMethod === "solana" && !wallet.connected) {
       setError("Wallet not connected for crypto payment");
       return;
     }
@@ -135,13 +135,13 @@ export default function CartPage() {
       );
 
       // Step 3: Sign and send transaction
-      if (wallet.status !== "connected" || !wallet.session?.signTransaction) {
+      if (!wallet.connected || !wallet.signTransaction) {
         throw new Error("Wallet does not support transaction signing");
       }
 
       // Use 'as any' to bypass strict type checks between legacy/versioned if needed
       // but VersionedTransaction is generally supported by modern adapters
-      const signedTx = await wallet.session.signTransaction(transaction as any);
+      const signedTx = await wallet.signTransaction(transaction as any);
 
       // Send transaction using our RPC connection to ensure devnet consistency
       const signature = await broadcastTransaction(signedTx);

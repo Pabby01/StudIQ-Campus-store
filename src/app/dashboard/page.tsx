@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import DashboardCard from "@/components/DashboardCard";
 import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw } from "lucide-react";
 import RevenueChart from "@/components/charts/RevenueChart";
@@ -35,7 +35,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const address = wallet.status === "connected" ? wallet.session.account.address.toString() : null;
+  const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
 
   useEffect(() => {
     if (address) {
@@ -87,7 +87,7 @@ export default function DashboardPage() {
     }
   }, [isBuyer]);
 
-  if (wallet.status !== "connected") {
+  if (!wallet.connected) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">

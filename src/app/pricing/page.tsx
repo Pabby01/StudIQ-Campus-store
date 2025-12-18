@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import PricingCard from "@/components/PricingCard";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -74,7 +74,7 @@ export default function PricingPage() {
     ];
 
     const handleSelectPlan = (planName: string) => {
-        if (wallet.status !== "connected") {
+        if (!wallet.connected) {
             router.push("/");
             return;
         }

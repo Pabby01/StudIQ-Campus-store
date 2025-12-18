@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Star, StarHalf, User } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useToast } from "@/hooks/useToast";
 
 type Review = {
@@ -43,7 +43,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (wallet.status !== "connected") {
+        if (!wallet.connected) {
             error("Error", "Please connect wallet to review");
             return;
         }
@@ -55,7 +55,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     productId,
-                    address: wallet.session?.account.address.toString(),
+                    address: wallet.publicKey?.toString(),
                     rating,
                     content,
                 }),
@@ -81,7 +81,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
             <h2 className="text-2xl font-bold text-black">Reviews ({reviews.length})</h2>
 
             {/* Review Form */}
-            {wallet.status === "connected" ? (
+            {wallet.connected ? (
                 <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl border border-border-gray space-y-4">
                     <h3 className="font-semibold text-lg">Write a Review</h3>
                     <div>

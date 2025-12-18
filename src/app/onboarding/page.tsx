@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
@@ -15,7 +15,7 @@ export default function OnboardingPage() {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
 
-  const address = wallet.status === "connected" ? wallet.session.account.address.toString() : null;
+  const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { ArrowLeft, Check, Crown, Loader2 } from "lucide-react";
@@ -32,7 +32,7 @@ function CheckoutContent() {
     const solPrice = convertUSDtoSOL(usdPrice);
 
     const handlePayment = async () => {
-        if (wallet.status !== 'connected') {
+        if (!wallet.connected) {
             toast.error('Please connect your wallet');
             return;
         }
@@ -40,7 +40,7 @@ function CheckoutContent() {
         setProcessing(true);
 
         try {
-            const userAddress = wallet.session.account.address;
+            const userAddress = wallet.publicKey;
 
             // Create subscription
             const response = await fetch('/api/subscription/checkout', {
@@ -71,7 +71,7 @@ function CheckoutContent() {
         }
     };
 
-    if (wallet.status !== 'connected') {
+    if (!wallet.connected) {
         return (
             <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
                 <Card className="p-8 text-center max-w-md">
@@ -134,8 +134,8 @@ function CheckoutContent() {
                                 onClick={() => setCycle('monthly')}
                                 disabled={processing}
                                 className={`p-4 rounded-lg border-2 transition-all ${cycle === 'monthly'
-                                        ? 'border-primary-blue bg-blue-50'
-                                        : 'border-gray-200 hover:border-gray-300'
+                                    ? 'border-primary-blue bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 <div className="font-semibold text-black">Monthly</div>
@@ -145,8 +145,8 @@ function CheckoutContent() {
                                 onClick={() => setCycle('yearly')}
                                 disabled={processing}
                                 className={`p-4 rounded-lg border-2 transition-all relative ${cycle === 'yearly'
-                                        ? 'border-primary-blue bg-blue-50'
-                                        : 'border-gray-200 hover:border-gray-300'
+                                    ? 'border-primary-blue bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 {planDetails.yearly < planDetails.monthly * 12 && (

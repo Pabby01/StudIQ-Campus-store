@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PremiumBadge from "@/components/PremiumBadge";
@@ -40,7 +40,7 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
   const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null);
 
-  const address = wallet.status === "connected" ? wallet.session.account.address.toString() : null;
+  const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
 
   useEffect(() => {
     if (address) {
@@ -99,7 +99,7 @@ function SettingsContent() {
     router.push(`/pricing`);
   };
 
-  if (wallet.status !== "connected") {
+  if (!wallet.connected) {
     return (
       <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
         <Card className="p-8 text-center">

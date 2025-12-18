@@ -1,37 +1,36 @@
 "use client";
 
-import { useConnectWallet, useDisconnectWallet, useWallet } from "@solana/react-hooks";
-import { useWalletConnection } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import Button from "@/components/ui/Button";
 
 export default function WalletBar() {
-  const wallet = useWallet();
-  const { connectors } = useWalletConnection();
-  const connect = useConnectWallet();
-  const disconnect = useDisconnectWallet();
+  const { connected, publicKey, disconnect } = useWallet();
+  const { setVisible } = useWalletModal();
 
-  if (wallet.status === "connected") {
+  if (connected && publicKey) {
     return (
       <div className="flex items-center justify-between rounded-lg border p-3 text-sm">
         <div>
           <div className="font-semibold">Wallet Connected</div>
-          <div className="text-zinc-500">{wallet.session.account.address.toString()}</div>
+          <div className="text-zinc-500">{publicKey.toBase58().slice(0, 8)}...{publicKey.toBase58().slice(-8)}</div>
         </div>
-        <button className="rounded-md bg-black px-3 py-1 text-white" onClick={() => void disconnect()}>Disconnect</button>
+        <button
+          className="rounded-md bg-black px-3 py-1 text-white hover:bg-gray-800 transition-colors"
+          onClick={() => disconnect()}
+        >
+          Disconnect
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {connectors.map((c) => (
-        <button
-          key={c.id}
-          className="rounded-md border px-3 py-1"
-          onClick={() => void connect(c.id)}
-        >
-          Connect {c.name}
-        </button>
-      ))}
-    </div>
+    <Button
+      onClick={() => setVisible(true)}
+      variant="primary"
+    >
+      Connect Wallet
+    </Button>
   );
 }

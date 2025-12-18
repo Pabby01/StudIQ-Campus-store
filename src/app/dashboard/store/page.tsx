@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import StoreForm from "@/components/StoreForm";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -17,16 +17,17 @@ export default function DashboardStorePage() {
 
   useEffect(() => {
     fetchStores();
-  }, [wallet.status]);
+  }, [wallet.connected]);
 
   async function fetchStores() {
-    if (wallet.status !== "connected") {
+    if (!wallet.connected) {
       setLoading(false);
       return;
     }
 
     try {
-      const address = wallet.session.account.address.toString();
+      if (!wallet.publicKey) return;
+      const address = wallet.publicKey.toString();
       const res = await fetch(`/api/store/list?address=${address}`);
       if (res.ok) {
         const data = await res.json();

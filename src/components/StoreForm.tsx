@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
@@ -35,7 +35,7 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (wallet.status !== "connected") {
+    if (!wallet.connected || !wallet.publicKey) {
       toast.error("Wallet not connected", "Please connect your wallet first");
       return;
     }
@@ -44,7 +44,7 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
 
     const formData = new FormData(e.currentTarget);
     const payload = {
-      address: wallet.session.account.address.toString(),
+      address: wallet.publicKey.toString(),
       name: String(formData.get("name")),
       description: String(formData.get("description")) || undefined,
       category: category || "Other",

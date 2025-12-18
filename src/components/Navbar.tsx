@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Search, ShoppingCart, Wallet, LayoutDashboard, PackageSearch } from "lucide-react";
-import { useWallet, useDisconnectWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useCart } from "@/store/cart";
 import Button from "@/components/ui/Button";
@@ -11,7 +11,6 @@ import { useState } from "react";
 
 export default function Navbar() {
   const wallet = useWallet();
-  const disconnect = useDisconnectWallet();
   const auth = useWalletAuth();
   const items = useCart((s) => s.items);
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -96,7 +95,7 @@ export default function Navbar() {
             {/* Right Side - Dashboard, Cart & Wallet */}
             <div className="flex items-center gap-3">
               {/* Dashboard Button (only when connected) */}
-              {wallet.status === "connected" && (
+              {wallet.connected && (
                 <Link href="/dashboard" className="hidden sm:block">
                   <Button variant="ghost" size="sm">
                     <LayoutDashboard className="w-4 h-4 mr-2" />
@@ -116,7 +115,7 @@ export default function Navbar() {
               </Link>
 
               {/* Wallet Connection */}
-              {wallet.status === "connected" ? (
+              {wallet.connected ? (
                 <div className="flex items-center gap-2">
                   <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-soft-gray-bg rounded-lg">
                     <Wallet className="w-4 h-4 text-primary-blue" />
@@ -127,7 +126,7 @@ export default function Navbar() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => void disconnect()}
+                    onClick={() => wallet.disconnect()}
                   >
                     Disconnect
                   </Button>

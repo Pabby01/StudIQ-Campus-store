@@ -7,7 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { Plus, Package, Loader2, Edit } from "lucide-react";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useToast } from "@/hooks/useToast";
 
 type Store = {
@@ -37,14 +37,14 @@ export default function DashboardProductsPage() {
   const toast = useToast();
 
   useEffect(() => {
-    if (wallet.status === "connected" && wallet.session.account.address) {
+    if (wallet.connected && wallet.publicKey) {
       fetchStores();
     }
-  }, [wallet.status]);
+  }, [wallet.connected]);
 
   const fetchStores = async () => {
     try {
-      const address = wallet.status === "connected" ? wallet.session.account.address.toString() : "";
+      const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : "";
       const res = await fetch("/api/store/all?limit=100");
       const data = await res.json();
 
@@ -108,7 +108,7 @@ export default function DashboardProductsPage() {
     }
   };
 
-  if (wallet.status !== "connected") {
+  if (!wallet.connected) {
     return (
       <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
         <Card className="p-8 text-center">
@@ -119,7 +119,7 @@ export default function DashboardProductsPage() {
     );
   }
 
-  const sellerAddress = wallet.status === "connected" ? wallet.session.account.address.toString() : "";
+  const sellerAddress = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : "";
 
   return (
     <div className="min-h-screen bg-soft-gray-bg p-8">

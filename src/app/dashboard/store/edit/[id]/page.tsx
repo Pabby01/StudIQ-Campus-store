@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { ArrowLeft, Save } from "lucide-react";
@@ -25,7 +25,7 @@ export default function EditStorePage() {
         banner_url: ""
     });
 
-    const address = wallet.status === "connected" ? wallet.session.account.address.toString() : null;
+    const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
 
     useEffect(() => {
         if (storeId && address) {
@@ -113,7 +113,7 @@ export default function EditStorePage() {
         }
     };
 
-    if (wallet.status !== "connected") {
+    if (!wallet.connected) {
         return (
             <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
                 <Card className="p-8 text-center">

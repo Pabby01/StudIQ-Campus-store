@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useToast } from "@/hooks/useToast";
 import ImageUpload from "@/components/ImageUpload";
 import Button from "@/components/ui/Button";
@@ -22,7 +22,7 @@ export default function NewProductPage() {
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
-        if (wallet.status !== "connected") {
+        if (!wallet.connected) {
             toast.error("Error", "Please connect your wallet");
             return;
         }
@@ -31,7 +31,7 @@ export default function NewProductPage() {
 
         const formData = new FormData(e.currentTarget);
         const payload = {
-            address: wallet.session.account.address.toString(),
+            address: wallet.publicKey?.toString(),
             storeId: params.id,
             name: formData.get("name"),
             category: category || "Other",

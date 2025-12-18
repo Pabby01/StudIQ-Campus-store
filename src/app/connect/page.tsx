@@ -1,6 +1,6 @@
 "use client";
 
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
@@ -13,16 +13,16 @@ export default function ConnectPage() {
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
-    if (wallet.status === "connected" && !checking) {
+    if (wallet.connected && !checking) {
       handleConnected();
     }
-  }, [wallet.status]);
+  }, [wallet.connected]);
 
   async function handleConnected() {
-    if (wallet.status !== "connected") return;
+    if (!wallet.connected || !wallet.publicKey) return;
 
     setChecking(true);
-    const address = wallet.session.account.address.toString();
+    const address = wallet.publicKey.toString();
 
     try {
       console.log("Checking profile for address:", address);
@@ -49,7 +49,7 @@ export default function ConnectPage() {
     }
   }
 
-  if (wallet.status === "connected") {
+  if (wallet.connected) {
     return (
       <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
         <Card className="max-w-md w-full p-8 text-center">

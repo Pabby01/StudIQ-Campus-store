@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { Upload, X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 interface ImageUploadProps {
     onUploadComplete: (url: string) => void;
@@ -30,7 +30,7 @@ export default function ImageUpload({
         if (!file) return;
 
         // Check wallet connection
-        if (wallet.status !== "connected") {
+        if (!wallet.connected || !wallet.publicKey) {
             setError("Please connect your wallet first");
             return;
         }
@@ -65,7 +65,7 @@ export default function ImageUpload({
             const formData = new FormData();
             formData.append("file", file);
             formData.append("folder", folder);
-            formData.append("address", wallet.session.account.address.toString());
+            formData.append("address", wallet.publicKey.toString());
 
             const res = await fetch("/api/storage", {
                 method: "POST",

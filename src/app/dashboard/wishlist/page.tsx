@@ -16,10 +16,10 @@ export default function DashboardWishlistPage() {
   useEffect(() => {
     if (auth.address) {
       fetchWishlist();
-    } else if (!auth.loading && !auth.address) {
+    } else if (!auth.connecting && !auth.address) {
       setLoading(false);
     }
-  }, [auth.address, auth.loading]);
+  }, [auth.address, auth.connecting]);
 
   const fetchWishlist = async () => {
     try {

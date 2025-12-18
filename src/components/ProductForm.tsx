@@ -7,7 +7,7 @@ import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import ImageUpload from "@/components/ImageUpload";
 import { useToast } from "@/hooks/useToast";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { X } from "lucide-react";
 
 type ProductFormProps = {
@@ -39,7 +39,7 @@ export default function ProductForm({ storeId, initial, onSuccess }: ProductForm
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (wallet.status !== "connected" || !wallet.session?.account?.address) {
+    if (!wallet.connected || !wallet.publicKey) {
       toast.error("Error", "Please connect your wallet first");
       return;
     }
@@ -55,7 +55,7 @@ export default function ProductForm({ storeId, initial, onSuccess }: ProductForm
     }
 
     const payload = {
-      address: wallet.session.account.address.toString(),
+      address: wallet.publicKey.toString(),
       storeId: storeId || String(formData.get("storeId")),
       name: formData.get("name"),
       description: String(formData.get("description")) || undefined,

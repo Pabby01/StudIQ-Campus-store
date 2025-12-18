@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Trophy, Medal, Award, Crown, TrendingUp, Loader2 } from "lucide-react";
-import { useWallet } from "@solana/react-hooks";
+import { useWallet } from "@solana/wallet-adapter-react";
 import Card from "@/components/ui/Card";
 
 type LeaderboardEntry = {
@@ -26,7 +26,7 @@ export default function LeaderboardPage() {
     const [range, setRange] = useState<"all" | "month" | "week">("all");
     const [loading, setLoading] = useState(true);
 
-    const address = wallet.status === "connected" ? wallet.session.account.address.toString() : null;
+    const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
 
     useEffect(() => {
         fetchLeaderboard();
@@ -88,8 +88,8 @@ export default function LeaderboardPage() {
                     <button
                         onClick={() => setRange("all")}
                         className={`px-6 py-2 rounded-lg font-medium transition-colors ${range === "all"
-                                ? "bg-primary-blue text-white"
-                                : "bg-white text-muted-text border border-border-gray hover:bg-gray-50"
+                            ? "bg-primary-blue text-white"
+                            : "bg-white text-muted-text border border-border-gray hover:bg-gray-50"
                             }`}
                     >
                         All Time
@@ -97,8 +97,8 @@ export default function LeaderboardPage() {
                     <button
                         onClick={() => setRange("month")}
                         className={`px-6 py-2 rounded-lg font-medium transition-colors ${range === "month"
-                                ? "bg-primary-blue text-white"
-                                : "bg-white text-muted-text border border-border-gray hover:bg-gray-50"
+                            ? "bg-primary-blue text-white"
+                            : "bg-white text-muted-text border border-border-gray hover:bg-gray-50"
                             }`}
                     >
                         This Month
@@ -106,8 +106,8 @@ export default function LeaderboardPage() {
                     <button
                         onClick={() => setRange("week")}
                         className={`px-6 py-2 rounded-lg font-medium transition-colors ${range === "week"
-                                ? "bg-primary-blue text-white"
-                                : "bg-white text-muted-text border border-border-gray hover:bg-gray-50"
+                            ? "bg-primary-blue text-white"
+                            : "bg-white text-muted-text border border-border-gray hover:bg-gray-50"
                             }`}
                     >
                         This Week

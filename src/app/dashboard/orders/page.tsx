@@ -37,10 +37,10 @@ export default function DashboardOrdersPage() {
   useEffect(() => {
     if (auth.address) {
       fetchOrders();
-    } else if (!auth.loading && !auth.address) {
+    } else if (!auth.connecting && !auth.address) {
       setLoading(false);
     }
-  }, [auth.address, auth.loading]);
+  }, [auth.address, auth.connecting]);
 
   const fetchOrders = async () => {
     try {
@@ -114,8 +114,8 @@ export default function DashboardOrdersPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize border ${order.status === 'completed' ? 'bg-green-100 text-green-700 border-green-200' :
-                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                          'bg-gray-100 text-gray-700 border-gray-200'
+                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                        'bg-gray-100 text-gray-700 border-gray-200'
                       }`}>
                       {order.status}
                     </span>

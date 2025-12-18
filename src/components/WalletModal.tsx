@@ -1,139 +1,47 @@
 "use client";
 
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { useWalletConnection, useConnectWallet } from "@solana/react-hooks";
-import { ExternalLink, Smartphone, Wallet, AlertCircle } from "lucide-react";
+import { ExternalLink, Smartphone, Wallet, Check } from "lucide-react";
 import { isMobileDevice, isIOS } from "@/lib/mobileWallet";
-import { useState } from "react";
 
 interface WalletModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-// Mobile wallet options
-const MOBILE_WALLETS = [
-    {
-        id: 'phantom',
-        name: 'Phantom',
-        icon: 'https://phantom.app/img/phantom-logo.svg',
-        installUrl: {
-            ios: 'https://apps.apple.com/app/phantom-crypto-wallet/id1598432977',
-            android: 'https://play.google.com/store/apps/details?id=app.phantom'
-        },
-        // Phantom's universal link format for connection
-        getConnectUrl: (appUrl: string) => {
-            const params = new URLSearchParams({
-                dapp_encryption_public_key: 'temp_key',
-                cluster: 'devnet',
-                app_url: appUrl,
-                redirect_link: appUrl
-            });
-            return `https://phantom.app/ul/browse/${encodeURIComponent(appUrl)}?${params.toString()}`;
-        }
-    },
-    {
-        id: 'solflare',
-        name: 'Solflare',
-        icon: 'https://solflare.com/assets/logo.svg',
-        installUrl: {
-            ios: 'https://apps.apple.com/app/solflare/id1580902717',
-            android: 'https://play.google.com/store/apps/details?id=com.solflare.mobile'
-        },
-        getConnectUrl: (appUrl: string) => {
-            // Solflare's universal link for browsing
-            return `https://solflare.com/ul/browse/${encodeURIComponent(appUrl)}`;
-        }
-    }
-];
-
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
-    const { connectors } = useWalletConnection();
-    const connectWallet = useConnectWallet();
-    const [showMobileInstructions, setShowMobileInstructions] = useState(false);
+    const { wallets, select, connect, connected } = useWallet();
+    const { setVisible } = useWalletModal();
+    const isMobile = isMobileDevice();
 
-    const handleConnect = async (connectorId: string) => {
+    const handleConnect = async (walletName: string) => {
         try {
-            await connectWallet(connectorId);
+            // Select the wallet
+            const wallet = wallets.find(w => w.adapter.name === walletName);
+            if (!wallet) return;
+
+            select(wallet.adapter.name);
+
+            // Wait for selection to complete before connecting
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Connect
+            await connect();
             onClose();
         } catch (error) {
             console.error("Connection failed:", error);
         }
     };
 
-    const handleMobileWalletClick = (wallet: typeof MOBILE_WALLETS[0]) => {
-        const appUrl = window.location.origin;
-        const connectUrl = wallet.getConnectUrl(appUrl);
-
-        // Open wallet app with connection URL
-        window.location.href = connectUrl;
-
-        // Show instructions
-        setShowMobileInstructions(true);
-    };
-
     if (!isOpen) return null;
 
-    const isMobile = isMobileDevice();
-    const hasDetectedWallets = connectors && connectors.length > 0;
-
-    // Mobile instructions view
-    if (isMobile && showMobileInstructions) {
-        return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                <Card className="w-full max-w-md p-6">
-                    <div className="text-center">
-                        <Smartphone className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                        <h2 className="text-xl font-bold text-black mb-3">Complete Connection in Wallet App</h2>
-                        <div className="space-y-3 text-left mb-6">
-                            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">1</div>
-                                <div className="text-sm">
-                                    <p className="font-semibold text-blue-900">Wallet app should have opened</p>
-                                    <p className="text-blue-700">If not, make sure the wallet is installed</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">2</div>
-                                <div className="text-sm">
-                                    <p className="font-semibold text-blue-900">Approve the connection</p>
-                                    <p className="text-blue-700">Tap "Connect" or "Approve" in your wallet</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">3</div>
-                                <div className="text-sm">
-                                    <p className="font-semibold text-blue-900">Return to browser</p>
-                                    <p className="text-blue-700">Come back to this page after connecting</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Button
-                                variant="primary"
-                                className="w-full"
-                                onClick={() => {
-                                    setShowMobileInstructions(false);
-                                    onClose();
-                                }}
-                            >
-                                I've Connected - Continue
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className="w-full"
-                                onClick={() => setShowMobileInstructions(false)}
-                            >
-                                Try Different Wallet
-                            </Button>
-                        </div>
-                    </div>
-                </Card>
-            </div>
-        );
-    }
+    // Available wallets
+    const installedWallets = wallets.filter(w => w.readyState === 'Installed');
+    const notInstalledWallets = wallets.filter(w => w.readyState === 'NotDetected');
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -144,106 +52,120 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     </h2>
                     <button
                         onClick={onClose}
-                        className="text-muted-text hover:text-black transition-colors"
+                        className="text-muted-text hover:text-black transition-colors text-2xl"
                     >
-                        ✕
+                        ×
                     </button>
                 </div>
 
                 {isMobile && (
-                    <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <div className="flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                            <Smartphone className="w-5 h-5 text-blue-600 mt-0.5" />
                             <div className="text-sm">
-                                <p className="font-semibold text-amber-900 mb-1">Mobile Wallet Connection</p>
-                                <p className="text-amber-700">
-                                    This will open your wallet app. Make sure to:<br />
-                                    • Have the wallet app installed<br />
-                                    • Approve the connection request<br />
-                                    • Return to this browser tab after
+                                <p className="font-semibold text-blue-900 mb-1">Mobile Wallet Connection</p>
+                                <p className="text-blue-700">
+                                    For the best experience, open this site in your wallet app's built-in browser.
+                                    Or select your wallet below to connect.
                                 </p>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Desktop: Show detected wallets */}
-                {!isMobile && hasDetectedWallets && (
-                    <div className="space-y-3 mb-4">
-                        <p className="text-xs font-semibold text-muted-text uppercase mb-2">
-                            Detected Wallets
+                {/* Installed Wallets */}
+                {installedWallets.length > 0 && (
+                    <div className="mb-6">
+                        <p className="text-xs font-semibold text-muted-text uppercase mb-3">
+                            {isMobile ? "Available Wallets" : "Detected Wallets"}
                         </p>
-                        {connectors.map((connector) => (
-                            <Button
-                                key={connector.id}
-                                variant="outline"
-                                className="w-full justify-between text-left"
-                                onClick={() => handleConnect(connector.id)}
-                            >
-                                <div className="flex items-center gap-3">
-                                    {connector.icon && (
+                        <div className="space-y-2">
+                            {installedWallets.map((wallet) => (
+                                <Button
+                                    key={wallet.adapter.name}
+                                    variant="outline"
+                                    className="w-full justify-between text-left"
+                                    onClick={() => handleConnect(wallet.adapter.name)}
+                                >
+                                    <div className="flex items-center gap-3">
                                         <img
-                                            src={connector.icon}
-                                            alt={connector.name}
+                                            src={wallet.adapter.icon}
+                                            alt={wallet.adapter.name}
                                             className="w-8 h-8"
                                         />
-                                    )}
-                                    <div className="font-semibold text-black">{connector.name}</div>
-                                </div>
-                            </Button>
-                        ))}
-                    </div>
-                )}
-
-                {/* Mobile: Always show mobile wallet options */}
-                {isMobile && (
-                    <div className="space-y-3">
-                        {MOBILE_WALLETS.map((wallet) => (
-                            <Button
-                                key={wallet.id}
-                                variant="outline"
-                                className="w-full justify-between text-left"
-                                onClick={() => handleMobileWalletClick(wallet)}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <img
-                                        src={wallet.icon}
-                                        alt={wallet.name}
-                                        className="w-8 h-8"
-                                        onError={(e) => {
-                                            e.currentTarget.style.display = 'none';
-                                        }}
-                                    />
-                                    <div>
-                                        <div className="font-semibold text-black">{wallet.name}</div>
-                                        <div className="text-xs text-muted-text">
-                                            Open app to connect
+                                        <div>
+                                            <div className="font-semibold text-black">{wallet.adapter.name}</div>
+                                            {isMobile && (
+                                                <div className="text-xs text-muted-text">
+                                                    Tap to connect
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                </div>
-                                <Smartphone className="w-5 h-5 text-muted-text" />
-                            </Button>
-                        ))}
-
-                        <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
-                            <p className="font-semibold mb-1">Don't have a wallet installed?</p>
-                            <p>Download {MOBILE_WALLETS[0].name} or {MOBILE_WALLETS[1].name} from your app store first, then come back here to connect.</p>
+                                    {wallet.readyState === 'Installed' && (
+                                        <Check className="w-5 h-5 text-green-600" />
+                                    )}
+                                </Button>
+                            ))}
                         </div>
                     </div>
                 )}
 
-                {/* Desktop: No wallets detected */}
-                {!isMobile && !hasDetectedWallets && (
+                {/* Not Installed Wallets */}
+                {notInstalledWallets.length > 0 && (
+                    <div>
+                        <p className="text-xs font-semibold text-muted-text uppercase mb-3">
+                            {installedWallets.length > 0 ? "More Wallets" : "Install a Wallet"}
+                        </p>
+                        <div className="space-y-2">
+                            {notInstalledWallets.map((wallet) => (
+                                <div
+                                    key={wallet.adapter.name}
+                                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <img
+                                            src={wallet.adapter.icon}
+                                            alt={wallet.adapter.name}
+                                            className="w-8 h-8"
+                                        />
+                                        <div>
+                                            <div className="font-semibold text-black">{wallet.adapter.name}</div>
+                                            <div className="text-xs text-muted-text">Not installed</div>
+                                        </div>
+                                    </div>
+                                    <a
+                                        href={wallet.adapter.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary-blue hover:text-accent-blue text-sm font-medium flex items-center gap-1"
+                                    >
+                                        Install
+                                        <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* No Wallets Available */}
+                {wallets.length === 0 && (
                     <div className="text-center py-8">
                         <Wallet className="w-16 h-16 text-muted-text mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-black mb-2">No Wallets Found</h3>
                         <p className="text-muted-text mb-6">
-                            Install a Solana wallet extension to get started
+                            Install a Solana wallet to get started
                         </p>
 
                         <div className="space-y-3">
                             <a
-                                href="https://phantom.app/download"
+                                href={isIOS()
+                                    ? "https://apps.apple.com/app/phantom-crypto-wallet/id1598432977"
+                                    : isMobile
+                                        ? "https://play.google.com/store/apps/details?id=app.phantom"
+                                        : "https://phantom.app/download"
+                                }
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
@@ -253,7 +175,12 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                             </a>
 
                             <a
-                                href="https://solflare.com/download"
+                                href={isIOS()
+                                    ? "https://apps.apple.com/app/solflare/id1580902717"
+                                    : isMobile
+                                        ? "https://play.google.com/store/apps/details?id=com.solflare.mobile"
+                                        : "https://solflare.com/download"
+                                }
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity"
@@ -268,7 +195,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 <div className="mt-6 pt-6 border-t border-gray-200">
                     <p className="text-xs text-center text-muted-text">
                         {isMobile
-                            ? "The wallet app will open in a new window"
+                            ? "Tip: Open this site in your wallet app's browser for seamless connection"
                             : "By connecting, you agree to our Terms of Service"}
                     </p>
                 </div>
