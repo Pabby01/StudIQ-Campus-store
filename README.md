@@ -1,5 +1,18 @@
 # StudiQ Campus Store
 
+## 🎥 Demo Video
+
+<div>
+  <a href="https://www.loom.com/share/4206d3449d95443ca81f35f321dd2ceb">
+    <p>StudIQ Campus Store - Demo Video - Watch Video</p>
+  </a>
+  <a href="https://www.loom.com/share/4206d3449d95443ca81f35f321dd2ceb">
+    <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/4206d3449d95443ca81f35f321dd2ceb-d9d0e7f5a7e8b1c8-full-play.gif">
+  </a>
+</div>
+
+---
+
 A decentralized campus marketplace built on Solana and Next.js.
 
 ## 🚀 Features
