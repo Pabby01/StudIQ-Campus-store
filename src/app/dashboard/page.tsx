@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import DashboardCard from "@/components/DashboardCard";
-import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw } from "lucide-react";
+import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet } from "lucide-react";
 import RevenueChart from "@/components/charts/RevenueChart";
 import OrdersChart from "@/components/charts/OrdersChart";
 import PointsChart from "@/components/charts/PointsChart";
@@ -192,6 +192,35 @@ export default function DashboardPage() {
                 }}
               />
             </div>
+
+            {/* Earnings & Withdraw Card (Seller Only) */}
+            {!isBuyer && (
+              <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-green-600 rounded-lg">
+                      <Wallet className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-green-900 mb-1">
+                        Manage Your Earnings
+                      </h3>
+                      <p className="text-green-700 text-sm">
+                        View your balance and withdraw funds from completed orders
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="primary"
+                    onClick={() => window.location.href = '/dashboard/earnings'}
+                    className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                  >
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    View Earnings
+                  </Button>
+                </div>
+              </Card>
+            )}
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 w-full">
