@@ -1,0 +1,23 @@
+{
+    "name": "StudIQ Campus Store",
+    "short_name": "StudIQ",
+    "description": "Decentralized campus marketplace on Solana",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#FFFFFF",
+    "theme_color": "#667eea",
+    "icons": [
+        {
+            "src": "https://i.postimg.cc/VNXWGB8P/logo.jpg",
+            "sizes": "192x192",
+            "type": "image/jpeg",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "https://i.postimg.cc/VNXWGB8P/logo.jpg",
+            "sizes": "512x512",
+            "type": "image/jpeg",
+            "purpose": "any maskable"
+        }
+    ]
+}

@@ -24,10 +24,12 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-8">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-primary-blue rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">S</span>
-                </div>
+              <Link href="/" className="flex items-center gap-3">
+                <img
+                  src="https://i.postimg.cc/VNXWGB8P/logo.jpg"
+                  alt="StudIQ Campus Store Logo"
+                  className="h-10 w-10 object-contain rounded-lg"
+                />
                 <span className="font-bold text-xl text-black hidden sm:block">
                   StudIQ Campus Store
                 </span>
