@@ -37,6 +37,7 @@ function SettingsContent() {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [storeLimit, setStoreLimit] = useState<any>(null);
+  const [billingHistory, setBillingHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null);
 
@@ -47,6 +48,7 @@ function SettingsContent() {
       fetchSubscription();
       fetchProfile();
       fetchStoreLimit();
+      fetchBillingHistory();
     }
   }, [address]);
 
@@ -92,6 +94,18 @@ function SettingsContent() {
       setStoreLimit(data);
     } catch (error) {
       console.error("Failed to fetch store limit:", error);
+    }
+  };
+
+  const fetchBillingHistory = async () => {
+    if (!address) return;
+
+    try {
+      const res = await fetch(`/api/subscription/billing-history?address=${address}`);
+      const data = await res.json();
+      setBillingHistory(data.transactions || []);
+    } catch (error) {
+      console.error("Failed to fetch billing history:", error);
     }
   };
 
@@ -362,18 +376,71 @@ function SettingsContent() {
           )}
         </Card>
 
-        {/* Billing History (Placeholder) */}
+        {/* Billing History */}
         <Card className="p-6">
-          <div className="flex items-start gap-3 mb-4">
-            <CreditCard className="w-5 h-5 text-gray-600 mt-0.5" />
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-semibold text-black">Billing History</h3>
               <p className="text-sm text-muted-text">View your past payments and invoices</p>
             </div>
           </div>
-          <div className="text-center py-8 text-muted-text">
-            No billing history yet
-          </div>
+
+          {billingHistory.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-text">No billing history yet</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-soft-gray-bg">
+                  <tr className="text-left text-sm text-muted-text">
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Plan</th>
+                    <th className="p-3">Cycle</th>
+                    <th className="p-3">Amount</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Transaction</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-gray">
+                  {billingHistory.map((transaction) => (
+                    <tr key={transaction.id} className="hover:bg-soft-gray-bg">
+                      <td className="p-3 text-sm">
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </td>
+                      <td className="p-3">
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 capitalize">
+                          {transaction.planName}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm capitalize">{transaction.cycle}</td>
+                      <td className="p-3 font-semibold">
+                        {transaction.amount.toFixed(4)} {transaction.currency}
+                      </td>
+                      <td className="p-3">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${transaction.status === 'completed'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                          {transaction.status}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <a
+                          href={`https://explorer.solana.com/tx/${transaction.txSignature}?cluster=devnet`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-blue hover:underline text-sm"
+                        >
+                          View
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
 
         {/* Help */}

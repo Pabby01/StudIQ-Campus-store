@@ -32,7 +32,7 @@ function CheckoutContent() {
     const solPrice = convertUSDtoSOL(usdPrice);
 
     const handlePayment = async () => {
-        if (!wallet.connected) {
+        if (!wallet.connected || !wallet.publicKey) {
             toast.error('Please connect your wallet');
             return;
         }
@@ -40,9 +40,77 @@ function CheckoutContent() {
         setProcessing(true);
 
         try {
-            const userAddress = wallet.publicKey;
+            const userAddress = wallet.publicKey.toString();
 
-            // Create subscription
+            // Import Solana libraries dynamically
+            const { Connection, PublicKey, SystemProgram, Transaction } = await import('@solana/web3.js');
+
+            // Get platform wallet from environment
+            const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET || 'Hjg614To7b1jWiaGhkTXzPsnsv6dKYKD9CVkzCU8ghhY';
+
+            // Create connection (disable websocket to avoid CSP issues)
+            const connection = new Connection(
+                process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.devnet.solana.com',
+                {
+                    commitment: 'confirmed',
+                    disableRetryOnRateLimit: false,
+                    confirmTransactionInitialTimeout: 60000, // 60 seconds
+                }
+            );
+
+            // Convert SOL to lamports
+            const lamports = Math.floor(solPrice * 1000000000);
+
+            // Create transaction
+            const transaction = new Transaction().add(
+                SystemProgram.transfer({
+                    fromPubkey: wallet.publicKey,
+                    toPubkey: new PublicKey(platformWallet),
+                    lamports: lamports
+                })
+            );
+
+            // Get recent blockhash
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = wallet.publicKey;
+
+            // Sign and send transaction
+            const signedTransaction = await wallet.signTransaction!(transaction);
+            const rawTransaction = signedTransaction.serialize();
+            const txSignature = await connection.sendRawTransaction(rawTransaction, {
+                skipPreflight: false,
+                preflightCommitment: 'confirmed',
+            });
+
+            toast.success('Payment sent! Confirming...');
+
+            // Confirm transaction with timeout handling
+            try {
+                const confirmation = await connection.confirmTransaction({
+                    signature: txSignature,
+                    blockhash,
+                    lastValidBlockHeight
+                }, 'confirmed');
+
+                if (confirmation.value.err) {
+                    throw new Error('Transaction failed on blockchain');
+                }
+            } catch (confirmError: any) {
+                // If confirmation times out, the transaction might still succeed
+                // Check transaction status manually
+                console.log('Confirmation timeout, checking transaction status...');
+
+                const status = await connection.getSignatureStatus(txSignature);
+                if (status?.value?.confirmationStatus === 'confirmed' ||
+                    status?.value?.confirmationStatus === 'finalized') {
+                    console.log('Transaction confirmed after timeout');
+                } else {
+                    throw new Error(`Transaction not confirmed. Signature: ${txSignature}. Please check Solana Explorer.`);
+                }
+            }
+
+            // Activate subscription with real transaction signature
             const response = await fetch('/api/subscription/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -50,7 +118,7 @@ function CheckoutContent() {
                     userAddress,
                     plan,
                     cycle,
-                    txSignature: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    txSignature,
                     amount: solPrice
                 })
             });
@@ -58,14 +126,23 @@ function CheckoutContent() {
             const data = await response.json();
 
             if (data.success) {
-                toast.success('Subscription activated!');
+                toast.success('Subscription activated successfully!');
                 router.push(`/pricing/success?plan=${plan}&cycle=${cycle}`);
             } else {
                 toast.error(data.error || 'Subscription activation failed');
             }
         } catch (err: any) {
             console.error('Subscription error:', err);
-            toast.error(err.message || 'Failed to activate subscription');
+
+            if (err.message?.includes('User rejected')) {
+                toast.error('Payment cancelled');
+            } else if (err.message?.includes('insufficient')) {
+                toast.error('Insufficient SOL balance');
+            } else if (err.message?.includes('not confirmed')) {
+                toast.error(err.message);
+            } else {
+                toast.error(err.message || 'Payment failed');
+            }
         } finally {
             setProcessing(false);
         }

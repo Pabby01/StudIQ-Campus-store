@@ -63,4 +63,4 @@ export function calculateYearlySavings(plan: PlanName): number {
 }
 
 // Platform wallet address for receiving payments
-export const PLATFORM_WALLET = process.env.NEXT_PUBLIC_PLATFORM_WALLET || 'Hx912yR4vDEwUqQNUZcaxwsjmE8B6Lq6grokrPh8a6Js';
+export const PLATFORM_WALLET = process.env.NEXT_PUBLIC_PLATFORM_WALLET || 'Hjg614To7b1jWiaGhkTXzPsnsv6dKYKD9CVkzCU8ghhY';

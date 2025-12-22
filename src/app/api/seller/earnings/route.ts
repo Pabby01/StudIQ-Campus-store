@@ -33,15 +33,30 @@ export async function GET(req: Request) {
             return Response.json({
                 ok: true,
                 earnings: {
-                    totalOrders: 0,
-                    completedOrders: 0,
-                    totalRevenue: 0,
-                    platformFee: 0,
-                    sellerShare: 0,
-                    withdrawn: 0,
-                    pendingWithdrawals: 0,
-                    available: 0,
-                    currency: "SOL",
+                    sol: {
+                        totalOrders: 0,
+                        completedOrders: 0,
+                        totalRevenue: 0,
+                        platformFee: 0,
+                        sellerShare: 0,
+                        withdrawn: 0,
+                        pendingWithdrawals: 0,
+                        available: 0,
+                    },
+                    usdc: {
+                        totalOrders: 0,
+                        completedOrders: 0,
+                        totalRevenue: 0,
+                        platformFee: 0,
+                        sellerShare: 0,
+                        withdrawn: 0,
+                        pendingWithdrawals: 0,
+                        available: 0,
+                    },
+                    combined: {
+                        totalOrders: 0,
+                        completedOrders: 0,
+                    },
                 },
             });
         }
@@ -54,65 +69,89 @@ export async function GET(req: Request) {
             .select("id, status, amount, currency, withdrawn, withdrawal_id")
             .in("store_id", storeIds);
 
-        // 3. Get completed orders
+        // 3. Get completed orders separated by currency
         const { data: completedOrders } = await supabase
             .from("orders")
             .select("id, amount, currency, withdrawn")
             .in("store_id", storeIds)
             .eq("status", "completed");
 
-        // 4. Get total withdrawn (completed withdrawals)
+        // 4. Get withdrawals separated by currency
         const { data: completedWithdrawals } = await supabase
             .from("withdrawal_requests")
             .select("amount, currency")
             .eq("seller_address", address)
             .eq("status", "completed");
 
-        // 5. Get pending withdrawals
         const { data: pendingWithdrawals } = await supabase
             .from("withdrawal_requests")
             .select("amount, currency")
             .eq("seller_address", address)
             .in("status", ["pending", "processing"]);
 
-        // Calculate totals (assuming SOL for now, can be extended for multi-currency)
-        const totalOrders = allOrders?.length || 0;
-        const completedCount = completedOrders?.length || 0;
-
-        const totalRevenue = completedOrders?.reduce((sum, order) => {
+        // Calculate for SOL
+        const solOrders = completedOrders?.filter(o => o.currency === "SOL") || [];
+        const solRevenue = solOrders.reduce((sum, order) => {
             return sum + (parseFloat(order.amount.toString()) || 0);
-        }, 0) || 0;
+        }, 0);
+        const solPlatformFee = solRevenue * 0.05;
+        const solSellerShare = solRevenue * 0.95;
 
-        const platformFee = totalRevenue * 0.05; // 5% fee
-        const sellerShare = totalRevenue * 0.95; // 95% for seller
+        const solWithdrawn = completedWithdrawals
+            ?.filter(w => w.currency === "SOL")
+            .reduce((sum, w) => sum + parseFloat(w.amount.toString()), 0) || 0;
 
-        const withdrawnAmount = completedWithdrawals?.reduce((sum, w) => {
-            return sum + (parseFloat(w.amount.toString()) || 0);
-        }, 0) || 0;
+        const solPending = pendingWithdrawals
+            ?.filter(w => w.currency === "SOL")
+            .reduce((sum, w) => sum + parseFloat(w.amount.toString()), 0) || 0;
 
-        const pendingAmount = pendingWithdrawals?.reduce((sum, w) => {
-            return sum + (parseFloat(w.amount.toString()) || 0);
-        }, 0) || 0;
+        const solAvailable = solSellerShare - solWithdrawn - solPending;
 
-        const available = sellerShare - withdrawnAmount - pendingAmount;
+        // Calculate for USDC
+        const usdcOrders = completedOrders?.filter(o => o.currency === "USDC") || [];
+        const usdcRevenue = usdcOrders.reduce((sum, order) => {
+            return sum + (parseFloat(order.amount.toString()) || 0);
+        }, 0);
+        const usdcPlatformFee = usdcRevenue * 0.05;
+        const usdcSellerShare = usdcRevenue * 0.95;
 
-        // Get currency from first order or default to SOL
-        const currency = completedOrders && completedOrders.length > 0
-            ? completedOrders[0].currency
-            : "SOL";
+        const usdcWithdrawn = completedWithdrawals
+            ?.filter(w => w.currency === "USDC")
+            .reduce((sum, w) => sum + parseFloat(w.amount.toString()), 0) || 0;
+
+        const usdcPending = pendingWithdrawals
+            ?.filter(w => w.currency === "USDC")
+            .reduce((sum, w) => sum + parseFloat(w.amount.toString()), 0) || 0;
+
+        const usdcAvailable = usdcSellerShare - usdcWithdrawn - usdcPending;
 
         return Response.json({
             ok: true,
             earnings: {
-                totalOrders,
-                completedOrders: completedCount,
-                totalRevenue,
-                platformFee,
-                sellerShare,
-                withdrawn: withdrawnAmount,
-                pendingWithdrawals: pendingAmount,
-                available: Math.max(0, available), // Ensure non-negative
-                currency,
+                sol: {
+                    totalOrders: allOrders?.filter(o => o.currency === "SOL").length || 0,
+                    completedOrders: solOrders.length,
+                    totalRevenue: solRevenue,
+                    platformFee: solPlatformFee,
+                    sellerShare: solSellerShare,
+                    withdrawn: solWithdrawn,
+                    pendingWithdrawals: solPending,
+                    available: Math.max(0, solAvailable),
+                },
+                usdc: {
+                    totalOrders: allOrders?.filter(o => o.currency === "USDC").length || 0,
+                    completedOrders: usdcOrders.length,
+                    totalRevenue: usdcRevenue,
+                    platformFee: usdcPlatformFee,
+                    sellerShare: usdcSellerShare,
+                    withdrawn: usdcWithdrawn,
+                    pendingWithdrawals: usdcPending,
+                    available: Math.max(0, usdcAvailable),
+                },
+                combined: {
+                    totalOrders: allOrders?.length || 0,
+                    completedOrders: completedOrders?.length || 0,
+                },
             },
         });
     } catch (error) {

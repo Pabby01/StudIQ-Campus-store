@@ -12,11 +12,11 @@ import {
     CheckCircle,
     XCircle,
     Loader2,
-    AlertCircle
+    AlertCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 
-interface Earnings {
+interface CurrencyEarnings {
     totalOrders: number;
     completedOrders: number;
     totalRevenue: number;
@@ -25,7 +25,15 @@ interface Earnings {
     withdrawn: number;
     pendingWithdrawals: number;
     available: number;
-    currency: string;
+}
+
+interface Earnings {
+    sol: CurrencyEarnings;
+    usdc: CurrencyEarnings;
+    combined: {
+        totalOrders: number;
+        completedOrders: number;
+    };
 }
 
 interface Withdrawal {
@@ -48,6 +56,8 @@ export default function EarningsPage() {
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
     const [withdrawing, setWithdrawing] = useState(false);
     const [withdrawAmount, setWithdrawAmount] = useState("");
+    const [selectedCurrency, setSelectedCurrency] = useState<"SOL" | "USDC">("SOL");
+    const [activeCurrencyTab, setActiveCurrencyTab] = useState<"SOL" | "USDC">("SOL");
 
     const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
 
@@ -91,7 +101,8 @@ export default function EarningsPage() {
             return;
         }
 
-        if (!earnings || amount > earnings.available) {
+        const currentCurrencyData = earnings?.[selectedCurrency.toLowerCase() as 'sol' | 'usdc'];
+        if (!currentCurrencyData || amount > currentCurrencyData.available) {
             toast.error("Insufficient Balance", "Amount exceeds available balance");
             return;
         }
@@ -105,7 +116,7 @@ export default function EarningsPage() {
                 body: JSON.stringify({
                     address,
                     amount,
-                    currency: earnings.currency,
+                    currency: selectedCurrency,
                 }),
             });
 
@@ -115,7 +126,7 @@ export default function EarningsPage() {
                 toast.success("Withdrawal Requested", "Your withdrawal will be processed within 24-48 hours");
                 setShowWithdrawModal(false);
                 setWithdrawAmount("");
-                fetchData(); // Refresh data
+                fetchData();
             } else {
                 toast.error("Withdrawal Failed", data.error || "Please try again");
             }
@@ -173,6 +184,8 @@ export default function EarningsPage() {
         );
     }
 
+    const currentCurrency = earnings?.[activeCurrencyTab.toLowerCase() as 'sol' | 'usdc'];
+
     return (
         <div className="min-h-screen bg-soft-gray-bg px-4 py-8">
             <div className="max-w-6xl mx-auto space-y-8">
@@ -182,16 +195,50 @@ export default function EarningsPage() {
                     <p className="text-muted-text">Manage your seller earnings and request withdrawals</p>
                 </div>
 
+                {/* Currency Tabs */}
+                <div className="flex gap-2 border-b border-border-gray">
+                    <button
+                        onClick={() => setActiveCurrencyTab("SOL")}
+                        className={`px-6 py-3 font-medium text-sm transition-colors relative ${activeCurrencyTab === "SOL"
+                                ? "text-primary-blue border-b-2 border-primary-blue"
+                                : "text-muted-text hover:text-black"
+                            }`}
+                    >
+                        SOL Earnings
+                        {earnings && earnings.sol.available > 0 && (
+                            <span className="ml-2 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full">
+                                {earnings.sol.available.toFixed(2)}
+                            </span>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => setActiveCurrencyTab("USDC")}
+                        className={`px-6 py-3 font-medium text-sm transition-colors relative ${activeCurrencyTab === "USDC"
+                                ? "text-primary-blue border-b-2 border-primary-blue"
+                                : "text-muted-text hover:text-black"
+                            }`}
+                    >
+                        USDC Earnings
+                        {earnings && earnings.usdc.available > 0 && (
+                            <span className="ml-2 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full">
+                                ${earnings.usdc.available.toFixed(2)}
+                            </span>
+                        )}
+                    </button>
+                </div>
+
                 {/* Earnings Overview */}
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
-                            <div className="p-3 bg-blue-100 rounded-lg">
-                                <TrendingUp className="w-6 h-6 text-primary-blue" />
+                            <div className={`p-3 rounded-lg ${activeCurrencyTab === 'SOL' ? 'bg-purple-100' : 'bg-green-100'}`}>
+                                <TrendingUp className={`w-6 h-6 ${activeCurrencyTab === 'SOL' ? 'text-purple-600' : 'text-green-600'}`} />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-black">Earnings Overview</h2>
-                                <p className="text-sm text-muted-text">{earnings?.completedOrders || 0} completed orders</p>
+                                <h2 className="text-xl font-bold text-black">{activeCurrencyTab} Earnings Overview</h2>
+                                <p className="text-sm text-muted-text">
+                                    {currentCurrency?.completedOrders || 0} completed orders
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -201,19 +248,19 @@ export default function EarningsPage() {
                             <div className="flex justify-between items-center pb-3 border-b border-border-gray">
                                 <span className="text-muted-text">Total Revenue</span>
                                 <span className="font-semibold text-black">
-                                    {earnings?.totalRevenue.toFixed(4)} {earnings?.currency}
+                                    {currentCurrency?.totalRevenue.toFixed(4)} {activeCurrencyTab}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center pb-3 border-b border-border-gray">
                                 <span className="text-muted-text">Platform Fee (5%)</span>
                                 <span className="font-semibold text-red-600">
-                                    -{earnings?.platformFee.toFixed(4)} {earnings?.currency}
+                                    -{currentCurrency?.platformFee.toFixed(4)} {activeCurrencyTab}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center pb-3 border-b-2 border-primary-blue">
                                 <span className="font-medium text-black">Your Share (95%)</span>
                                 <span className="font-bold text-primary-blue text-lg">
-                                    {earnings?.sellerShare.toFixed(4)} {earnings?.currency}
+                                    {currentCurrency?.sellerShare.toFixed(4)} {activeCurrencyTab}
                                 </span>
                             </div>
                         </div>
@@ -222,13 +269,13 @@ export default function EarningsPage() {
                             <div className="flex justify-between items-center pb-3 border-b border-border-gray">
                                 <span className="text-muted-text">Already Withdrawn</span>
                                 <span className="font-semibold text-muted-text">
-                                    -{earnings?.withdrawn.toFixed(4)} {earnings?.currency}
+                                    -{currentCurrency?.withdrawn.toFixed(4)} {activeCurrencyTab}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center pb-3 border-b border-border-gray">
                                 <span className="text-muted-text">Pending Withdrawals</span>
                                 <span className="font-semibold text-yellow-600">
-                                    -{earnings?.pendingWithdrawals.toFixed(4)} {earnings?.currency}
+                                    -{currentCurrency?.pendingWithdrawals.toFixed(4)} {activeCurrencyTab}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg border-2 border-green-600">
@@ -237,41 +284,75 @@ export default function EarningsPage() {
                                     <span className="font-medium text-green-900">Available to Withdraw</span>
                                 </div>
                                 <span className="font-bold text-green-600 text-xl">
-                                    {earnings?.available.toFixed(4)} {earnings?.currency}
+                                    {currentCurrency?.available.toFixed(4)} {activeCurrencyTab}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    {earnings && earnings.available > 0 && (
+                    {currentCurrency && currentCurrency.available > 0 && (
                         <div className="mt-6 pt-6 border-t border-border-gray">
                             <Button
                                 variant="primary"
                                 onClick={() => {
-                                    setWithdrawAmount(earnings.available.toString());
+                                    setSelectedCurrency(activeCurrencyTab);
+                                    setWithdrawAmount(currentCurrency.available.toString());
                                     setShowWithdrawModal(true);
                                 }}
                                 className="w-full md:w-auto"
                             >
                                 <Wallet className="w-4 h-4 mr-2" />
-                                Request Withdrawal
+                                Request {activeCurrencyTab} Withdrawal
                             </Button>
                         </div>
                     )}
 
-                    {earnings && earnings.available === 0 && (
+                    {currentCurrency && currentCurrency.available === 0 && (
                         <div className="mt-6 pt-6 border-t border-border-gray">
                             <div className="flex items-center gap-2 text-muted-text">
                                 <AlertCircle className="w-5 h-5" />
                                 <p className="text-sm">
-                                    {earnings.pendingWithdrawals > 0
-                                        ? "You have a pending withdrawal being processed"
-                                        : "No funds available for withdrawal. Complete more orders to earn!"}
+                                    {currentCurrency.pendingWithdrawals > 0
+                                        ? `You have a pending ${activeCurrencyTab} withdrawal being processed`
+                                        : `No ${activeCurrencyTab} funds available for withdrawal. Complete more orders to earn!`}
                                 </p>
                             </div>
                         </div>
                     )}
                 </Card>
+
+                {/* Combined Stats */}
+                {earnings && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className="p-6">
+                            <h3 className="text-lg font-bold text-black mb-4">Total Statistics</h3>
+                            <div className="space-y-3">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-text">Total Orders</span>
+                                    <span className="font-semibold">{earnings.combined.totalOrders}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-text">Completed Orders</span>
+                                    <span className="font-semibold text-green-600">{earnings.combined.completedOrders}</span>
+                                </div>
+                            </div>
+                        </Card>
+
+                        <Card className="p-6">
+                            <h3 className="text-lg font-bold text-black mb-4">Currency Breakdown</h3>
+                            <div className="space-y-3">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-text">SOL Orders</span>
+                                    <span className="font-semibold">{earnings.sol.completedOrders}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-text">USDC Orders</span>
+                                    <span className="font-semibold">{earnings.usdc.completedOrders}</span>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                )}
 
                 {/* Withdrawal History */}
                 <Card className="p-6">
@@ -289,6 +370,7 @@ export default function EarningsPage() {
                                     <tr className="text-left text-sm text-muted-text">
                                         <th className="p-3">Status</th>
                                         <th className="p-3">Amount</th>
+                                        <th className="p-3">Currency</th>
                                         <th className="p-3">Orders</th>
                                         <th className="p-3">Requested</th>
                                         <th className="p-3">Completed</th>
@@ -307,7 +389,13 @@ export default function EarningsPage() {
                                                 </div>
                                             </td>
                                             <td className="p-3 font-semibold">
-                                                {w.amount.toFixed(4)} {w.currency}
+                                                {w.amount.toFixed(4)}
+                                            </td>
+                                            <td className="p-3">
+                                                <span className={`px-2 py-1 rounded text-xs font-medium ${w.currency === 'SOL' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
+                                                    }`}>
+                                                    {w.currency}
+                                                </span>
                                             </td>
                                             <td className="p-3 text-muted-text">{w.orderCount}</td>
                                             <td className="p-3 text-sm text-muted-text">
@@ -342,12 +430,12 @@ export default function EarningsPage() {
                 {showWithdrawModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <Card className="max-w-md w-full p-6">
-                            <h3 className="text-xl font-bold text-black mb-4">Request Withdrawal</h3>
+                            <h3 className="text-xl font-bold text-black mb-4">Request {selectedCurrency} Withdrawal</h3>
 
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-black mb-2">
-                                        Amount ({earnings?.currency})
+                                        Amount ({selectedCurrency})
                                     </label>
                                     <input
                                         type="number"
@@ -358,7 +446,7 @@ export default function EarningsPage() {
                                         placeholder="0.0000"
                                     />
                                     <p className="text-xs text-muted-text mt-1">
-                                        Available: {earnings?.available.toFixed(4)} {earnings?.currency}
+                                        Available: {earnings?.[selectedCurrency.toLowerCase() as 'sol' | 'usdc']?.available.toFixed(4)} {selectedCurrency}
                                     </p>
                                 </div>
 

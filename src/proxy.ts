@@ -93,7 +93,7 @@ export function proxy(request: NextRequest) {
     // Referrer Policy
     response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
-    // Content Security Policy (updated for production)
+    // Content Security Policy (updated for Solana and production)
     response.headers.set(
         "Content-Security-Policy",
         "default-src 'self'; " +
@@ -101,7 +101,8 @@ export function proxy(request: NextRequest) {
         "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
         "font-src 'self' https://fonts.gstatic.com; " +
-        "connect-src 'self' https://api.devnet.solana.com https://api.mainnet-beta.solana.com https://*.supabase.co wss://*.supabase.co;"
+        "media-src 'self' data: blob:; " +
+        "connect-src 'self' https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.supabase.co wss://*.supabase.co;"
     );
 
     return response;
