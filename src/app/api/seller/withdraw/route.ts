@@ -53,27 +53,62 @@ export async function POST(req: Request) {
             );
         }
 
-        // 3. Calculate available earnings
-        const { data: earningsData, error: earningsError } = await supabase
-            .rpc("get_seller_earnings", { p_seller_address: address });
+        // 3. Get seller's stores
+        const { data: stores } = await supabase
+            .from("stores")
+            .select("id")
+            .eq("owner_address", address);
 
-        if (earningsError || !earningsData || earningsData.length === 0) {
-            console.error("[Withdraw] Earnings calculation error:", earningsError);
+        if (!stores || stores.length === 0) {
             return Response.json(
-                { ok: false, error: "Failed to calculate earnings" },
-                { status: 500 }
+                { ok: false, error: "No stores found" },
+                { status: 404 }
             );
         }
 
-        const earnings = earningsData[0];
-        const available = parseFloat(earnings.available) || 0;
+        const storeIds = stores.map(s => s.id);
 
-        // 4. Validate withdrawal amount
+        // 4. Calculate available earnings
+        const { data: completedOrders } = await supabase
+            .from("orders")
+            .select("id, amount")
+            .in("store_id", storeIds)
+            .eq("status", "completed");
+
+        const { data: completedWithdrawals } = await supabase
+            .from("withdrawal_requests")
+            .select("amount")
+            .eq("seller_address", address)
+            .eq("status", "completed");
+
+        const { data: pendingWithdrawals } = await supabase
+            .from("withdrawal_requests")
+            .select("amount")
+            .eq("seller_address", address)
+            .in("status", ["pending", "processing"]);
+
+        const totalRevenue = completedOrders?.reduce((sum, order) => {
+            return sum + (parseFloat(order.amount.toString()) || 0);
+        }, 0) || 0;
+
+        const sellerShare = totalRevenue * 0.95;
+
+        const withdrawnAmount = completedWithdrawals?.reduce((sum, w) => {
+            return sum + (parseFloat(w.amount.toString()) || 0);
+        }, 0) || 0;
+
+        const pendingAmount = pendingWithdrawals?.reduce((sum, w) => {
+            return sum + (parseFloat(w.amount.toString()) || 0);
+        }, 0) || 0;
+
+        const available = sellerShare - withdrawnAmount - pendingAmount;
+
+        // 5. Validate withdrawal amount
         if (amount > available) {
             return Response.json(
                 {
                     ok: false,
-                    error: `Insufficient balance. Available: ${available} ${currency}`
+                    error: `Insufficient balance. Available: ${available.toFixed(4)} ${currency}`
                 },
                 { status: 400 }
             );
@@ -91,28 +126,15 @@ export async function POST(req: Request) {
             );
         }
 
-        // 5. Get eligible orders (completed, not withdrawn, belongs to seller's stores)
-        const { data: stores } = await supabase
-            .from("stores")
-            .select("id")
-            .eq("owner_address", address);
+        // 6. Get eligible orders (completed, not withdrawn, belongs to seller's stores)
 
-        if (!stores || stores.length === 0) {
-            return Response.json(
-                { ok: false, error: "No stores found" },
-                { status: 404 }
-            );
-        }
-
-        const storeIds = stores.map(s => s.id);
-
+        // 7. Get eligible orders for withdrawal
         const { data: eligibleOrders } = await supabase
             .from("orders")
-            .select("id, amount, currency")
+            .select("id, amount")
             .in("store_id", storeIds)
             .eq("status", "completed")
             .eq("withdrawn", false)
-            .eq("currency", currency)
             .order("created_at", { ascending: true });
 
         if (!eligibleOrders || eligibleOrders.length === 0) {
@@ -122,30 +144,34 @@ export async function POST(req: Request) {
             );
         }
 
-        // 6. Select orders that sum up to the withdrawal amount (with seller's share)
-        let selectedAmount = 0;
+        // 8. Select orders to cover the withdrawal amount
+        // We need to track which orders contributed to this seller's earnings
+        let accumulatedSellerShare = 0;
         const selectedOrderIds: string[] = [];
 
         for (const order of eligibleOrders) {
-            const sellerShare = parseFloat(order.amount) * 0.95;
-            if (selectedAmount + sellerShare <= amount) {
-                selectedOrderIds.push(order.id);
-                selectedAmount += sellerShare;
+            const orderSellerShare = parseFloat(order.amount.toString()) * 0.95;
+            selectedOrderIds.push(order.id);
+            accumulatedSellerShare += orderSellerShare;
+
+            // Keep selecting orders until we've covered the withdrawal amount
+            if (accumulatedSellerShare >= amount) {
+                break;
             }
-            if (selectedAmount >= amount) break;
         }
 
-        if (selectedAmount < amount) {
+        // Verify we selected enough orders
+        if (accumulatedSellerShare < amount) {
             return Response.json(
                 {
                     ok: false,
-                    error: "Could not match order amounts to withdrawal request"
+                    error: `Insufficient orders to cover withdrawal. Available from orders: ${accumulatedSellerShare.toFixed(4)} ${currency}, Requested: ${amount.toFixed(4)} ${currency}`
                 },
                 { status: 400 }
             );
         }
 
-        // 7. Create withdrawal request
+        // 9. Create withdrawal request
         const { data: withdrawal, error: withdrawalError } = await supabase
             .from("withdrawal_requests")
             .insert({
@@ -167,7 +193,7 @@ export async function POST(req: Request) {
             );
         }
 
-        // 8. Mark orders as in-withdrawal (set withdrawal_id)
+        // 10. Mark orders as in-withdrawal (set withdrawal_id)
         const { error: updateError } = await supabase
             .from("orders")
             .update({ withdrawal_id: withdrawal.id })
