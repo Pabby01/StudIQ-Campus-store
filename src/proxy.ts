@@ -93,7 +93,7 @@ export function proxy(request: NextRequest) {
     // Referrer Policy
     response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
-    // Content Security Policy (updated for Solana and production)
+    // Content Security Policy (updated for Solana wallets and production)
     response.headers.set(
         "Content-Security-Policy",
         "default-src 'self'; " +
@@ -102,7 +102,8 @@ export function proxy(request: NextRequest) {
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
         "font-src 'self' https://fonts.gstatic.com; " +
         "media-src 'self' data: blob:; " +
-        "connect-src 'self' https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.supabase.co wss://*.supabase.co;"
+        "frame-src 'self' https://connect.solflare.com https://phantom.app; " +
+        "connect-src 'self' https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com;"
     );
 
     return response;

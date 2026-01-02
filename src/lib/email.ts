@@ -85,7 +85,7 @@ export async function sendOrderConfirmation(details: OrderDetails) {
                   <!-- Header with Logo -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
                       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Order Confirmed!</h1>
                       <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Thank you for shopping with us 🎉</p>
                     </td>
@@ -144,7 +144,7 @@ export async function sendOrderConfirmation(details: OrderDetails) {
                       <table width="100%" cellpadding="0" cellspacing="0" style="margin: 35px 0;">
                         <tr>
                           <td align="center">
-                            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stud-iq-campus-store.vercel.app'}/track" 
+                            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun'}/track" 
                                style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
                               Track Your Order →
                             </a>
@@ -236,7 +236,7 @@ export async function sendSellerNotification(details: SellerNotification) {
                   <!-- Header with Logo -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
                       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">New Order Received!</h1>
                       <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">You have a new order to fulfill 🛍️</p>
                     </td>
@@ -305,7 +305,7 @@ export async function sendSellerNotification(details: SellerNotification) {
                       <table width="100%" cellpadding="0" cellspacing="0" style="margin: 35px 0;">
                         <tr>
                           <td align="center">
-                            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stud-iq-campus-store.vercel.app'}/dashboard/orders" 
+                            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun'}/dashboard/orders" 
                                style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);">
                               View Order in Dashboard →
                             </a>
@@ -381,7 +381,7 @@ export async function sendShippingConfirmation(
                   <!-- Header with Logo -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
                       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Your Order is On Its Way!</h1>
                       <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">It's being shipped to you 📦</p>
                     </td>
@@ -419,7 +419,7 @@ export async function sendShippingConfirmation(
                       <table width="100%" cellpadding="0" cellspacing="0" style="margin: 35px 0;">
                         <tr>
                           <td align="center">
-                            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stud-iq-campus-store.vercel.app'}/track" 
+                            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun'}/track" 
                                style="display: inline-block; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); color: #ffffff; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">
                               Track Your Order →
                             </a>
@@ -495,7 +495,7 @@ export async function sendOrderCompleted(
                   <!-- Header with Logo -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
                       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Order Delivered!</h1>
                       <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Enjoy your purchase! ✨</p>
                     </td>
@@ -529,7 +529,7 @@ export async function sendOrderCompleted(
                             <table cellpadding="0" cellspacing="0">
                               <tr>
                                 <td>
-                                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stud-iq-campus-store.vercel.app'}/dashboard/orders" 
+                                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun'}/dashboard/orders" 
                                      style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
                                     Write a Review ⭐
                                   </a>
