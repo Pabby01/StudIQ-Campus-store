@@ -13,9 +13,9 @@ const SESSION_EXPIRY_DAYS = 7
 
 export interface WalletSession {
     walletAddress: string
-  connect edAt: number
-expiresAt: number
-appOrigin: 'main_app' | 'campus_store'
+    connectedAt: number
+    expiresAt: number
+    appOrigin: 'main_app' | 'campus_store'
 }
 
 export class CrossAppSessionManager {
