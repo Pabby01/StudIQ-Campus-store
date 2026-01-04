@@ -3,10 +3,13 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import Button from "@/components/ui/Button";
+import MobileWalletButton from "@/components/MobileWalletButton";
+import { isMobileDevice } from "@/lib/mobileWallet";
 
 export default function WalletBar() {
   const { connected, publicKey, disconnect } = useWallet();
   const { setVisible } = useWalletModal();
+  const isMobile = isMobileDevice();
 
   if (connected && publicKey) {
     return (
@@ -25,6 +28,12 @@ export default function WalletBar() {
     );
   }
 
+  // On mobile, use MobileWalletButton which handles deep linking properly
+  if (isMobile) {
+    return <MobileWalletButton />;
+  }
+
+  // On desktop, use custom modal
   return (
     <Button
       onClick={() => setVisible(true)}

@@ -14,23 +14,33 @@ interface WalletModalProps {
 }
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
-    const { wallets, select, connect, connected, publicKey } = useWallet();
+    const { wallets, select, connect, connected, publicKey, wallet: currentWallet } = useWallet();
     const { setVisible } = useWalletModal();
     const isMobile = isMobileDevice();
 
     const handleConnect = async (walletName: string) => {
         try {
-            // Select the wallet
+            // Find the wallet
             const wallet = wallets.find(w => w.adapter.name === walletName);
             if (!wallet) return;
 
+            console.log('[WalletModal] Connecting to:', walletName);
+
+            // Select the wallet
             select(wallet.adapter.name);
 
-            // Wait for selection to complete before connecting
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // For Mobile Wallet Adapter, we need to ensure the connection is triggered
+            // Wait a bit for selection to propagate
+            await new Promise(resolve => setTimeout(resolve, 200));
 
-            // Connect
+            // Connect - this will trigger the deep link for mobile wallets
+            console.log('[WalletModal] Triggering connection...');
             await connect();
+
+            console.log('[WalletModal] Connection initiated, waiting for result...');
+
+            // Wait for connection to complete
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             // Check if profile exists and is complete
             if (publicKey) {
@@ -72,7 +82,9 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
             onClose();
         } catch (error) {
-            console.error("Connection failed:", error);
+            console.error("[WalletModal] Connection failed:", error);
+            // Show error to user
+            alert(`Failed to connect: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     };
 
