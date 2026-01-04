@@ -49,7 +49,62 @@ setInterval(() => {
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Apply rate limiting to API routes
+    // Handle CORS for API sync routes
+    if (pathname.startsWith('/api/sync/')) {
+        const key = getRateLimitKey(request);
+        const { allowed, remaining } = checkRateLimit(key);
+
+        if (!allowed) {
+            return NextResponse.json(
+                {
+                    ok: false,
+                    error: "Too many requests",
+                    code: "RATE_LIMIT_EXCEEDED",
+                },
+                {
+                    status: 429,
+                    headers: {
+                        "X-RateLimit-Limit": MAX_REQUESTS.toString(),
+                        "X-RateLimit-Remaining": "0",
+                        "Retry-After": "60",
+                    },
+                }
+            );
+        }
+
+        const response = NextResponse.next();
+
+        // CORS headers for sync API
+        const origin = request.headers.get('origin');
+        const allowedOrigins = [
+            'https://www.studiq.fun',
+            'https://studiq.fun',
+            'https://store.studiq.fun',
+            'http://localhost:3000',
+            'http://localhost:3001'
+        ];
+
+        if (origin && allowedOrigins.includes(origin)) {
+            response.headers.set('Access-Control-Allow-Origin', origin);
+            response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Sync-API-Key');
+            response.headers.set('Access-Control-Allow-Credentials', 'true');
+        }
+
+        // Handle OPTIONS preflight
+        if (request.method === 'OPTIONS') {
+            return new NextResponse(null, {
+                status: 200,
+                headers: response.headers
+            });
+        }
+
+        response.headers.set("X-RateLimit-Limit", MAX_REQUESTS.toString());
+        response.headers.set("X-RateLimit-Remaining", remaining.toString());
+        return response;
+    }
+
+    // Apply rate limiting to other API routes
     if (pathname.startsWith("/api/")) {
         const key = getRateLimitKey(request);
         const { allowed, remaining } = checkRateLimit(key);
