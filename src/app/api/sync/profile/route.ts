@@ -73,15 +73,13 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/sync/profile/:walletAddress
+ * GET /api/sync/profile?walletAddress=xxx
  * Send profile data to main app
  */
-export async function GET(
-    request: NextRequest,
-    { params }: { params: { walletAddress: string } }
-) {
+export async function GET(request: NextRequest) {
     try {
-        const { walletAddress } = params
+        const { searchParams } = new URL(request.url)
+        const walletAddress = searchParams.get('walletAddress')
 
         if (!walletAddress) {
             return NextResponse.json(

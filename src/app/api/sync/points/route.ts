@@ -5,15 +5,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 /**
- * GET /api/sync/points/:walletAddress
+ * GET /api/sync/points?walletAddress=xxx
  * Get total points earned from store purchases
  */
-export async function GET(
-    request: NextRequest,
-    { params }: { params: { walletAddress: string } }
-) {
+export async function GET(request: NextRequest) {
     try {
-        const { walletAddress } = params
+        const { searchParams } = new URL(request.url)
+        const walletAddress = searchParams.get('walletAddress')
 
         if (!walletAddress) {
             return NextResponse.json(
