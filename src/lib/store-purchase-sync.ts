@@ -13,7 +13,7 @@ interface PurchaseSyncData {
 }
 
 export async function syncPurchaseToMainApp(data: PurchaseSyncData) {
-    const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'https://studiq.app'
+    const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'https://www.studiq.fun'
 
     try {
         // Report purchase to main app
@@ -56,7 +56,7 @@ export async function syncPurchaseToMainApp(data: PurchaseSyncData) {
  * Sync points earned to main app
  */
 export async function syncPointsToMainApp(walletAddress: string, points: number, reason: string) {
-    const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'https://studiq.app'
+    const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'https://www.studiq.fun'
 
     try {
         const response = await fetch(`${mainAppUrl}/api/sync/points`, {

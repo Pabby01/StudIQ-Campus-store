@@ -38,7 +38,7 @@ export default function Navbar() {
               {/* Desktop Navigation */}
               <div className="hidden md:flex items-center gap-6">
                 <a
-                  href="https://studiq.app"
+                  href="https://www.studiq.fun"
                   className="text-sm font-medium text-primary-blue hover:text-blue-700 transition-colors flex items-center gap-1"
                 >
                   ← Back to StudIQ
