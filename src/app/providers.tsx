@@ -4,12 +4,6 @@ import { useMemo } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
-import {
-  SolanaMobileWalletAdapter,
-  createDefaultAddressSelector,
-  createDefaultAuthorizationResultCache,
-  createDefaultWalletNotFoundHandler,
-} from "@solana-mobile/wallet-adapter-mobile";
 import type { ReactNode } from "react";
 
 // Import wallet adapter CSS
@@ -28,22 +22,9 @@ function getRpcConfig() {
 export default function Providers({ children }: { children: ReactNode }) {
   const { endpoint } = getRpcConfig();
 
-  // Configure wallets with Mobile Wallet Adapter for deep linking
+  // Configure wallets - Phantom and Solflare work on BOTH desktop and mobile web
   const wallets = useMemo(
     () => [
-      // Mobile Wallet Adapter for native app deep linking (iOS/Android)
-      new SolanaMobileWalletAdapter({
-        addressSelector: createDefaultAddressSelector(),
-        appIdentity: {
-          name: "StudIQ Campus Store",
-          uri: "https://store.studiq.fun",
-          icon: "https://i.postimg.cc/VNXWGB8P/logo.jpg",
-        },
-        authorizationResultCache: createDefaultAuthorizationResultCache(),
-        cluster: "devnet",
-        onWalletNotFound: createDefaultWalletNotFoundHandler(),
-      }),
-      // Desktop wallet adapters (browser extensions)
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
     ],
