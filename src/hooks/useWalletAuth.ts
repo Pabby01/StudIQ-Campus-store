@@ -63,7 +63,6 @@ export function useWalletAuth() {
     disconnect: wallet.disconnect,
 
     // Session helpers
-    getSessionToken: () => CrossAppSessionManager.getCurrentSession()?.token,
-    hasActiveSession: () => CrossAppSessionManager.getCurrentSession() !== null,
+    hasActiveSession: () => CrossAppSessionManager.hasActiveSession(),
   };
 }
