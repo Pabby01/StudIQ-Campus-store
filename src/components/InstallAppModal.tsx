@@ -93,7 +93,7 @@ export default function InstallAppModal() {
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative w-full max-w-md bg-gradient-to-br from-gray-900 to-gray-800 border border-purple-500/20 rounded-2xl shadow-2xl p-6 animate-in slide-in-from-bottom-4 duration-300">
+            <div className="relative w-full max-w-md bg-gradient-to-br from-gray-900 to-gray-800 border border-blue-500/20 rounded-2xl shadow-2xl p-6 animate-in slide-in-from-bottom-4 duration-300">
                 {/* Close button */}
                 <button
                     onClick={handleDismiss}
@@ -105,7 +105,7 @@ export default function InstallAppModal() {
 
                 {/* Logo/Icon */}
                 <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
                         <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
@@ -125,8 +125,8 @@ export default function InstallAppModal() {
                 {/* Benefits */}
                 <div className="space-y-3 mb-6">
                     <div className="flex items-center gap-3 text-sm">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                            <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                         </div>
@@ -154,7 +154,7 @@ export default function InstallAppModal() {
                 <div className="flex flex-col gap-3">
                     <button
                         onClick={handleInstallClick}
-                        className="w-full py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-purple-500/50 transition-all duration-200 transform hover:scale-[1.02]"
+                        className="w-full py-3 px-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-blue-500/50 transition-all duration-200 transform hover:scale-[1.02]"
                     >
                         Install Now
                     </button>
