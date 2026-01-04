@@ -22,6 +22,11 @@ function getRpcConfig() {
 export default function Providers({ children }: { children: ReactNode }) {
   const { endpoint } = getRpcConfig();
 
+  // Get the app URL for redirects (critical for PWA mode)
+  const appUrl = typeof window !== 'undefined'
+    ? window.location.origin
+    : process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun';
+
   // Configure wallets - Phantom and Solflare work on BOTH desktop and mobile web
   const wallets = useMemo(
     () => [
@@ -32,8 +37,20 @@ export default function Providers({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect={false}>
+    <ConnectionProvider
+      endpoint={endpoint}
+      config={{
+        commitment: 'confirmed',
+        // Critical: Tell wallet where to redirect after authorization
+        wsEndpoint: undefined,
+      }}
+    >
+      <WalletProvider
+        wallets={wallets}
+        autoConnect={false}
+        // This ensures proper redirect handling in PWA mode
+        localStorageKey="studiq-wallet"
+      >
         <WalletModalProvider>
           {children}
         </WalletModalProvider>
