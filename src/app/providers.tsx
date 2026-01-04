@@ -23,6 +23,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   const { endpoint } = getRpcConfig();
 
   // Configure wallets
+  // Note: Mobile Wallet Adapter will be added after verifying correct API
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
