@@ -22,47 +22,30 @@ export async function POST(request: NextRequest) {
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-        // Check if profile exists
-        const { data: existingProfile } = await supabase
+        // Use upsert to handle concurrent requests gracefully
+        // This prevents duplicate key errors when multiple sync requests arrive
+        const { error } = await supabase
             .from('profiles')
-            .select('address')
-            .eq('address', walletAddress)
-            .single()
-
-        if (existingProfile) {
-            // Update existing profile
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    name: displayName || undefined,
-                    updated_at: new Date().toISOString()
-                } as any)
-                .eq('address', walletAddress)
-
-            if (error) throw error
-
-            return NextResponse.json({
-                success: true,
-                message: 'Profile updated from main app'
+            .upsert({
+                address: walletAddress,
+                name: displayName || 'Student',
+                school: null,
+                campus: null,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'address',  // Specify which column is unique
+                ignoreDuplicates: false  // Update existing row instead of ignoring
             })
-        } else {
-            // Create new profile from main app data
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert({
-                    address: walletAddress,
-                    name: displayName || 'Student',
-                    school: null,
-                    campus: null
-                } as any)
 
-            if (profileError) throw profileError
-
-            return NextResponse.json({
-                success: true,
-                message: 'Profile created from main app'
-            })
+        if (error) {
+            console.error('Profile sync error:', error)
+            throw error
         }
+
+        return NextResponse.json({
+            success: true,
+            message: 'Profile synced from main app'
+        })
     } catch (error) {
         console.error('Profile sync error:', error)
         return NextResponse.json(

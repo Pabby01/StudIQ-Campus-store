@@ -19,5 +19,12 @@
             "type": "image/jpeg",
             "purpose": "any maskable"
         }
-    ]
+    ],
+    "protocol_handlers": [
+        {
+            "protocol": "web+solana",
+            "url": "/?wallet-response=%s"
+        }
+    ],
+    "scope": "/"
 }

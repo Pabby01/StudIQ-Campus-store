@@ -9,6 +9,10 @@ import type { ReactNode } from "react";
 // Import wallet adapter CSS
 import "@solana/wallet-adapter-react-ui/styles.css";
 
+// CRITICAL: Import wallet-standard-mobile to enable PWA mobile wallet connections
+// This registers the Mobile Wallet Adapter for local connections on the same device
+import "@solana-mobile/wallet-standard-mobile";
+
 function getRpcConfig() {
   const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet";
   const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
@@ -28,6 +32,7 @@ export default function Providers({ children }: { children: ReactNode }) {
     : process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun';
 
   // Configure wallets - Phantom and Solflare work on BOTH desktop and mobile web
+  // The wallet-standard-mobile import above automatically registers MWA
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
