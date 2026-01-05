@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import DashboardCard from "@/components/DashboardCard";
 import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet } from "lucide-react";
 import RevenueChart from "@/components/charts/RevenueChart";
@@ -28,36 +28,34 @@ type AnalyticsData = {
 };
 
 export default function DashboardPage() {
-  const wallet = useWallet();
+  const { walletAddress, user, isLoading: authLoading } = useCivicWallet();
   const [isBuyer, setIsBuyer] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
-
   useEffect(() => {
-    if (address) {
+    if (walletAddress) {
       fetchDashboardData();
-    } else {
+    } else if (!authLoading) {
       setLoading(false);
     }
-  }, [address]);
+  }, [walletAddress, authLoading]);
 
   const fetchDashboardData = async (silent = false) => {
-    if (!address) return;
+    if (!walletAddress) return;
 
     if (!silent) setLoading(true);
     setRefreshing(true);
 
     try {
       // Fetch stats
-      const statsRes = await fetch(`/api/dashboard/stats?address=${address}`);
+      const statsRes = await fetch(`/api/dashboard/stats?address=${walletAddress}`);
       const statsData = await statsRes.json();
 
       // Fetch analytics
-      const analyticsRes = await fetch(`/api/dashboard/analytics?address=${address}&range=30`);
+      const analyticsRes = await fetch(`/api/dashboard/analytics?address=${walletAddress}&range=30`);
       const analyticsData = await analyticsRes.json();
 
       setStats(isBuyer ? statsData.buyer : statsData.seller);
@@ -82,17 +80,20 @@ export default function DashboardPage() {
 
   // Re-fetch when toggling between buyer/seller
   useEffect(() => {
-    if (address) {
+    if (walletAddress) {
       fetchDashboardData();
     }
   }, [isBuyer]);
 
-  if (!wallet.connected) {
+  if (!user || !walletAddress) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-black mb-4">Connect Your Wallet</h2>
-          <p className="text-lg text-muted-text">Please connect your wallet to view dashboard</p>
+          <h2 className="text-2xl font-bold text-black mb-4">Sign In Required</h2>
+          <p className="text-lg text-muted-text mb-6">Please sign in to view your dashboard</p>
+          <Button variant="primary" onClick={() => window.location.href = "/"}>
+            Go to Home
+          </Button>
         </div>
       </div>
     );

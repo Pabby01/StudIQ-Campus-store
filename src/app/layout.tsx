@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import MobileNav from "@/components/MobileNav";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import InstallAppModal from "@/components/InstallAppModal";
-import WalletDebugPanel from "@/components/WalletDebugPanel";
+
 import { ToastProvider } from "@/hooks/useToast";
 
 const geistSans = Geist({
@@ -95,7 +95,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <ToastProvider>
             <Providers>
-              <WalletDebugPanel />
+
               <InstallAppModal />
               <Navbar />
               <main className="pb-16 md:pb-0">

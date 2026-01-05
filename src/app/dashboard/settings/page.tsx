@@ -1,8 +1,7 @@
-"use client";
-
+'use client';
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PremiumBadge from "@/components/PremiumBadge";
@@ -33,7 +32,7 @@ export default function DashboardSettingsPage() {
 function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const wallet = useWallet();
+  const { walletAddress, user } = useCivicWallet();
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [storeLimit, setStoreLimit] = useState<any>(null);
@@ -41,16 +40,14 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
   const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null);
 
-  const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
-
   useEffect(() => {
-    if (address) {
+    if (walletAddress) {
       fetchSubscription();
       fetchProfile();
       fetchStoreLimit();
       fetchBillingHistory();
     }
-  }, [address]);
+  }, [walletAddress]);
 
   useEffect(() => {
     const target = searchParams?.get("upgrade");
@@ -60,10 +57,10 @@ function SettingsContent() {
   }, [searchParams]);
 
   const fetchSubscription = async () => {
-    if (!address) return;
+    if (!walletAddress) return;
 
     try {
-      const res = await fetch(`/api/subscription/status?address=${address}`);
+      const res = await fetch(`/api/subscription/status?address=${walletAddress}`);
       const data = await res.json();
       setSubscription(data);
     } catch (error) {
@@ -74,10 +71,10 @@ function SettingsContent() {
   };
 
   const fetchProfile = async () => {
-    if (!address) return;
+    if (!walletAddress) return;
 
     try {
-      const res = await fetch(`/api/profile?address=${address}`);
+      const res = await fetch(`/api/profile?address=${walletAddress}`);
       const data = await res.json();
       setProfile(data.profile);
     } catch (error) {
@@ -86,10 +83,10 @@ function SettingsContent() {
   };
 
   const fetchStoreLimit = async () => {
-    if (!address) return;
+    if (!walletAddress) return;
 
     try {
-      const res = await fetch(`/api/store/check-limit?address=${address}`);
+      const res = await fetch(`/api/store/check-limit?address=${walletAddress}`);
       const data = await res.json();
       setStoreLimit(data);
     } catch (error) {
@@ -98,10 +95,10 @@ function SettingsContent() {
   };
 
   const fetchBillingHistory = async () => {
-    if (!address) return;
+    if (!walletAddress) return;
 
     try {
-      const res = await fetch(`/api/subscription/billing-history?address=${address}`);
+      const res = await fetch(`/api/subscription/billing-history?address=${walletAddress}`);
       const data = await res.json();
       setBillingHistory(data.transactions || []);
     } catch (error) {
@@ -113,12 +110,15 @@ function SettingsContent() {
     router.push(`/pricing`);
   };
 
-  if (!wallet.connected) {
+  if (!user || !walletAddress) {
     return (
       <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
         <Card className="p-8 text-center">
-          <h2 className="text-xl font-bold mb-4">Connect Wallet</h2>
-          <p className="text-muted-text">Please connect your wallet to manage settings</p>
+          <h2 className="text-xl font-bold mb-4">Sign In Required</h2>
+          <p className="text-muted-text mb-6">Please sign in to manage your settings</p>
+          <Button variant="primary" onClick={() => router.push("/")}>
+            Go to Home
+          </Button>
         </Card>
       </div>
     );
@@ -352,7 +352,7 @@ function SettingsContent() {
                   Wallet Address
                 </label>
                 <div className="bg-gray-50 rounded-lg p-3 font-mono text-xs break-all">
-                  {address}
+                  {walletAddress}
                 </div>
               </div>
               <Button
@@ -369,7 +369,7 @@ function SettingsContent() {
                   Wallet Address
                 </label>
                 <div className="bg-gray-50 rounded-lg p-3 font-mono text-sm break-all">
-                  {address}
+                  {walletAddress}
                 </div>
               </div>
             </div>
@@ -419,8 +419,8 @@ function SettingsContent() {
                       </td>
                       <td className="p-3">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${transaction.status === 'completed'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
                           }`}>
                           {transaction.status}
                         </span>

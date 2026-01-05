@@ -148,17 +148,17 @@ export function proxy(request: NextRequest) {
     // Referrer Policy
     response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
-    // Content Security Policy (updated for Solana wallets and production)
+    // Content Security Policy (updated for Civic Auth, Metakeep, and Solana wallets)
     response.headers.set(
         "Content-Security-Policy",
         "default-src 'self'; " +
         "img-src 'self' data: https: blob:; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.civic.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.civic.com; " +
         "font-src 'self' https://fonts.gstatic.com; " +
         "media-src 'self' data: blob:; " +
-        "frame-src 'self' https://connect.solflare.com https://phantom.app; " +
-        "connect-src 'self' https://studiq.fun https://www.studiq.fun https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com;"
+        "frame-src 'self' https://connect.solflare.com https://phantom.app https://*.civic.com https://auth.metakeep.xyz https://*.metakeep.xyz; " +
+        "connect-src 'self' https://studiq.fun https://www.studiq.fun https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com https://*.civic.com https://*.metakeep.xyz https://sepolia-preconf.base.org https://mainnet.base.org;"
     );
 
     return response;

@@ -2,14 +2,13 @@
 "use client";
 
 import { useCart } from "@/store/cart";
-import { useWalletAuth } from "@/hooks/useWalletAuth";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { createTransferTransaction, waitForConfirmation, broadcastTransaction } from "@/lib/solana";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifying" | "success" | "error";
 
@@ -19,8 +18,9 @@ export default function CartPage() {
   const remove = useCart((s) => s.remove);
   const clear = useCart((s) => s.clear);
   const updateQty = useCart((s) => s.updateQty);
-  const auth = useWalletAuth();
-  const wallet = useWallet();
+
+  // Use Civic wallet hook for unified access
+  const { walletAddress, email, wallet } = useCivicWallet();
 
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -29,31 +29,29 @@ export default function CartPage() {
   const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup">("shipping");
   const [paymentMethod, setPaymentMethod] = useState<"solana" | "pod">("solana");
 
-  // Use effect to handle pickup payment method default
-  /* useEffect(() => {
-     if (deliveryMethod === 'pickup') setPaymentMethod('pod');
-  }, [deliveryMethod]); */
-
   const [deliveryDetails, setDeliveryDetails] = useState({
     name: "",
-    email: "", // Added email state
+    email: email || "", // Pre-fill from Civic
     address: "",
     city: "",
     zip: "",
   });
 
-  async function checkout() {
-    // If POD (or Pickup), we might not need wallet connected if we allow guest checkout, 
-    // but the backend uses wallet address as ID. Let's keep wallet req for now for auth.
-    const userAddress = auth.address || (wallet.connected ? wallet.publicKey?.toBase58() : null);
+  // Pre-fill email when Civic user loads
+  useEffect(() => {
+    if (email && !deliveryDetails.email) {
+      setDeliveryDetails(prev => ({ ...prev, email }));
+    }
+  }, [email]);
 
-    if (!userAddress) {
-      setError("Please connect your wallet first");
+  async function checkout() {
+    if (!walletAddress) {
+      setError("Please sign in to complete checkout");
       return;
     }
 
-    if (paymentMethod === "solana" && !wallet.connected) {
-      setError("Wallet not connected for crypto payment");
+    if (paymentMethod === "solana" && !wallet.publicKey) {
+      setError("Wallet not ready for crypto payment");
       return;
     }
 
@@ -76,7 +74,7 @@ export default function CartPage() {
       const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
 
       const payload = {
-        buyer: userAddress,
+        buyer: walletAddress,
         storeId: items[0]?.storeId || "",
         items: items.map((i) => ({ productId: i.id, qty: i.qty })),
         currency: (items[0]?.currency || "SOL") as "SOL" | "USDC",
@@ -120,7 +118,7 @@ export default function CartPage() {
         return;
       }
 
-      // Validate Recipient Address for Crypto details
+      // Validate Recipient Address for Crypto
       if (!orderData.payTo) {
         throw new Error("Store wallet address is missing. Cannot verify payment destination.");
       }
@@ -128,7 +126,7 @@ export default function CartPage() {
       // Step 2: Create Solana transaction
       setCheckoutStatus("signing");
       const transaction = await createTransferTransaction(
-        userAddress,
+        walletAddress,
         orderData.payTo,
         total,
         orderData.currency === "USDC" ? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" : undefined

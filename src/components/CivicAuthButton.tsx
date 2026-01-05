@@ -1,27 +1,26 @@
 "use client";
 
-import { useUser } from "@civic/auth-web3/react";
-import { UserButton } from "@civic/auth-web3/react";
-import { Loader2, LogIn } from "lucide-react";
+import { useUser, SignInButton, UserButton } from "@civic/auth/react";
+import { Loader2 } from "lucide-react";
 
 export default function CivicAuthButton() {
-    const { user, isLoading, authStatus, signIn } = useUser();
+    const userContext = useUser();
 
     // Loading state
-    if (isLoading || authStatus === "authenticating") {
+    if (userContext.isLoading) {
         return (
             <button
                 disabled
-                className="px-4 py-2 bg-gray-100 rounded-lg flex items-center gap-2 cursor-not-allowed"
+                className="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-60"
             >
-                <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
-                <span className="text-sm text-gray-500">Loading...</span>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm font-medium">Loading...</span>
             </button>
         );
     }
 
-    // Authenticated - show Civic's UserButton component
-    if (user) {
+    // Authenticated - show Civic's UserButton
+    if (userContext.user) {
         return (
             <div className="civic-user-button">
                 <UserButton />
@@ -29,14 +28,7 @@ export default function CivicAuthButton() {
         );
     }
 
-    // Not authenticated - show custom sign in button
-    return (
-        <button
-            onClick={() => signIn()}
-            className="px-6 py-2.5 bg-gradient-to-r from-primary-blue to-accent-blue text-white font-semibold rounded-lg hover:opacity-90 transition-opacity shadow-md hover:shadow-lg flex items-center gap-2"
-        >
-            <LogIn className="w-4 h-4" />
-            <span>Sign In</span>
-        </button>
-    );
+    // Not authenticated - use Civic's SignInButton
+    // With displayMode="iframe" in provider, this should open as popup overlay
+    return <SignInButton />;
 }

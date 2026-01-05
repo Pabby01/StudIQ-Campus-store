@@ -3,9 +3,8 @@
 import { useMemo } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { CivicAuthProvider } from "@civic/auth-web3/react";
+import { CivicAuthProvider } from "@civic/auth/react";
 import type { ReactNode } from "react";
-import { useRouter } from "next/navigation";
 
 // Import wallet adapter CSS
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -39,30 +38,20 @@ export default function Providers({ children }: { children: ReactNode }) {
     return [];
   }, []);
 
-  console.log("[PROVIDER] Initializing with Civic Auth");
+  console.log("[PROVIDER] Initializing with Civic Auth (iframe mode)");
 
   return (
     <CivicAuthProvider
       clientId={civicClientId!}
-      onSignIn={async (user) => {
-        // Handle successful sign-in
-        const userEmail = user && 'email' in user ? user.email : null;
-        console.log("[CIVIC] User signed in:", userEmail);
-
-        // Check if user has completed onboarding
-        if (user && userEmail) {
-          try {
-            const res = await fetch(`/api/profile/check?email=${encodeURIComponent(userEmail as string)}`);
-            const data = await res.json();
-
-            if (!data.exists && typeof window !== 'undefined') {
-              console.log("[CIVIC] New user, redirecting to onboarding");
-              window.location.href = "/onboarding";
-            }
-          } catch (error) {
-            console.error("[CIVIC] Profile check failed:", error);
-          }
+      displayMode="new_tab"
+      onSignIn={({ error, user }) => {
+        if (error) {
+          console.error("[CIVIC] Sign in error:", error);
+          return;
         }
+        console.log("[CIVIC] User signed in successfully:", user?.email);
+        // User info available via user object
+        // Redirect to onboarding if needed - handled in components via useUser
       }}
       onSignOut={() => {
         console.log("[CIVIC] User signed out");
