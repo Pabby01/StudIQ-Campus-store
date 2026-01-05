@@ -1,19 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShoppingCart, Wallet, LayoutDashboard } from "lucide-react";
+import { Search, ShoppingCart, LayoutDashboard, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useCart } from "@/store/cart";
-import Button from "@/components/ui/Button";
 
 export default function Navbar() {
   const wallet = useWallet();
-  const auth = useWalletAuth();
   const items = useCart((s) => s.items);
 
   const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
+
+  const navItems = [
+    { href: "https://www.studiq.fun", icon: ArrowLeft, label: "StudIQ" },
+    { href: "/search", icon: Search, label: "Browse" },
+    { href: "/stores", icon: Store, label: "Stores" },
+    { href: "/prediction", icon: TrendingUp, label: "Predictions" },
+    { href: "/track", icon: Package, label: "Track" },
+    { href: "/leaderboard", icon: Trophy, label: "Leaderboard" },
+    { href: "/faq", icon: HelpCircle, label: "FAQ" },
+  ];
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-border-gray">
@@ -32,51 +39,36 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-6">
-              <a
-                href="https://www.studiq.fun"
-                className="text-sm font-medium text-primary-blue hover:text-blue-700 transition-colors flex items-center gap-1"
-              >
-                ← Back to StudIQ
-              </a>
-              <div className="h-4 w-px bg-border-gray" />
-              <Link
-                href="/search"
-                className="text-sm font-medium text-muted-text hover:text-primary-blue transition-colors"
-              >
-                Browse
-              </Link>
-              <Link
-                href="/stores"
-                className="text-sm font-medium text-muted-text hover:text-primary-blue transition-colors"
-              >
-                Stores
-              </Link>
-              <Link
-                href="/prediction"
-                className="text-sm font-medium text-muted-text hover:text-primary-blue transition-colors"
-              >
-                Predictions
-              </Link>
-              <Link
-                href="/track"
-                className="text-sm font-medium text-muted-text hover:text-primary-blue transition-colors"
-              >
-                Track Order
-              </Link>
-              <Link
-                href="/leaderboard"
-                className="text-sm font-medium text-muted-text hover:text-primary-blue transition-colors"
-              >
-                Leaderboard
-              </Link>
-              <Link
-                href="/faq"
-                className="text-sm font-medium text-muted-text hover:text-primary-blue transition-colors"
-              >
-                FAQ
-              </Link>
+            {/* Desktop Icon Navigation */}
+            <div className="hidden md:flex items-center gap-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isExternal = item.href.startsWith('http');
+
+                return isExternal ? (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    className="group flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all"
+                  >
+                    <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                    <span className="text-xs font-medium text-muted-text group-hover:text-primary-blue opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute translate-y-8">
+                      {item.label}
+                    </span>
+                  </a>
+                ) : (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="group flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all"
+                  >
+                    <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                    <span className="text-xs font-medium text-muted-text group-hover:text-primary-blue opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute translate-y-8">
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
@@ -102,17 +94,20 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             {/* Dashboard Button (only when connected) */}
             {wallet.connected && (
-              <Link href="/dashboard" className="hidden sm:block">
-                <Button variant="ghost" size="sm">
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
+              <Link
+                href="/dashboard"
+                className="group hidden sm:flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all"
+              >
+                <LayoutDashboard className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                <span className="text-xs font-medium text-muted-text group-hover:text-primary-blue opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute translate-y-8">
                   Dashboard
-                </Button>
+                </span>
               </Link>
             )}
 
             {/* Cart */}
-            <Link href="/cart" className="relative p-2 hover:bg-soft-gray-bg rounded-lg transition-colors">
-              <ShoppingCart className="w-5 h-5 text-black" />
+            <Link href="/cart" className="group relative p-2 hover:bg-soft-gray-bg rounded-lg transition-all">
+              <ShoppingCart className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {cartCount}
@@ -143,6 +138,12 @@ export default function Navbar() {
           />
         </div>
       </div>
+
+      <style jsx>{`
+        .rotate-360 {
+          transform: rotate(360deg);
+        }
+      `}</style>
     </nav>
   );
 }
