@@ -90,27 +90,10 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
     if (!isOpen) return null;
 
-    // Available wallets - different logic for mobile
-    const installedWallets = wallets.filter(w => {
-        // On mobile, show Mobile Wallet Adapter as "installed"
-        if (isMobile && w.adapter.name === 'Mobile Wallet Adapter') {
-            return true;
-        }
-        // On desktop, only show actually installed extensions
-        return w.readyState === 'Installed';
-    });
+    // Available wallets - only show actually installed/detected wallets
+    const installedWallets = wallets.filter(w => w.readyState === 'Installed');
 
-    const notInstalledWallets = wallets.filter(w => {
-        // Hide Mobile Wallet Adapter from "not installed" section on mobile
-        if (isMobile && w.adapter.name === 'Mobile Wallet Adapter') {
-            return false;
-        }
-        // On desktop, hide Mobile Wallet Adapter entirely
-        if (!isMobile && w.adapter.name === 'Mobile Wallet Adapter') {
-            return false;
-        }
-        return w.readyState === 'NotDetected';
-    });
+    const notInstalledWallets = wallets.filter(w => w.readyState === 'NotDetected');
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -164,15 +147,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                                         />
                                         <div>
                                             <div className="font-semibold text-black">
-                                                {wallet.adapter.name === 'Mobile Wallet Adapter'
-                                                    ? 'Solana Wallets'
-                                                    : wallet.adapter.name}
+                                                {wallet.adapter.name}
                                             </div>
                                             {isMobile && (
                                                 <div className="text-xs text-muted-text">
-                                                    {wallet.adapter.name === 'Mobile Wallet Adapter'
-                                                        ? 'Connect Phantom, Solflare, or any Solana wallet'
-                                                        : 'Tap to connect'}
+                                                    Tap to connect
                                                 </div>
                                             )}
                                         </div>
