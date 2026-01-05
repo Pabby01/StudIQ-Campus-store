@@ -1,17 +1,29 @@
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Wallet } from "lucide-react";
 
 export default function CustomWalletButton() {
     const { wallet, wallets, select, connect, disconnect, connected, publicKey, connecting } = useWallet();
     const [showMenu, setShowMenu] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
-    // FILTER OUT Mobile Wallet Adapter
-    const availableWallets = wallets.filter(
-        (w) => w.adapter.name !== "Mobile Wallet Adapter"
-    );
+    useEffect(() => {
+        setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+    }, []);
+
+    // FILTER OUT Mobile Wallet Adapter and PRIORITIZE Solflare
+    const availableWallets = wallets
+        .filter((w) => w.adapter.name !== "Mobile Wallet Adapter")
+        .sort((a, b) => {
+            // Solflare first, then Phantom, then others
+            if (a.adapter.name === "Solflare") return -1;
+            if (b.adapter.name === "Solflare") return 1;
+            if (a.adapter.name === "Phantom") return -1;
+            if (b.adapter.name === "Phantom") return 1;
+            return 0;
+        });
 
     const handleWalletSelect = async (walletName: string) => {
         try {
@@ -81,34 +93,42 @@ export default function CustomWalletButton() {
 
                         {availableWallets.length === 0 ? (
                             <div className="text-sm text-gray-600 p-4 text-center">
-                                No wallets detected. Please install Phantom or Solflare.
+                                No wallets detected. Please install Solflare or Phantom.
                             </div>
                         ) : (
                             <div className="space-y-1">
-                                {availableWallets.map((w) => (
-                                    <button
-                                        key={w.adapter.name}
-                                        onClick={() => handleWalletSelect(w.adapter.name)}
-                                        disabled={w.readyState !== "Installed"}
-                                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
-                                    >
-                                        <img
-                                            src={w.adapter.icon}
-                                            alt={w.adapter.name}
-                                            className="w-6 h-6"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="text-sm font-medium text-gray-900">
-                                                {w.adapter.name}
+                                {availableWallets.map((w) => {
+                                    // On mobile, show all wallets as clickable (they use deep links)
+                                    // On desktop, only show installed extensions
+                                    const isAvailable = isMobile || w.readyState === "Installed";
+
+                                    return (
+                                        <button
+                                            key={w.adapter.name}
+                                            onClick={() => handleWalletSelect(w.adapter.name)}
+                                            disabled={!isAvailable}
+                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
+                                        >
+                                            <img
+                                                src={w.adapter.icon}
+                                                alt={w.adapter.name}
+                                                className="w-6 h-6"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {w.adapter.name}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {isMobile
+                                                        ? "Tap to open app"
+                                                        : w.readyState === "Installed"
+                                                            ? "Detected"
+                                                            : "Not Installed"}
+                                                </div>
                                             </div>
-                                            <div className="text-xs text-gray-500">
-                                                {w.readyState === "Installed"
-                                                    ? "Detected"
-                                                    : "Not Installed"}
-                                            </div>
-                                        </div>
-                                    </button>
-                                ))}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
 
@@ -116,12 +136,14 @@ export default function CustomWalletButton() {
                             <p className="text-xs text-gray-500 text-center">
                                 Don't have a wallet?{" "}
                                 <a
-                                    href="https://phantom.app"
+                                    href={isMobile
+                                        ? "https://play.google.com/store/apps/details?id=com.solflare.mobile"
+                                        : "https://solflare.com"}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-primary-blue hover:underline"
                                 >
-                                    Get Phantom
+                                    Get Solflare
                                 </a>
                             </p>
                         </div>
