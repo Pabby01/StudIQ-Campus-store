@@ -4,12 +4,6 @@ import { useMemo } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
-import {
-  SolanaMobileWalletAdapter,
-  createDefaultAddressSelector,
-  createDefaultAuthorizationResultCache,
-  createDefaultWalletNotFoundHandler
-} from "@solana-mobile/wallet-adapter-mobile";
 import type { ReactNode } from "react";
 
 // Import wallet adapter CSS
@@ -31,33 +25,23 @@ function getRpcConfig() {
 export default function Providers({ children }: { children: ReactNode }) {
   const { endpoint } = getRpcConfig();
 
-  // Configure wallets with Mobile Wallet Adapter for mobile deep linking
+  // For PWAs: Use standard wallet adapters which have mobile deep linking built-in
+  // SolanaMobileWalletAdapter is for native Android apps only (uses localhost websocket)
   const wallets = useMemo(
     () => {
-      console.log("[WALLET INIT] Creating wallet adapters...");
+      console.log("[WALLET INIT] Creating wallet adapters for PWA...");
+      console.log("[WALLET INIT] Using Phantom and Solflare (with mobile deep linking)");
 
-      const mobileAdapter = new SolanaMobileWalletAdapter({
-        addressSelector: createDefaultAddressSelector(),
-        appIdentity: {
-          name: "StudIQ Campus Store",
-          uri: "https://store.studiq.fun",
-          icon: "https://i.postimg.cc/VNXWGB8P/logo.jpg",
-        },
-        authorizationResultCache: createDefaultAuthorizationResultCache(),
-        cluster: "devnet",
-        onWalletNotFound: createDefaultWalletNotFoundHandler(),
-      });
-
-      console.log("[WALLET INIT] Mobile Wallet Adapter created");
-      console.log("[WALLET INIT] App Identity URI:", "https://store.studiq.fun");
-
+      // Both Phantom and Solflare support mobile deep linking for PWAs
+      // They will automatically open the wallet app via deep link on mobile
       const phantomAdapter = new PhantomWalletAdapter();
       const solflareAdapter = new SolflareWalletAdapter();
 
-      console.log("[WALLET INIT] Desktop adapters created");
-      console.log("[WALLET INIT] Total adapters:", 3);
+      console.log("[WALLET INIT] Adapters created");
+      console.log("[WALLET INIT] Total adapters:", 2);
+      console.log("[WALLET INIT] Mobile support: Deep linking (not websocket)");
 
-      return [mobileAdapter, phantomAdapter, solflareAdapter];
+      return [phantomAdapter, solflareAdapter];
     },
     []
   );
