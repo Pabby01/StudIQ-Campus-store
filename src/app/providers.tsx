@@ -19,6 +19,9 @@ function getRpcConfig() {
   const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet";
   const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
 
+  console.log("[WALLET CONFIG] Network:", network);
+  console.log("[WALLET CONFIG] Endpoint:", endpoint);
+
   return {
     network,
     endpoint
@@ -30,42 +33,58 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   // Configure wallets with Mobile Wallet Adapter for mobile deep linking
   const wallets = useMemo(
-    () => [
-      // CRITICAL: Mobile Wallet Adapter MUST be first for mobile devices
-      new SolanaMobileWalletAdapter({
+    () => {
+      console.log("[WALLET INIT] Creating wallet adapters...");
+
+      const mobileAdapter = new SolanaMobileWalletAdapter({
         addressSelector: createDefaultAddressSelector(),
         appIdentity: {
           name: "StudIQ Campus Store",
-          // CRITICAL: This URI is where the wallet redirects back to after authorization
-          // Must match your live domain exactly for PWA to reopen correctly
           uri: "https://store.studiq.fun",
-          // Full URL to your app icon
           icon: "https://i.postimg.cc/VNXWGB8P/logo.jpg",
         },
-        // Cache authorization so users don't have to approve every time
         authorizationResultCache: createDefaultAuthorizationResultCache(),
         cluster: "devnet",
         onWalletNotFound: createDefaultWalletNotFoundHandler(),
-      }),
-      // Desktop wallet adapters (browser extensions)
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-    ],
+      });
+
+      console.log("[WALLET INIT] Mobile Wallet Adapter created");
+      console.log("[WALLET INIT] App Identity URI:", "https://store.studiq.fun");
+
+      const phantomAdapter = new PhantomWalletAdapter();
+      const solflareAdapter = new SolflareWalletAdapter();
+
+      console.log("[WALLET INIT] Desktop adapters created");
+      console.log("[WALLET INIT] Total adapters:", 3);
+
+      return [mobileAdapter, phantomAdapter, solflareAdapter];
+    },
     []
   );
+
+  console.log("[WALLET PROVIDER] Rendering with", wallets.length, "wallets");
 
   return (
     <ConnectionProvider
       endpoint={endpoint}
       config={{
-        commitment: 'confirmed',
+        commitment: 'processed', // Faster confirmations
         wsEndpoint: undefined,
+        confirmTransactionInitialTimeout: 60000, // 60 seconds
       }}
     >
       <WalletProvider
         wallets={wallets}
         autoConnect={false}
         localStorageKey="studiq-wallet"
+        onError={(error) => {
+          console.error("[WALLET ERROR]", error);
+          console.error("[WALLET ERROR] Name:", error.name);
+          console.error("[WALLET ERROR] Message:", error.message);
+          if (error.stack) {
+            console.error("[WALLET ERROR] Stack:", error.stack.split('\n')[0]);
+          }
+        }}
       >
         <WalletModalProvider>
           {children}

@@ -2,7 +2,7 @@
     "name": "StudIQ Campus Store",
     "short_name": "StudIQ",
     "description": "Decentralized campus marketplace on Solana",
-    "start_url": "https://store.studiq.fun/",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#667eea",
