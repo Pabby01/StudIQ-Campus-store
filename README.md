@@ -20,7 +20,7 @@ A decentralized campus marketplace built on Solana and Next.js.
 ### For Buyers
 - **Browse Products**: Explore a wide range of campus essentials.
 - **Crypto Payments**: Securely pay with SOL or USDC via Solana Pay.
-- **Pay on Delivery (POD)**: Option to pay in cash upon receipt/pickup for verified items.
+- **Pay on Delivery (POD)**: Option to pay in cash upon receipt/pickup for verified items
 - **Shopping Cart**: Manage items and checkout seamlessly.
 - **Receipts**: Download professional PDF receipts for all orders.
 - **Wallet Connection**: Connect Phantom or Solflare for seamless web3 integration.
