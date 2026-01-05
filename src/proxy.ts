@@ -158,7 +158,7 @@ export function proxy(request: NextRequest) {
         "font-src 'self' https://fonts.gstatic.com; " +
         "media-src 'self' data: blob:; " +
         "frame-src 'self' https://connect.solflare.com https://phantom.app; " +
-        "connect-src 'self' https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com;"
+        "connect-src 'self' https://studiq.fun https://www.studiq.fun https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com;"
     );
 
     return response;
