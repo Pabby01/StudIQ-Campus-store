@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import { WalletConnectWalletAdapter } from "@solana/wallet-adapter-walletconnect";
 import type { ReactNode } from "react";
 
 // Import wallet adapter CSS
@@ -23,27 +25,39 @@ function getRpcConfig() {
 }
 
 export default function Providers({ children }: { children: ReactNode }) {
-  const { endpoint } = getRpcConfig();
+  const { endpoint, network } = getRpcConfig();
 
-  // For PWAs: Use standard wallet adapters which have mobile deep linking built-in
-  // SolanaMobileWalletAdapter is for native Android apps only (uses localhost websocket)
+  // Configure wallets - WalletConnect for mobile PWA, standard adapters for desktop
   const wallets = useMemo(
     () => {
       console.log("[WALLET INIT] Creating wallet adapters for PWA...");
-      console.log("[WALLET INIT] Using Phantom and Solflare (with mobile deep linking)");
 
-      // Both Phantom and Solflare support mobile deep linking for PWAs
-      // They will automatically open the wallet app via deep link on mobile
-      const phantomAdapter = new PhantomWalletAdapter();
+      // WalletConnect for reliable mobile connections via QR code + deep links
+      const walletConnectAdapter = new WalletConnectWalletAdapter({
+        network: network === "mainnet-beta" ? WalletAdapterNetwork.Mainnet : WalletAdapterNetwork.Devnet,
+        options: {
+          projectId: "86c481a14ec4d1f6c545c9218e9d2206", // WalletConnect Cloud Project ID
+          metadata: {
+            name: "StudIQ Campus Store",
+            description: "Decentralized campus marketplace on Solana",
+            url: "https://store.studiq.fun",
+            icons: ["https://i.postimg.cc/VNXWGB8P/logo.jpg"],
+          },
+        },
+      });
+
+      // Standard adapters for desktop browser extensions
       const solflareAdapter = new SolflareWalletAdapter();
+      const phantomAdapter = new PhantomWalletAdapter();
 
       console.log("[WALLET INIT] Adapters created");
-      console.log("[WALLET INIT] Total adapters:", 2);
-      console.log("[WALLET INIT] Mobile support: Deep linking (not websocket)");
+      console.log("[WALLET INIT] Total adapters:", 3);
+      console.log("[WALLET INIT] Mobile support: WalletConnect (QR + Deep Link)");
 
-      return [phantomAdapter, solflareAdapter];
+      // WalletConnect first for mobile, standard adapters for desktop
+      return [walletConnectAdapter, solflareAdapter, phantomAdapter];
     },
-    []
+    [network]
   );
 
   console.log("[WALLET PROVIDER] Rendering with", wallets.length, "wallets");

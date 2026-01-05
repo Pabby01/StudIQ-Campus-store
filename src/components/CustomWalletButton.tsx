@@ -2,7 +2,7 @@
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useState, useEffect } from "react";
-import { Wallet } from "lucide-react";
+import { Wallet, QrCode } from "lucide-react";
 
 export default function CustomWalletButton() {
     const { wallet, wallets, select, connect, disconnect, connected, publicKey, connecting } = useWallet();
@@ -13,11 +13,16 @@ export default function CustomWalletButton() {
         setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
     }, []);
 
-    // FILTER OUT Mobile Wallet Adapter and PRIORITIZE Solflare
+    // FILTER OUT Mobile Wallet Adapter and sort by priority
     const availableWallets = wallets
         .filter((w) => w.adapter.name !== "Mobile Wallet Adapter")
         .sort((a, b) => {
-            // Solflare first, then Phantom, then others
+            // On mobile: WalletConnect first, then Solflare, then Phantom
+            // On desktop: Solflare first, then Phantom, then WalletConnect
+            if (isMobile) {
+                if (a.adapter.name === "WalletConnect") return -1;
+                if (b.adapter.name === "WalletConnect") return 1;
+            }
             if (a.adapter.name === "Solflare") return -1;
             if (b.adapter.name === "Solflare") return 1;
             if (a.adapter.name === "Phantom") return -1;
@@ -98,32 +103,45 @@ export default function CustomWalletButton() {
                         ) : (
                             <div className="space-y-1">
                                 {availableWallets.map((w) => {
-                                    // On mobile, show all wallets as clickable (they use deep links)
-                                    // On desktop, only show installed extensions
-                                    const isAvailable = isMobile || w.readyState === "Installed";
+                                    // WalletConnect always works (QR code + deep link)
+                                    // Standard adapters: mobile (all clickable), desktop (only installed)
+                                    const isWalletConnect = w.adapter.name === "WalletConnect";
+                                    const isAvailable = isWalletConnect || isMobile || w.readyState === "Installed";
 
                                     return (
                                         <button
                                             key={w.adapter.name}
                                             onClick={() => handleWalletSelect(w.adapter.name)}
                                             disabled={!isAvailable}
-                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
+                                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors ${isWalletConnect && isMobile ? "bg-blue-50 border border-blue-200" : ""
+                                                }`}
                                         >
-                                            <img
-                                                src={w.adapter.icon}
-                                                alt={w.adapter.name}
-                                                className="w-6 h-6"
-                                            />
+                                            {isWalletConnect ? (
+                                                <QrCode className="w-6 h-6 text-primary-blue" />
+                                            ) : (
+                                                <img
+                                                    src={w.adapter.icon}
+                                                    alt={w.adapter.name}
+                                                    className="w-6 h-6"
+                                                />
+                                            )}
                                             <div className="flex-1">
                                                 <div className="text-sm font-medium text-gray-900">
                                                     {w.adapter.name}
+                                                    {isWalletConnect && isMobile && (
+                                                        <span className="ml-2 text-xs bg-primary-blue text-white px-2 py-0.5 rounded">
+                                                            Recommended
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="text-xs text-gray-500">
-                                                    {isMobile
-                                                        ? "Tap to open app"
-                                                        : w.readyState === "Installed"
-                                                            ? "Detected"
-                                                            : "Not Installed"}
+                                                    {isWalletConnect
+                                                        ? isMobile ? "QR code or deep link" : "Scan QR with wallet app"
+                                                        : isMobile
+                                                            ? "Tap to open app"
+                                                            : w.readyState === "Installed"
+                                                                ? "Detected"
+                                                                : "Not Installed"}
                                                 </div>
                                             </div>
                                         </button>
