@@ -61,7 +61,14 @@ export default function Providers({ children }: { children: ReactNode }) {
         wallets={wallets}
         autoConnect={false}
         localStorageKey="studiq-wallet"
-        onError={(error) => {
+        onError={(error, adapter) => {
+          // Ignore errors from Mobile Wallet Adapter
+          // It's auto-installed by @solana/wallet-adapter-react but doesn't work for PWAs
+          if (adapter?.name === 'Mobile Wallet Adapter') {
+            console.log("[WALLET] Ignoring Mobile Wallet Adapter error");
+            return;
+          }
+
           console.error("[WALLET ERROR]", error);
           console.error("[WALLET ERROR] Name:", error.name);
           console.error("[WALLET ERROR] Message:", error.message);

@@ -90,10 +90,15 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
     if (!isOpen) return null;
 
-    // Available wallets - only show actually installed/detected wallets
-    const installedWallets = wallets.filter(w => w.readyState === 'Installed');
+    // Available wallets - FILTER OUT Mobile Wallet Adapter
+    // It's auto-installed by @solana/wallet-adapter-react but doesn't work for PWAs
+    const installedWallets = wallets.filter(w =>
+        w.readyState === 'Installed' && w.adapter.name !== 'Mobile Wallet Adapter'
+    );
 
-    const notInstalledWallets = wallets.filter(w => w.readyState === 'NotDetected');
+    const notInstalledWallets = wallets.filter(w =>
+        w.readyState === 'NotDetected' && w.adapter.name !== 'Mobile Wallet Adapter'
+    );
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
