@@ -1,13 +1,13 @@
 "use client";
 
-import { useUser, SignInButton, UserButton } from "@civic/auth/react";
+import { useUser, SignInButton, UserButton } from "@civic/auth-web3/react";
 import { Loader2 } from "lucide-react";
 
 export default function CivicAuthButton() {
-    const userContext = useUser();
+    const { user, isLoading, authStatus } = useUser();
 
     // Loading state
-    if (userContext.isLoading) {
+    if (isLoading || authStatus === "authenticating") {
         return (
             <button
                 disabled
@@ -20,7 +20,7 @@ export default function CivicAuthButton() {
     }
 
     // Authenticated - show Civic's UserButton
-    if (userContext.user) {
+    if (user) {
         return (
             <div className="civic-user-button">
                 <UserButton />
@@ -29,6 +29,5 @@ export default function CivicAuthButton() {
     }
 
     // Not authenticated - use Civic's SignInButton
-    // With displayMode="iframe" in provider, this should open as popup overlay
     return <SignInButton />;
 }

@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import MobileNav from "@/components/MobileNav";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import InstallAppModal from "@/components/InstallAppModal";
+import { OnboardingGuard } from "@/components/OnboardingGuard";
 
 import { ToastProvider } from "@/hooks/useToast";
 
@@ -98,9 +99,11 @@ export default function RootLayout({
 
               <InstallAppModal />
               <Navbar />
-              <main className="pb-16 md:pb-0">
-                {children}
-              </main>
+              <OnboardingGuard>
+                <main className="pb-16 md:pb-0">
+                  {children}
+                </main>
+              </OnboardingGuard>
               <Footer />
               <MobileNav />
             </Providers>

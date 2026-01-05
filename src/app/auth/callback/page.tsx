@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
@@ -19,6 +19,9 @@ export default function AuthCallbackPage() {
                 // If not in popup, redirect to home
                 router.push('/');
             }
+        } else {
+            // No code, just redirect home
+            router.push('/');
         }
     }, [searchParams, router]);
 
@@ -29,5 +32,20 @@ export default function AuthCallbackPage() {
                 <p className="text-gray-600">Completing authentication...</p>
             </div>
         </div>
+    );
+}
+
+export default function AuthCallbackPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-soft-gray-bg">
+                <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        }>
+            <AuthCallbackContent />
+        </Suspense>
     );
 }

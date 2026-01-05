@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Search, ShoppingCart, LayoutDashboard, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft } from "lucide-react";
-import { useUser } from "@civic/auth/react";
+import { useUser } from "@civic/auth-web3/react";
 import CivicAuthButton from "@/components/CivicAuthButton";
 import { useCart } from "@/store/cart";
 

@@ -1,39 +1,37 @@
-import { useUser } from "@civic/auth/react";
+import { useUser } from "@civic/auth-web3/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 /**
  * Unified hook that combines Civic Auth user with Solana Wallet
  * Use this instead of useWallet() directly for Civic compatibility
- * 
- * Note: With @civic/auth (non-web3), embedded wallets are not available.
- * You'll need to use a separate wallet connection for transactions.
  */
 export function useCivicWallet() {
-    const userContext = useUser();
+    const { user, isLoading: civicLoading } = useUser();
     const wallet = useWallet();
 
-    // Get user from context
-    const user = userContext.user;
+    // Check if user has embedded wallet from Civic
+    const hasEmbeddedWallet = user && typeof user === 'object' && 'solana' in user;
 
-    // Get wallet address from connected wallet adapter
-    const walletAddress = wallet.publicKey?.toBase58() || null;
+    // Get wallet address from Civic embedded wallet or connected wallet
+    const walletAddress = hasEmbeddedWallet
+        ? (user as any).solana?.address
+        : wallet.publicKey?.toBase58();
 
     return {
-        // User info from Civic Auth
+        // User info from Civic
         user,
         email: user && 'email' in user ? (user.email as string) : null,
         civicUserId: user && 'sub' in user ? (user.sub as string) : null,
 
-        // Wallet info (from wallet adapter - needs separate connection)
+        // Wallet info (works with both Civic embedded and direct connection)
         wallet,
         walletAddress,
-        isConnected: !!walletAddress || !!user,
-        isAuthenticated: !!user,
+        isConnected: !!walletAddress,
 
         // Loading states
-        isLoading: userContext.isLoading || wallet.connecting,
+        isLoading: civicLoading || wallet.connecting,
 
-        // For transaction signing
+        // For transaction signing (Civic embedded wallet works with adapter)
         signTransaction: wallet.signTransaction,
         signAllTransactions: wallet.signAllTransactions,
     };

@@ -12,15 +12,15 @@ export const signinSchema = z.object({
 });
 
 export const updateProfileSchema = z.object({
-  address: z.string().min(32),
+  address: z.string().min(10), // Allow both Solana addresses and civic_* placeholders
   name: z.string().min(2),
-  email: z.string().email().optional(),
-  civic_user_id: z.string().optional(),
+  email: z.string().email().optional().nullable(),
+  civic_user_id: z.string().optional().nullable(),
   verified_email: z.boolean().optional(),
   school: z.string().min(2),
   campus: z.string().min(2),
-  level: z.string().min(1).optional(),
-  phone: z.string().min(6).optional(),
+  level: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
 });
 
 export const createStoreSchema = z.object({
