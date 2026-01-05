@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { Search, ShoppingCart, LayoutDashboard, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft } from "lucide-react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import CustomWalletButton from "@/components/CustomWalletButton";
+import { useUser } from "@civic/auth-web3/react";
+import CivicAuthButton from "@/components/CivicAuthButton";
 import { useCart } from "@/store/cart";
 
 export default function Navbar() {
-  const wallet = useWallet();
+  const { user } = useUser();
   const items = useCart((s) => s.items);
 
   const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
@@ -90,10 +90,10 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Right Side - Dashboard, Cart & Wallet */}
+          {/* Right Side - Dashboard, Cart & Auth */}
           <div className="flex items-center gap-3">
-            {/* Dashboard Button (only when connected) */}
-            {wallet.connected && (
+            {/* Dashboard Button (only when signed in) */}
+            {user && (
               <Link
                 href="/dashboard"
                 className="group hidden sm:flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all"
@@ -115,8 +115,8 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Wallet Connection Button */}
-            <CustomWalletButton />
+            {/* Civic Auth Button */}
+            <CivicAuthButton />
           </div>
         </div>
       </div>

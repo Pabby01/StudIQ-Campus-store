@@ -30,11 +30,13 @@ export async function POST(req: Request) {
         address: parsed.data.address,
         name: parsed.data.name,
         email: parsed.data.email || null,
+        civic_user_id: parsed.data.civic_user_id || null,
+        verified_email: parsed.data.verified_email || false,
         school: parsed.data.school,
         campus: parsed.data.campus,
         level: parsed.data.level || null,
         phone: parsed.data.phone || null,
-        updated_at: new Date().toISOString(),
+        last_login: new Date().toISOString(),
       })
       .select()
       .single();

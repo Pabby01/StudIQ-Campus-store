@@ -3,10 +3,9 @@
 import { useMemo } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
-import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
-import { WalletConnectWalletAdapter } from "@solana/wallet-adapter-walletconnect";
+import { CivicAuthProvider } from "@civic/auth-web3/react";
 import type { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 
 // Import wallet adapter CSS
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -25,76 +24,71 @@ function getRpcConfig() {
 }
 
 export default function Providers({ children }: { children: ReactNode }) {
-  const { endpoint, network } = getRpcConfig();
+  const { endpoint } = getRpcConfig();
 
-  // Configure wallets - WalletConnect for mobile PWA, standard adapters for desktop
-  const wallets = useMemo(
-    () => {
-      console.log("[WALLET INIT] Creating wallet adapters for PWA...");
+  // Civic Auth configuration
+  const civicClientId = process.env.NEXT_PUBLIC_CIVIC_CLIENT_ID;
 
-      // WalletConnect for reliable mobile connections via QR code + deep links
-      const walletConnectAdapter = new WalletConnectWalletAdapter({
-        network: network === "mainnet-beta" ? WalletAdapterNetwork.Mainnet : WalletAdapterNetwork.Devnet,
-        options: {
-          projectId: "86c481a14ec4d1f6c545c9218e9d2206", // WalletConnect Cloud Project ID
-          metadata: {
-            name: "StudIQ Campus Store",
-            description: "Decentralized campus marketplace on Solana",
-            url: "https://store.studiq.fun",
-            icons: ["https://i.postimg.cc/VNXWGB8P/logo.jpg"],
-          },
-        },
-      });
+  if (!civicClientId) {
+    console.error("[CIVIC] Client ID not configured! Add NEXT_PUBLIC_CIVIC_CLIENT_ID to .env");
+  }
 
-      // Standard adapters for desktop browser extensions
-      const solflareAdapter = new SolflareWalletAdapter();
-      const phantomAdapter = new PhantomWalletAdapter();
+  // Empty wallets array - Civic will provide the embedded wallet
+  const wallets = useMemo(() => {
+    console.log("[WALLET INIT] Using Civic embedded wallets");
+    return [];
+  }, []);
 
-      console.log("[WALLET INIT] Adapters created");
-      console.log("[WALLET INIT] Total adapters:", 3);
-      console.log("[WALLET INIT] Mobile support: WalletConnect (QR + Deep Link)");
-
-      // WalletConnect first for mobile, standard adapters for desktop
-      return [walletConnectAdapter, solflareAdapter, phantomAdapter];
-    },
-    [network]
-  );
-
-  console.log("[WALLET PROVIDER] Rendering with", wallets.length, "wallets");
+  console.log("[PROVIDER] Initializing with Civic Auth");
 
   return (
-    <ConnectionProvider
-      endpoint={endpoint}
-      config={{
-        commitment: 'processed', // Faster confirmations
-        wsEndpoint: undefined,
-        confirmTransactionInitialTimeout: 60000, // 60 seconds
+    <CivicAuthProvider
+      clientId={civicClientId!}
+      onSignIn={async (user) => {
+        // Handle successful sign-in
+        const userEmail = user && 'email' in user ? user.email : null;
+        console.log("[CIVIC] User signed in:", userEmail);
+
+        // Check if user has completed onboarding
+        if (user && userEmail) {
+          try {
+            const res = await fetch(`/api/profile/check?email=${encodeURIComponent(userEmail as string)}`);
+            const data = await res.json();
+
+            if (!data.exists && typeof window !== 'undefined') {
+              console.log("[CIVIC] New user, redirecting to onboarding");
+              window.location.href = "/onboarding";
+            }
+          } catch (error) {
+            console.error("[CIVIC] Profile check failed:", error);
+          }
+        }
+      }}
+      onSignOut={() => {
+        console.log("[CIVIC] User signed out");
+        // Clear any cached data
+        if (typeof window !== 'undefined') {
+          window.location.href = "/";
+        }
       }}
     >
-      <WalletProvider
-        wallets={wallets}
-        autoConnect={false}
-        localStorageKey="studiq-wallet"
-        onError={(error, adapter) => {
-          // Ignore errors from Mobile Wallet Adapter
-          // It's auto-installed by @solana/wallet-adapter-react but doesn't work for PWAs
-          if (adapter?.name === 'Mobile Wallet Adapter') {
-            console.log("[WALLET] Ignoring Mobile Wallet Adapter error");
-            return;
-          }
-
-          console.error("[WALLET ERROR]", error);
-          console.error("[WALLET ERROR] Name:", error.name);
-          console.error("[WALLET ERROR] Message:", error.message);
-          if (error.stack) {
-            console.error("[WALLET ERROR] Stack:", error.stack.split('\n')[0]);
-          }
+      <ConnectionProvider
+        endpoint={endpoint}
+        config={{
+          commitment: 'processed',
+          wsEndpoint: undefined,
+          confirmTransactionInitialTimeout: 60000,
         }}
       >
-        <WalletModalProvider>
-          {children}
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+        <WalletProvider
+          wallets={wallets}
+          autoConnect={true}
+        >
+          <WalletModalProvider>
+            {children}
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    </CivicAuthProvider>
   );
 }

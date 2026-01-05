@@ -15,6 +15,8 @@ export const updateProfileSchema = z.object({
   address: z.string().min(32),
   name: z.string().min(2),
   email: z.string().email().optional(),
+  civic_user_id: z.string().optional(),
+  verified_email: z.boolean().optional(),
   school: z.string().min(2),
   campus: z.string().min(2),
   level: z.string().min(1).optional(),
