@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Search, ShoppingCart, LayoutDashboard, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import CustomWalletButton from "@/components/CustomWalletButton";
 import { useCart } from "@/store/cart";
 
 export default function Navbar() {
@@ -116,7 +116,7 @@ export default function Navbar() {
             </Link>
 
             {/* Wallet Connection Button */}
-            <WalletMultiButton />
+            <CustomWalletButton />
           </div>
         </div>
       </div>
