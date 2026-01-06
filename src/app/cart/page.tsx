@@ -20,7 +20,7 @@ export default function CartPage() {
   const updateQty = useCart((s) => s.updateQty);
 
   // Use Civic wallet hook for unified access
-  const { walletAddress, email, wallet, isAuthenticated, user } = useCivicWallet();
+  const { walletAddress, email, wallet, isAuthenticated, user, signTransaction } = useCivicWallet();
 
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -45,14 +45,20 @@ export default function CartPage() {
   }, [email]);
 
   async function checkout() {
+    // Determine final payment method: if pickup, force POD/POP logic
+    const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
+    console.log("Starting checkout process...", { finalPaymentMethod, deliveryMethod, isAuthenticated });
+
     // Check if user is authenticated
     if (!isAuthenticated) {
+      console.log("Checkout blocked: Not authenticated");
       setError("Please sign in to complete checkout");
       return;
     }
 
-    // For crypto payment, wallet must be ready
-    if (paymentMethod === "solana" && !wallet.publicKey) {
+    // For crypto payment, wallet must be ready (Only if final method is solana)
+    if (finalPaymentMethod === "solana" && !walletAddress) {
+      console.log("Checkout blocked: Wallet not ready for crypto");
       setError("Wallet not ready for crypto payment. Please wait or use Pay on Delivery.");
       return;
     }
@@ -72,8 +78,7 @@ export default function CartPage() {
 
     try {
       // Step 1: Create order
-      // Determine final payment method: if pickup, force POD/POP logic
-      const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
+      console.log("Creating order with payment method:", finalPaymentMethod);
 
       const payload = {
         buyer: walletAddress,
@@ -135,13 +140,13 @@ export default function CartPage() {
       );
 
       // Step 3: Sign and send transaction
-      if (!wallet.connected || !wallet.signTransaction) {
+      if (!walletAddress || !signTransaction) {
         throw new Error("Wallet does not support transaction signing");
       }
 
       // Use 'as any' to bypass strict type checks between legacy/versioned if needed
       // but VersionedTransaction is generally supported by modern adapters
-      const signedTx = await wallet.signTransaction(transaction as any);
+      const signedTx = await signTransaction(transaction as any);
 
       // Send transaction using our RPC connection to ensure devnet consistency
       const signature = await broadcastTransaction(signedTx);
@@ -182,6 +187,18 @@ export default function CartPage() {
       setCheckoutStatus("error");
     }
   }
+
+  const getButtonText = () => {
+    if (checkoutStatus === "creating") return "Creating Order...";
+    if (checkoutStatus === "signing") return "Check Wallet...";
+    if (checkoutStatus === "confirming") return "Confirming...";
+    if (checkoutStatus === "verifying") return "Verifying...";
+    if (checkoutStatus === "success") return "Complete!";
+
+    if (deliveryMethod === "pickup") return "Place Pickup Order";
+    if (paymentMethod === "pod") return "Place Order (Cash on Delivery)";
+    return "Checkout with Solana";
+  };
 
   const getStatusMessage = () => {
     switch (checkoutStatus) {
@@ -471,9 +488,7 @@ export default function CartPage() {
                     onClick={() => void checkout()}
                     disabled={checkoutStatus !== "idle" && checkoutStatus !== "error"}
                   >
-                    {checkoutStatus === "idle" || checkoutStatus === "error"
-                      ? "Checkout with Solana"
-                      : "Processing..."}
+                    {getButtonText()}
                   </Button>
                   <Button
                     variant="outline"

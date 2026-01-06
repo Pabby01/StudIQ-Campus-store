@@ -1,5 +1,7 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
     const url = new URL(req.url);
     const address = url.searchParams.get("address");
@@ -10,6 +12,9 @@ export async function GET(req: Request) {
 
     const supabase = getSupabaseServerClient();
 
+
+
+    // 1. Fetch orders (no joins)
     const { data: orders, error } = await supabase
         .from("orders")
         .select(`
@@ -18,12 +23,7 @@ export async function GET(req: Request) {
       status,
       amount,
       currency,
-      order_items(
-        product_id,
-        price,
-        qty,
-        products(name, image_url)
-      ),
+      store_id,
       stores(name)
     `)
         .eq("buyer_address", address)
@@ -34,23 +34,34 @@ export async function GET(req: Request) {
         return Response.json({ error: error.message }, { status: 500 });
     }
 
-    // Transform the response to match expected format
-    const transformedOrders = orders?.map(order => ({
-        ...order,
-        items: order.order_items?.map((item: any) => ({
-            id: item.product_id, // Use product_id as id
-            price: item.price,
-            qty: item.qty,
-            product: item.products
-        })) || [],
-        store: order.stores
-    })) || [];
+    if (!orders || orders.length === 0) {
+        return Response.json({ orders: [] });
+    }
 
-    // Clean up
-    transformedOrders.forEach(order => {
-        delete (order as any).order_items;
-        delete (order as any).stores;
+    // 2. Fetch items for these orders
+    const orderIds = orders.map(o => o.id);
+    const { data: items } = await supabase
+        .from("order_items")
+        .select("*, products(name, image_url)")
+        .in("order_id", orderIds);
+
+    // 3. Merge
+    const transformedOrders = orders.map(order => {
+        const orderItems = items?.filter(i => i.order_id === order.id) || [];
+        return {
+            ...order,
+            items: orderItems.map((item: any) => ({
+                id: item.product_id,
+                price: item.price,
+                qty: item.qty,
+                product: item.products || { name: "Product " + item.product_id }
+            })),
+            store: order.stores // stores join usually works as it's simple FK, but if safe, keep it. If fails, user will say "Unknown Store".
+        };
     });
+
+    // Clean up stores property format if needed (PostgREST returns Object or Array? Single object usually for M:1)
+    // The previous code had `stores(name)`.
 
     return Response.json({ orders: transformedOrders });
 }

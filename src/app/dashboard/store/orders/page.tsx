@@ -43,7 +43,7 @@ export default function VendorOrdersPage() {
 
   const { data, mutate, error, isLoading } = useSWR<EnhancedOrder[]>(
     auth.address ? `/api/vendor/orders?address=${auth.address}` : null,
-    async (url: string) => (await fetch(url)).json()
+    async (url: string) => (await fetch(url, { cache: 'no-store' })).json()
   );
 
   async function update(id: string, status: string) {

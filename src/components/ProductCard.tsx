@@ -20,18 +20,23 @@ type Product = Readonly<{
   rating?: number | null;
   category?: string;
   originalPrice?: number;
+  original_price?: number; // Support snake_case from DB
   store_id?: string;
   inventory?: number; // Stock count
   owner_address?: string; // Seller's address
   isPremiumSeller?: boolean; // Whether seller has premium subscription
+  reviews_count?: number; // Total reviews
+
 }>;
 
 export default function ProductCard({ p }: { p: Product }) {
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
-  const hasDiscount = p.originalPrice && p.originalPrice > p.price;
+
+  const originalPrice = p.original_price || p.originalPrice;
+  const hasDiscount = originalPrice && originalPrice > p.price;
   const discountPercent = hasDiscount
-    ? Math.round(((p.originalPrice! - p.price) / p.originalPrice!) * 100)
+    ? Math.round(((originalPrice! - p.price) / originalPrice!) * 100)
     : 0;
 
   const { walletAddress: address } = useCivicWallet();
@@ -169,9 +174,9 @@ export default function ProductCard({ p }: { p: Product }) {
           <div className="flex items-center gap-1 mb-3">
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
             <span className="text-sm font-medium text-black">
-              {p.rating?.toFixed?.(1) ?? "4.5"}
+              {p.rating?.toFixed?.(1) ?? "0.0"}
             </span>
-            <span className="text-xs text-muted-text ml-1">(127)</span>
+            <span className="text-xs text-muted-text ml-1">({p.reviews_count || 0})</span>
           </div>
 
           {/* Pricing */}
@@ -186,8 +191,8 @@ export default function ProductCard({ p }: { p: Product }) {
               {hasDiscount && (
                 <span className="text-sm text-muted-text line-through">
                   {p.currency === "SOL"
-                    ? `${p.originalPrice!.toFixed(2)} SOL`
-                    : `$${p.originalPrice!.toFixed(2)}`
+                    ? `${originalPrice!.toFixed(2)} SOL`
+                    : `$${originalPrice!.toFixed(2)}`
                   }
                 </span>
               )}
@@ -196,8 +201,8 @@ export default function ProductCard({ p }: { p: Product }) {
             {hasDiscount && (
               <div className="text-xs text-green-600 font-medium">
                 Save {p.currency === "SOL"
-                  ? `${(p.originalPrice! - p.price).toFixed(2)} SOL`
-                  : `$${(p.originalPrice! - p.price).toFixed(2)}`
+                  ? `${(originalPrice! - p.price).toFixed(2)} SOL`
+                  : `$${(originalPrice! - p.price).toFixed(2)}`
                 }
               </div>
             )}

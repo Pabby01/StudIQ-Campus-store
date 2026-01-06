@@ -23,7 +23,7 @@ export default function DashboardWishlistPage() {
 
   const fetchWishlist = async () => {
     try {
-      const res = await fetch(`/api/wishlist?address=${auth.address}`);
+      const res = await fetch(`/api/wishlist?address=${auth.address}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         // Transform data if necessary or just set

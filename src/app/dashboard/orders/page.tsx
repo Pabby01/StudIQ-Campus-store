@@ -44,7 +44,7 @@ export default function DashboardOrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch(`/api/orders/user?address=${auth.address}`);
+      const res = await fetch(`/api/orders/user?address=${auth.address}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setOrders(data.orders || []);

@@ -2,6 +2,7 @@ import { useWallet as useWalletAdapter } from "@solana/wallet-adapter-react";
 import { useMemo, useEffect } from "react";
 import { CrossAppSessionManager } from "@/lib/cross-app-session";
 import { getSyncClient } from "@/lib/bidirectional-sync";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 
 /**
  * Enhanced wallet authentication hook with cross-app sync
@@ -9,17 +10,18 @@ import { getSyncClient } from "@/lib/bidirectional-sync";
  */
 export function useWalletAuth() {
   const wallet = useWalletAdapter();
+  const civic = useCivicWallet();
 
   const address = useMemo(() => {
-    if (!wallet.connected || !wallet.publicKey) return null;
-    return wallet.publicKey.toBase58();
-  }, [wallet.connected, wallet.publicKey]);
+    // Prefer Civic embedded wallet if available, then standard adapter
+    return civic.walletAddress || (wallet.connected && wallet.publicKey ? wallet.publicKey.toBase58() : null);
+  }, [wallet.connected, wallet.publicKey, civic.walletAddress]);
 
-  const isAuthenticated = wallet.connected;
+  const isAuthenticated = wallet.connected || !!civic.user;
 
   // Handle wallet connection - create session token and sync with main app
   useEffect(() => {
-    if (wallet.connected && address) {
+    if ((wallet.connected || civic.user) && address) {
       // Create session token for cross-app authentication
       CrossAppSessionManager.createSessionToken(address, 'campus_store');
 
@@ -31,15 +33,15 @@ export function useWalletAuth() {
 
       console.log('✅ Wallet connected on store, session created, sync initiated:', address);
     }
-  }, [wallet.connected, address]);
+  }, [wallet.connected, civic.user, address]);
 
   // Handle wallet disconnection - clear session
   useEffect(() => {
-    if (!wallet.connected) {
+    if (!wallet.connected && !civic.user) {
       CrossAppSessionManager.clearSession();
       console.log('✅ Session cleared on disconnect');
     }
-  }, [wallet.connected]);
+  }, [wallet.connected, civic.user]);
 
   // Check for existing session on mount
   useEffect(() => {

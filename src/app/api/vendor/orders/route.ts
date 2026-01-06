@@ -1,6 +1,8 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const address = url.searchParams.get("address") ?? "";
@@ -11,33 +13,23 @@ export async function GET(req: Request) {
 
   const supabase = getSupabaseServerClient();
 
-  // Find seller's store
-  const { data: store } = await supabase
+  // Find seller's stores (handle multiple)
+  const { data: stores } = await supabase
     .from("stores")
     .select("id")
-    .eq("owner_address", address)
-    .maybeSingle();
+    .eq("owner_address", address);
 
-  if (!store) {
+  if (!stores || stores.length === 0) {
     return NextResponse.json([]);
   }
 
-  // Fetch orders with full details
+  const storeIds = stores.map(s => s.id);
+
+  // Fetch orders (no join)
   const { data: orders, error } = await supabase
     .from("orders")
-    .select(`
-      *,
-      order_items(
-        product_id,
-        price,
-        qty,
-        products(
-          name,
-          image_url
-        )
-      )
-    `)
-    .eq("store_id", store.id)
+    .select("*")
+    .in("store_id", storeIds)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -45,20 +37,34 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
   }
 
-  // Transform response to match expected format
-  const transformedOrders = orders?.map(order => ({
-    ...order,
-    items: order.order_items?.map((item: any) => ({
-      id: item.product_id,
-      price: item.price,
-      qty: item.qty,
-      product: item.products
-    })) || []
-  })) || [];
+  if (!orders || orders.length === 0) {
+    return NextResponse.json([]);
+  }
 
-  // Clean up
-  transformedOrders.forEach(order => {
-    delete (order as any).order_items;
+  const orderIds = orders.map(o => o.id);
+
+  // Fetch items for these orders
+  const { data: items, error: itemsError } = await supabase
+    .from("order_items")
+    .select("*, products(name, image_url)")
+    .in("order_id", orderIds);
+
+  if (itemsError) {
+    console.error("Failed to fetch order items:", itemsError);
+  }
+
+  // Merge items into orders
+  const transformedOrders = orders.map(order => {
+    const orderItems = items?.filter(i => i.order_id === order.id) || [];
+    return {
+      ...order,
+      items: orderItems.map((item: any) => ({
+        id: item.product_id,
+        price: item.price,
+        qty: item.qty,
+        product: item.products || { name: "Product " + item.product_id }
+      }))
+    };
   });
 
   return NextResponse.json(transformedOrders);

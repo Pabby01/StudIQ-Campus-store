@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     const supabase = getSupabaseServerClient();
 
-    // Verify purchase? (Optional, skipping for now per request)
+    // Verify purchase check can be added here if needed
 
     const { error } = await supabase
         .from("reviews")
@@ -60,6 +60,26 @@ export async function POST(req: Request) {
             }),
         });
 
+        // Recalculate and update product rating/stats
+        const { data: stats } = await supabase
+            .from("reviews")
+            .select("rating")
+            .eq("product_id", productId);
+
+        if (stats) {
+            const totalRating = stats.reduce((acc, curr) => acc + curr.rating, 0);
+            const count = stats.length;
+            const averageRating = count > 0 ? totalRating / count : 0;
+
+            await supabase
+                .from("products")
+                .update({
+                    rating: averageRating,
+                    reviews_count: count
+                })
+                .eq("id", productId);
+        }
+
         // If 5-star review, award seller 25 points
         if (rating === 5) {
             const { data: product } = await supabase
@@ -69,19 +89,24 @@ export async function POST(req: Request) {
                 .single();
 
             if (product) {
-                await fetch(`${req.headers.get("origin")}/api/points/award`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        address: (product.stores as any).owner_address,
-                        points: 25,
-                        reason: "Received 5-star review",
-                    }),
-                });
+                // @ts-ignore
+                const ownerAddress = product.stores?.owner_address;
+                if (ownerAddress) {
+                    await fetch(`${req.headers.get("origin")}/api/points/award`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            address: ownerAddress,
+                            points: 25,
+                            reason: "Received 5-star review",
+                        }),
+                    });
+                }
             }
         }
     } catch (e) {
         console.error("Points award failed:", e);
+        // Don't fail the request if points/stats update fails, but log it
     }
 
     return Response.json({ success: true });

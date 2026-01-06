@@ -328,7 +328,7 @@ export default function ProductDetailPage() {
 
         {/* Reviews Section */}
         <div className="border-t border-border-gray mt-12 pt-8">
-          <ProductReviews productId={product.id} />
+          <ProductReviews productId={product.id} onReviewAdded={fetchProduct} />
         </div>
       </div>
     </div>

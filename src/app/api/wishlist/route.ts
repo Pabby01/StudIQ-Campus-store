@@ -1,5 +1,7 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
     const url = new URL(req.url);
     const address = url.searchParams.get("address");
@@ -10,21 +12,10 @@ export async function GET(req: Request) {
 
     const supabase = getSupabaseServerClient();
 
-    const { data, error } = await supabase
+    // 1. Fetch wishlist items
+    const { data: wishlist, error } = await supabase
         .from("wishlist")
-        .select(`
-      id,
-      created_at,
-      product:products (
-        id,
-        name,
-        price,
-        image_url,
-        rating,
-        category,
-        store:stores(name)
-      )
-    `)
+        .select("id, created_at, product_id") // No join
         .eq("user_address", address)
         .order("created_at", { ascending: false });
 
@@ -33,7 +24,32 @@ export async function GET(req: Request) {
         return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ wishlist: data });
+    if (!wishlist || wishlist.length === 0) {
+        return Response.json({ wishlist: [] });
+    }
+
+    // 2. Fetch products
+    const productIds = wishlist.map(w => w.product_id);
+    const { data: products } = await supabase
+        .from("products")
+        .select("id, name, price, image_url, rating, category, store_id, stores(name)") // stores join usually safe, or split if paranoid
+        .in("id", productIds);
+
+    // 3. Merge
+    const transformedWishlist = wishlist.map(item => {
+        const product = products?.find(p => p.id === item.product_id);
+        if (!product) return null; // Product might be deleted
+        return {
+            id: item.id,
+            created_at: item.created_at,
+            product: {
+                ...product,
+                store: product.stores // Rename stores -> store
+            }
+        };
+    }).filter(Boolean); // Remove nulls
+
+    return Response.json({ wishlist: transformedWishlist });
 }
 
 export async function POST(req: Request) {

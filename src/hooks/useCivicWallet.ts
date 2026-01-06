@@ -138,7 +138,17 @@ export function useCivicWallet() {
         isLoading: civicLoading || wallet.connecting || isCreatingWallet || walletCreationInProgress,
 
         // For transaction signing
-        signTransaction: wallet.signTransaction,
+        signTransaction: async (tx: any) => {
+            // Priority 1: Standard Adapter
+            if (wallet.connected && wallet.signTransaction) {
+                return wallet.signTransaction(tx);
+            }
+            // Priority 2: Embedded Wallet Adapter (context.wallet)
+            if (solanaContext?.wallet?.signTransaction) {
+                return solanaContext.wallet.signTransaction(tx);
+            }
+            throw new Error("No wallet available to sign transaction");
+        },
         signAllTransactions: wallet.signAllTransactions,
     };
 }

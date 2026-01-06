@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     console.log("[Checkout Create] Fetching products:", items.map(i => i.productId));
     const { data: prods, error: prodsError } = await supabase
       .from("products")
-      .select("id, price, store_id, inventory")
+      .select("id, name, image_url, price, store_id, inventory")
       .in(
         "id",
         items.map((i) => i.productId)
@@ -283,7 +283,8 @@ export async function POST(req: Request) {
         products: items.map(i => {
           const product = prods.find(p => p.id === i.productId)!;
           return {
-            name: product.id, // We'd need to fetch product names from products table
+            name: product.name,
+            imageUrl: product.image_url,
             price: product.price,
             qty: i.qty,
           };

@@ -15,7 +15,7 @@ type Review = {
     reviewer_name?: string; // Optional if we join with profiles
 };
 
-export default function ProductReviews({ productId }: { productId: string }) {
+export default function ProductReviews({ productId, onReviewAdded }: { productId: string, onReviewAdded?: () => void }) {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
     const [rating, setRating] = useState(5);
@@ -66,6 +66,9 @@ export default function ProductReviews({ productId }: { productId: string }) {
                 setContent("");
                 setRating(5);
                 fetchReviews();
+                if (onReviewAdded) {
+                    onReviewAdded();
+                }
             } else {
                 throw new Error("Failed to submit");
             }
