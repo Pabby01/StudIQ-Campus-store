@@ -2,22 +2,20 @@
 
 import { useState } from "react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
-import { useSolanaBalance } from "@/hooks/useSolanaBalance";
+import { useTokenBalances } from "@/hooks/useTokenBalances";
 import WalletCard from "@/components/wallet/WalletCard";
 import SendModal from "@/components/wallet/SendModal";
 import ReceiveModal from "@/components/wallet/ReceiveModal";
 import TransactionHistory from "@/components/wallet/TransactionHistory";
 import { Loader2 } from "lucide-react";
-
 import { Cluster } from "@/hooks/useSolanaBalance";
-
-import Dialog from "@/components/ui/Dialog";
-import Button from "@/components/ui/Button";
 
 export default function WalletPage() {
     const { walletAddress, isAuthenticated } = useCivicWallet();
     const [cluster, setCluster] = useState<Cluster>('devnet');
-    const { balance, loading: balanceLoading } = useSolanaBalance(walletAddress, cluster);
+
+    // Updated to use Multi-Token Hook
+    const { tokens, totalUsd, loading: balanceLoading } = useTokenBalances(walletAddress);
 
     const [isSendOpen, setIsSendOpen] = useState(false);
     const [isReceiveOpen, setIsReceiveOpen] = useState(false);
@@ -36,11 +34,12 @@ export default function WalletPage() {
         <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-black mb-2">My Wallet</h1>
-                <p className="text-muted-text">Manage your funds and view transactions</p>
+                <p className="text-muted-text">Manage your funds and view portfolio</p>
             </div>
 
             <WalletCard
-                balance={balance}
+                tokens={tokens}
+                totalUsd={totalUsd}
                 address={walletAddress}
                 loading={balanceLoading}
                 cluster={cluster}
@@ -56,8 +55,7 @@ export default function WalletPage() {
                 isOpen={isSendOpen}
                 onClose={() => setIsSendOpen(false)}
                 onSuccess={() => {
-                    // Refresh logic handled by hooks automatically (polling)
-                    // But could trigger a re-fetch manually if hooks exposed it
+                    // Refresh logic is auto via hooks poller
                 }}
                 cluster={cluster}
             />

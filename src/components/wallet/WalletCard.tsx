@@ -1,11 +1,12 @@
 import { useState } from "react";
-import Link from "next/link";
-import { Copy, Send, ArrowDown, Wallet, Eye, EyeOff, ChevronDown } from "lucide-react";
+import { Copy, Send, ArrowDown, Wallet, Eye, EyeOff, ChevronDown, Coins } from "lucide-react";
 import Card from "@/components/ui/Card";
 import { Cluster } from "@/hooks/useSolanaBalance";
+import { TokenBalance } from "@/hooks/useTokenBalances";
 
 interface WalletCardProps {
-    balance: number;
+    tokens: TokenBalance[];
+    totalUsd: number;
     address: string;
     loading: boolean;
     cluster: Cluster;
@@ -16,7 +17,8 @@ interface WalletCardProps {
 }
 
 export default function WalletCard({
-    balance,
+    tokens,
+    totalUsd,
     address,
     loading,
     cluster,
@@ -42,6 +44,7 @@ export default function WalletCard({
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
             <div className="p-8 relative z-10">
+                {/* Header */}
                 <div className="flex justify-between items-start mb-8">
                     <div className="flex items-center gap-2 opacity-90">
                         <Wallet className="w-5 h-5" />
@@ -58,14 +61,15 @@ export default function WalletCard({
                     </button>
                 </div>
 
+                {/* Total Balance */}
                 <div className="mb-10 text-center">
-                    <p className="text-blue-100/80 mb-2 font-medium text-sm">Total Balance</p>
+                    <p className="text-blue-100/80 mb-2 font-medium text-sm">Total Balance (Est.)</p>
                     <div className="flex items-center justify-center gap-3 mb-3">
                         <div className="text-5xl font-bold tracking-tight text-white drop-shadow-sm">
                             {loading ? (
                                 <span className="animate-pulse opacity-50">...</span>
                             ) : showBalance ? (
-                                <>{balance.toFixed(4)} <span className="text-2xl opacity-60 font-medium">SOL</span></>
+                                <>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalUsd)}</>
                             ) : (
                                 <span className="tracking-widest opacity-80">••••••••</span>
                             )}
@@ -87,7 +91,8 @@ export default function WalletCard({
                     </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mb-6">
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mb-8">
                     <button
                         onClick={onSend}
                         className="group flex flex-col items-center justify-center gap-2 bg-white text-blue-900 hover:bg-blue-50 active:scale-95 rounded-xl p-4 transition-all shadow-lg shadow-blue-900/20"
@@ -108,7 +113,7 @@ export default function WalletCard({
                     </button>
                 </div>
 
-                <div className="max-w-sm mx-auto">
+                <div className="max-w-sm mx-auto mb-8">
                     <button
                         onClick={onDeposit}
                         className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95 relative overflow-hidden group"
@@ -117,6 +122,47 @@ export default function WalletCard({
                         <Wallet className="w-5 h-5" />
                         <span>Deposit w/ Naira (Paj Cash)</span>
                     </button>
+                </div>
+
+                {/* Token List */}
+                <div className="bg-black/20 rounded-2xl p-4 backdrop-blur-sm">
+                    <h3 className="text-sm font-semibold text-blue-100 mb-3 flex items-center gap-2">
+                        <Coins className="w-4 h-4" />
+                        Your Assets
+                    </h3>
+                    <div className="space-y-2">
+                        {loading && tokens.length === 0 ? (
+                            <div className="text-center py-4 text-white/50 text-sm">Loading assets...</div>
+                        ) : tokens.length === 0 ? (
+                            <div className="text-center py-4 text-white/50 text-sm">No assets found</div>
+                        ) : (
+                            tokens.map((token) => (
+                                <div key={token.mint} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-xl transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        {token.logo ? (
+                                            <img src={token.logo} alt={token.name} className="w-8 h-8 rounded-full bg-white/10" />
+                                        ) : (
+                                            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold">
+                                                {token.symbol[0]}
+                                            </div>
+                                        )}
+                                        <div>
+                                            <div className="font-semibold text-sm">{token.symbol}</div>
+                                            <div className="text-xs text-blue-200">{token.name}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="font-semibold text-sm">
+                                            {showBalance ? token.balance.toLocaleString() : "••••"}
+                                        </div>
+                                        <div className="text-xs text-blue-200">
+                                            {showBalance ? `$${token.usdValue.toFixed(2)}` : "••••"}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
         </Card>
