@@ -11,6 +11,9 @@ import { Loader2 } from "lucide-react";
 
 import { Cluster } from "@/hooks/useSolanaBalance";
 
+import Dialog from "@/components/ui/Dialog";
+import Button from "@/components/ui/Button";
+
 export default function WalletPage() {
     const { walletAddress, isAuthenticated } = useCivicWallet();
     const [cluster, setCluster] = useState<Cluster>('devnet');
@@ -18,6 +21,7 @@ export default function WalletPage() {
 
     const [isSendOpen, setIsSendOpen] = useState(false);
     const [isReceiveOpen, setIsReceiveOpen] = useState(false);
+    const [isDepositOpen, setIsDepositOpen] = useState(false);
 
     // If loading user or not authenticated
     if (!walletAddress) {
@@ -43,7 +47,7 @@ export default function WalletPage() {
                 onClusterChange={setCluster}
                 onSend={() => setIsSendOpen(true)}
                 onReceive={() => setIsReceiveOpen(true)}
-                onDeposit={() => alert("Coming Soon!")}
+                onDeposit={() => setIsDepositOpen(true)}
             />
 
             <TransactionHistory address={walletAddress} cluster={cluster} />

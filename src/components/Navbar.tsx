@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShoppingCart, LayoutDashboard, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft } from "lucide-react";
+import { Search, ShoppingCart, LayoutDashboard, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft, Bell } from "lucide-react";
 import { useUser } from "@civic/auth-web3/react";
 import CivicAuthButton from "@/components/CivicAuthButton";
 import { useCart } from "@/store/cart";
@@ -94,15 +94,31 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             {/* Dashboard Button (only when signed in) */}
             {user && (
-              <Link
-                href="/dashboard"
-                className="group hidden sm:flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all"
-              >
-                <LayoutDashboard className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                <span className="text-xs font-medium text-muted-text group-hover:text-primary-blue opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute translate-y-8">
-                  Dashboard
-                </span>
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  className="group hidden sm:flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all"
+                >
+                  <LayoutDashboard className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                  <span className="text-xs font-medium text-muted-text group-hover:text-primary-blue opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute translate-y-8">
+                    Dashboard
+                  </span>
+                </Link>
+
+                <Link
+                  href="/dashboard/notifications"
+                  className="group flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all relative"
+                >
+                  <div className="relative">
+                    <Bell className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                    {/* Placeholder for unread count - we could use useNotifications() here but it might cause hydration mismatch if not handled carefully */}
+                    {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-3 h-3 flex items-center justify-center"></span> */}
+                  </div>
+                  <span className="text-xs font-medium text-muted-text group-hover:text-primary-blue opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute translate-y-8">
+                    Alerts
+                  </span>
+                </Link>
+              </>
             )}
 
             {/* Cart */}
