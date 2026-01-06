@@ -13,11 +13,19 @@ export async function resolveAddressFromParam(addressOrEmail: string): Promise<{
 
     if (addressOrEmail.startsWith("email:")) {
         const email = addressOrEmail.replace("email:", "");
-        const { data: profile } = await supabase
+        console.log(`[AddressResolver] Resolving email: ${email}`);
+
+        const { data: profile, error } = await supabase
             .from("profiles")
             .select("*")
             .eq("email", email)
             .maybeSingle();
+
+        if (error) {
+            console.error(`[AddressResolver] Error finding profile by email:`, error);
+        }
+
+        console.log(`[AddressResolver] Found profile:`, profile ? { address: profile.address, email: profile.email } : 'none');
 
         return {
             address: profile?.address || null,
@@ -45,5 +53,6 @@ export async function resolveAddressFromParam(addressOrEmail: string): Promise<{
  */
 export async function getWalletAddress(addressOrEmail: string): Promise<string | null> {
     const result = await resolveAddressFromParam(addressOrEmail);
+    console.log(`[AddressResolver] getWalletAddress(${addressOrEmail}) => ${result.address}`);
     return result.address;
 }
