@@ -6,7 +6,7 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import PremiumBadge from "@/components/PremiumBadge";
 import { useCart } from "@/store/cart";
-import { useWalletAuth } from "@/hooks/useWalletAuth";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useToast } from "@/hooks/useToast";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -34,7 +34,7 @@ export default function ProductCard({ p }: { p: Product }) {
     ? Math.round(((p.originalPrice! - p.price) / p.originalPrice!) * 100)
     : 0;
 
-  const { address } = useWalletAuth();
+  const { walletAddress: address } = useCivicWallet();
 
   // Check if product is sold out
   const isSoldOut = p.inventory !== undefined && p.inventory <= 0;

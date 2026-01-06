@@ -213,7 +213,7 @@ export default function CartPage() {
         </div>
 
         {/* Status Messages */}
-        {checkoutStatus !== "idle" && (
+        {(checkoutStatus !== "idle" || error) && (
           <Card className="mb-6 p-4">
             <div className="flex items-center gap-3">
               {checkoutStatus === "success" ? (

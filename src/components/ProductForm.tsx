@@ -58,6 +58,7 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
       images: images,      // All images
       isPodEnabled: formData.get("isPodEnabled") === "true",
       original_price: formData.get("original_price") ? Number(formData.get("original_price")) : null,
+      originalPrice: formData.get("original_price") ? Number(formData.get("original_price")) : null,
     };
 
     try {

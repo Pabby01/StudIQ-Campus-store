@@ -34,6 +34,7 @@ export async function POST(req: Request) {
     image_url: parsed.data.imageUrl ?? null,
     images: parsed.data.images ?? (parsed.data.imageUrl ? [parsed.data.imageUrl] : []),
     is_pod_enabled: parsed.data.isPodEnabled,
+    original_price: parsed.data.originalPrice,
   }).select("id").single();
 
   if (error) {

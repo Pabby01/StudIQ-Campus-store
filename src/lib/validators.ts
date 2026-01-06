@@ -45,6 +45,7 @@ export const createProductSchema = z.object({
   imageUrl: z.string().url().optional(), // Keep for backward compatibility
   images: z.array(z.string().url()).min(0).max(10).optional(),
   isPodEnabled: z.boolean().default(false).optional(),
+  originalPrice: z.number().positive().optional().nullable(),
 });
 
 export const updateProductSchema = createProductSchema.extend({ id: z.string().min(1) });

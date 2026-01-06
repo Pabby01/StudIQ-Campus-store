@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { Star, ShoppingCart, Minus, Plus, Loader2, Package, ChevronLeft, ChevronRight } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Star, ShoppingCart, Minus, Plus, Loader2, Package, ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { useCart } from "@/store/cart";
 import { useToast } from "@/hooks/useToast";
 import ProductReviews from "@/components/ProductReviews";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 
 type Product = {
   id: string;
@@ -26,10 +27,12 @@ type Product = {
     name: string;
     owner_address: string;
   };
+  original_price?: number;
 };
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const productId = params.id as string;
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,7 @@ export default function ProductDetailPage() {
 
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
+  const { walletAddress } = useCivicWallet();
 
   useEffect(() => {
     fetchProduct();
@@ -76,6 +80,21 @@ export default function ProductDetailPage() {
     toast.success("Added to cart", `${quantity}x ${product.name}`);
   };
 
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    try {
+      const res = await fetch(`/api/product/${productId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Product deleted");
+        router.push("/dashboard/products");
+      } else {
+        toast.error("Failed to delete product");
+      }
+    } catch (e) {
+      toast.error("Error deleting product");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
@@ -100,6 +119,7 @@ export default function ProductDetailPage() {
   }
 
   const inStock = (product.inventory || 0) > 0;
+  const isOwner = walletAddress && product.stores?.owner_address === walletAddress;
 
   // Combine image_url and images array for the gallery
   const galleryImages = [
@@ -191,6 +211,11 @@ export default function ProductDetailPage() {
               <span className="text-4xl font-bold text-primary-blue">
                 {product.currency === "USDC" ? "USDC" : "SOL"} {product.price.toFixed(2)}
               </span>
+              {product.original_price && product.original_price > product.price && (
+                <span className="text-xl text-muted-text line-through">
+                  {product.currency === "USDC" ? "USDC" : "SOL"} {product.original_price.toFixed(2)}
+                </span>
+              )}
               {product.is_pod_enabled && (
                 <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
                   Cash on Delivery Available
@@ -225,45 +250,79 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Quantity Selector */}
-            {inStock && (
-              <div>
-                <label className="block text-sm font-medium text-black mb-2">
-                  Quantity
-                </label>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 bg-soft-gray-bg rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+            {/* Actions: Edit/Delete for Owner, Add to Cart for Buyer */}
+            {isOwner ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100">
+                  <p className="font-medium flex items-center gap-2">
+                    <Edit className="w-4 h-4" />
+                    You are the owner of this product
+                  </p>
+                </div>
+                <div className="flex gap-4">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="flex-1"
+                    onClick={() => router.push(`/dashboard/products/edit/${product.id}`)}
                   >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-12 text-center font-semibold text-black">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setQuantity(Math.min(product.inventory || 1, quantity + 1))
-                    }
-                    className="w-10 h-10 bg-soft-gray-bg rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                    <Edit className="w-5 h-5 mr-2" />
+                    Edit Product
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="lg"
+                    className="flex-shrink-0"
+                    onClick={handleDelete}
                   >
-                    <Plus className="w-4 h-4" />
-                  </button>
+                    <Trash2 className="w-5 h-5 mr-2" />
+                    Delete
+                  </Button>
                 </div>
               </div>
-            )}
+            ) : (
+              <>
+                {/* Quantity Selector */}
+                {inStock && (
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">
+                      Quantity
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="w-10 h-10 bg-soft-gray-bg rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="w-12 text-center font-semibold text-black">
+                        {quantity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setQuantity(Math.min(product.inventory || 1, quantity + 1))
+                        }
+                        className="w-10 h-10 bg-soft-gray-bg rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-            {/* Add to Cart Button */}
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full"
-              onClick={handleAddToCart}
-              disabled={!inStock}
-            >
-              <ShoppingCart className="w-5 h-5 mr-2" />
-              {inStock ? "Add to Cart" : "Out of Stock"}
-            </Button>
+                {/* Add to Cart Button */}
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  onClick={handleAddToCart}
+                  disabled={!inStock}
+                >
+                  <ShoppingCart className="w-5 h-5 mr-2" />
+                  {inStock ? "Add to Cart" : "Out of Stock"}
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
