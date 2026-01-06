@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { sendWithdrawalAdminNotification, sendWithdrawalConfirmation } from "@/lib/email";
 
 export async function POST(req: Request) {
     try {
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
         // 1. Verify wallet address belongs to a seller
         const { data: profile } = await supabase
             .from("profiles")
-            .select("address")
+            .select("address, email, name")
             .eq("address", address)
             .single();
 
@@ -213,7 +214,33 @@ export async function POST(req: Request) {
             );
         }
 
+
         // Success!
+
+        // Send Emails
+        if (profile.email) {
+            try {
+                await Promise.allSettled([
+                    sendWithdrawalAdminNotification(
+                        withdrawal.id,
+                        profile.name || "Seller",
+                        profile.email,
+                        amount,
+                        currency
+                    ),
+                    sendWithdrawalConfirmation(
+                        profile.email,
+                        amount,
+                        currency,
+                        "24-48 hours"
+                    )
+                ]);
+            } catch (emailError) {
+                console.error("[Withdraw] Email sending failed:", emailError);
+                // Don't fail the request if email fails, but log it
+            }
+        }
+
         return Response.json({
             ok: true,
             withdrawal: {

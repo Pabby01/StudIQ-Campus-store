@@ -589,3 +589,114 @@ export async function sendOrderCompleted(
     return { success: false, error };
   }
 }
+/**
+ * Send withdrawal notification to admin
+ */
+export async function sendWithdrawalAdminNotification(
+  requestId: string,
+  sellerName: string,
+  sellerEmail: string,
+  amount: number,
+  currency: string
+) {
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@studiq.fun';
+    console.log('[Email] Sending withdrawal notification to admin:', adminEmail);
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                  <tr>
+                    <td style="background-color: #333; padding: 30px; text-align: center;">
+                       <h1 style="color: #ffffff; margin: 0; font-size: 24px;">New Withdrawal Request 💰</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 40px 30px;">
+                      <p><strong>Seller:</strong> ${sellerName} (${sellerEmail})</p>
+                      <p><strong>Amount:</strong> ${amount.toFixed(4)} ${currency}</p>
+                      <p><strong>Request ID:</strong> ${requestId}</p>
+                      <br/>
+                      <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun'}/admin" style="background-color: #333; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Process in Admin Panel</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: adminEmail,
+      subject: `Withdrawal Request - ${sellerName}`,
+      html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email] Failed to send admin withdrawal notification:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Send withdrawal confirmation to seller
+ */
+export async function sendWithdrawalConfirmation(
+  sellerEmail: string,
+  amount: number,
+  currency: string,
+  estimatedDate: string
+) {
+  try {
+    console.log('[Email] Sending withdrawal confirmation to seller:', sellerEmail);
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                  <tr>
+                    <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center;">
+                       <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Withdrawal Requested ✅</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 40px 30px;">
+                      <p>Your request to withdraw <strong>${amount.toFixed(4)} ${currency}</strong> has been received.</p>
+                      <p>Funds will be sent to your connected wallet within <strong>24-48 hours</strong>.</p>
+                      <p>Thank you for selling on StudIQ!</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: sellerEmail,
+      subject: `Withdrawal Requested - ${amount.toFixed(2)} ${currency}`,
+      html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email] Failed to send withdrawal confirmation:', error);
+    return { success: false, error };
+  }
+}
