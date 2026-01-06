@@ -222,7 +222,7 @@ export default function PredictionPage() {
       </div>
 
       {/* Coming Soon Overlay */}
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(15, 16, 17, 0.0)' }}>
+      <div className="absolute inset-0 flex items-center justify-center z-10 p-4">
         <Card className="max-w-md w-full p-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary-blue to-purple-600 mb-6">
             <Lock className="w-8 h-8 text-white" />

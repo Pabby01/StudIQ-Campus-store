@@ -10,32 +10,35 @@ import { useToast } from "@/hooks/useToast";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { X } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
+import { CURRENCIES, getCurrencySymbol } from "@/lib/currencies";
 
 type ProductFormProps = {
   storeId?: string;
-  initial?: any; // Using any for flexibility, but ideally should be Product type
+  productId?: string; // Added for edit mode
+  initial?: any;
   onSuccess?: () => void;
 };
 
-
-
-export default function ProductForm({ storeId, initial, onSuccess }: ProductFormProps) {
+export default function ProductForm({ storeId, productId, initial, onSuccess }: ProductFormProps) {
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<string[]>(initial?.images || (initial?.imageUrl ? [initial.imageUrl] : []));
   const [category, setCategory] = useState(initial?.category || "");
+  const [currency, setCurrency] = useState(initial?.currency || "SOL");
   const router = useRouter();
   const toast = useToast();
   const { walletAddress, isAuthenticated } = useCivicWallet();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+
     if (!walletAddress) {
       toast.error("Error", "Please wait for your wallet to be ready");
       return;
     }
 
     setLoading(true);
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(form);
 
     // Validate images
     if (images.length === 0) {
@@ -44,38 +47,69 @@ export default function ProductForm({ storeId, initial, onSuccess }: ProductForm
       return;
     }
 
-    const payload = {
-      address: walletAddress,
-      storeId: storeId || String(formData.get("storeId")),
+    const basePayload = {
       name: formData.get("name"),
       description: String(formData.get("description")) || undefined,
       category: formData.get("category"),
       price: Number(formData.get("price")),
       currency: formData.get("currency"),
       inventory: Number(formData.get("inventory")),
-      imageUrl: images[0], // Main image for backward compatibility
+      imageUrl: images[0], // Main image
       images: images,      // All images
+      isPodEnabled: formData.get("isPodEnabled") === "true",
+      original_price: formData.get("original_price") ? Number(formData.get("original_price")) : null,
     };
 
     try {
-      const res = await fetch("/api/product/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      let res;
+      if (productId) {
+        // Edit Mode
+        res = await fetch("/api/products/update", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...basePayload,
+            productId,
+            userAddress: walletAddress,
+            // Map keys if needed by update API (it expects image_url, etc)
+            image_url: images[0],
+          }),
+        });
+      } else {
+        // Create Mode
+        res = await fetch("/api/product/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...basePayload,
+            address: walletAddress,
+            storeId: storeId || String(formData.get("storeId")),
+          }),
+        });
+      }
 
       if (res.ok) {
-        toast.success("Product created!", "Your product is now live");
+        const data = await res.json();
+        if (productId && !data.success && !data.ok) {
+          throw new Error(data.error || "Update failed");
+        }
+
+        toast.success(productId ? "Product updated!" : "Product created!",
+          productId ? "Your changes have been saved" : "Your product is now live");
         onSuccess?.();
-        e.currentTarget.reset();
-        setImages([]);
-        setCategory("");
+        if (!productId) {
+          form.reset();
+          setImages([]);
+          setCategory("");
+          setCurrency("SOL");
+        }
       } else {
         const error = await res.json();
-        toast.error("Failed to create product", error.error || "Please try again");
+        toast.error("Failed to save product", error.error || "Please try again");
       }
     } catch (error) {
-      toast.error("Error", "Failed to create product");
+      console.error(error);
+      toast.error("Error", error instanceof Error ? error.message : "Failed to save product");
     } finally {
       setLoading(false);
     }
@@ -83,37 +117,20 @@ export default function ProductForm({ storeId, initial, onSuccess }: ProductForm
 
   return (
     <Card>
-      <h3 className="text-lg font-semibold text-black mb-6">{initial ? "Edit Product" : "Add New Product"}</h3>
+      <h3 className="text-lg font-semibold text-black mb-6">{productId ? "Edit Product" : "Add New Product"}</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Product Image */}
         <div>
           <label className="block text-sm font-medium text-black mb-2">
             Product Images (Max 10)
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {images.map((url, index) => (
-              <div key={index} className="relative group aspect-square">
-                <img src={url} alt={`Product ${index + 1}`} className="w-full h-full object-cover rounded-lg border border-border-gray" />
-                <button
-                  type="button"
-                  onClick={() => setImages(images.filter((_, i) => i !== index))}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-
-            {images.length < 10 && (
-              <div className="aspect-square">
-                <ImageUpload
-                  key={images.length}
-                  onUploadComplete={(url) => setImages([...images, url])}
-                  folder="products"
-                />
-              </div>
-            )}
-          </div>
+          <ImageUpload
+            value={images}
+            onChange={(val) => setImages(Array.isArray(val) ? val : [val])}
+            folder="products"
+            allowMultiple={true}
+            maxFiles={10}
+          />
           <p className="text-xs text-muted-text mt-2">
             Add at least one image. The first image will be the main product photo.
           </p>
@@ -134,7 +151,7 @@ export default function ProductForm({ storeId, initial, onSuccess }: ProductForm
             id="isPodEnabled"
             name="isPodEnabled"
             value="true"
-            defaultChecked={initial?.is_pod_enabled}
+            defaultChecked={initial?.is_pod_enabled || initial?.isPodEnabled}
             className="w-4 h-4 text-primary-blue border-gray-300 rounded focus:ring-primary-blue"
           />
           <label htmlFor="isPodEnabled" className="text-sm font-medium text-black">
@@ -196,13 +213,30 @@ export default function ProductForm({ storeId, initial, onSuccess }: ProductForm
             </label>
             <select
               name="currency"
-              defaultValue={initial?.currency || "SOL"}
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
               className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
             >
-              <option value="SOL">SOL</option>
-              <option value="USDC">USDC</option>
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} ({c.symbol})
+                </option>
+              ))}
             </select>
           </div>
+        </div>
+
+        {/* Original Price (Optional) */}
+        <div>
+          <Input
+            name="original_price"
+            label="Original Price (Optional)"
+            type="number"
+            step="0.01"
+            placeholder="0.00"
+            defaultValue={initial?.original_price}
+          />
+          <p className="text-xs text-muted-text mt-1">If set higher than price, a discount badge will be shown</p>
         </div>
 
         {/* Inventory */}
@@ -222,7 +256,7 @@ export default function ProductForm({ storeId, initial, onSuccess }: ProductForm
           className="w-full"
           disabled={loading}
         >
-          {loading ? (initial ? "Updating..." : "Creating...") : (initial ? "Update Product" : "Create Product")}
+          {loading ? (productId ? "Updating..." : "Creating...") : (productId ? "Update Product" : "Create Product")}
         </Button>
       </form>
     </Card>
