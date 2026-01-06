@@ -140,7 +140,7 @@ export default function OrderSuccessPage() {
                         </div>
 
                         {/* Customer Info with improved design */}
-                        <div className="grid grid-cols-2 gap-8 mb-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                             <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
                                 <p className="text-xs text-gray-500 uppercase font-bold mb-3 tracking-wide">Billed To</p>
                                 <p className="font-semibold text-gray-900 text-lg">{order.delivery_info.name}</p>

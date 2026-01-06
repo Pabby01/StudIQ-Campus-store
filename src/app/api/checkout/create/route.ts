@@ -261,6 +261,8 @@ export async function POST(req: Request) {
       // Import email functions
       const { sendOrderConfirmation, sendSellerNotification } = await import('@/lib/email');
 
+      console.log("[Checkout Email] Sending confirmations. Buyer Email:", parsed.data.buyerEmail);
+
       // Get store information for seller email
       const { data: store } = await supabase
         .from('stores')
@@ -325,8 +327,48 @@ export async function POST(req: Request) {
         );
       }
     } catch (emailError) {
-      // Don't fail the checkout if emails fail
       console.error('[Checkout] Email notification error:', emailError);
+    }
+
+    // Step 9: Create In-App Notifications (New)
+    try {
+      const notificationsToInsert = [];
+
+      // 1. Notify Buyer
+      // We need buyer's profile ID. We have buyerProfile from earlier Step 31 (but that was 'data' which might be partial).
+      // Let's re-fetch or assume we can get ID if we queried it. Use 'buyer_address'.
+      // Actually we queried 'address' in Step 34. We need 'id'.
+
+      const { data: buyerUser } = await supabase.from('profiles').select('id').eq('address', parsed.data.buyer).single();
+      if (buyerUser) {
+        notificationsToInsert.push({
+          user_id: buyerUser.id,
+          title: 'Order Placed! 🛍️',
+          message: `Your order #${newOrder.id.slice(0, 8)} has been placed successfully.`,
+          type: 'success',
+          read: false
+        });
+      }
+
+      // 2. Notify Seller
+      // We have store.owner_address. Need profile ID.
+      const { data: sellerUser } = await supabase.from('profiles').select('id').eq('address', store?.owner_address).single();
+      if (sellerUser) {
+        notificationsToInsert.push({
+          user_id: sellerUser.id,
+          title: 'New Order Received! 💰',
+          message: `You have a new order #${newOrder.id.slice(0, 8)} for ${parsed.data.currency} ${amount}.`,
+          type: 'success',
+          read: false
+        });
+      }
+
+      if (notificationsToInsert.length > 0) {
+        await supabase.from('notifications').insert(notificationsToInsert);
+      }
+
+    } catch (notifyError) {
+      console.error('[Checkout] In-App Notification error:', notifyError);
     }
 
     return Response.json({

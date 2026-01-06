@@ -85,7 +85,7 @@ export async function sendOrderConfirmation(details: OrderDetails) {
                   <!-- Header with Logo -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
+                      <img src="https://i.postimg.cc/FRJMZQbz/logo.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
                       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Order Confirmed!</h1>
                       <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Thank you for shopping with us 🎉</p>
                     </td>
@@ -236,7 +236,7 @@ export async function sendSellerNotification(details: SellerNotification) {
                   <!-- Header with Logo -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
+                      <img src="https://i.postimg.cc/FRJMZQbz/logo.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
                       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">New Order Received!</h1>
                       <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">You have a new order to fulfill 🛍️</p>
                     </td>
@@ -381,7 +381,7 @@ export async function sendShippingConfirmation(
                   <!-- Header with Logo -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
+                      <img src="https://i.postimg.cc/FRJMZQbz/logo.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
                       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Your Order is On Its Way!</h1>
                       <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">It's being shipped to you 📦</p>
                     </td>
@@ -495,7 +495,7 @@ export async function sendOrderCompleted(
                   <!-- Header with Logo -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/jjrt2Kdw/logo-2.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
+                      <img src="https://i.postimg.cc/FRJMZQbz/logo.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
                       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Order Delivered!</h1>
                       <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Enjoy your purchase! ✨</p>
                     </td>
