@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { ArrowLeft, Check, Crown, Loader2 } from "lucide-react";
@@ -20,7 +20,7 @@ export default function CheckoutPage() {
 function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const wallet = useWallet();
+    const { walletAddress, isAuthenticated, wallet } = useCivicWallet();
     const toast = useToast();
 
     const plan = (searchParams?.get('plan') || 'premium') as PlanName;
@@ -32,15 +32,15 @@ function CheckoutContent() {
     const solPrice = convertUSDtoSOL(usdPrice);
 
     const handlePayment = async () => {
-        if (!wallet.connected || !wallet.publicKey) {
-            toast.error('Please connect your wallet');
+        if (!walletAddress || !wallet.publicKey) {
+            toast.error('Please sign in first');
             return;
         }
 
         setProcessing(true);
 
         try {
-            const userAddress = wallet.publicKey.toString();
+            const userAddress = walletAddress;
 
             // Import Solana libraries dynamically
             const { Connection, PublicKey, SystemProgram, Transaction } = await import('@solana/web3.js');
@@ -148,13 +148,13 @@ function CheckoutContent() {
         }
     };
 
-    if (!wallet.connected) {
+    if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
                 <Card className="p-8 text-center max-w-md">
-                    <h2 className="text-2xl font-bold mb-4">Connect Wallet</h2>
+                    <h2 className="text-2xl font-bold mb-4">Sign In Required</h2>
                     <p className="text-muted-text mb-6">
-                        Please connect your Solana wallet to complete your subscription purchase.
+                        Please sign in to complete your subscription purchase.
                     </p>
                     <Button variant="primary" onClick={() => router.push('/')}>
                         Go to Home

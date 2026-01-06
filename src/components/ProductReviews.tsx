@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Star, StarHalf, User } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useToast } from "@/hooks/useToast";
 
 type Review = {
@@ -22,7 +22,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
     const [content, setContent] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
-    const wallet = useWallet();
+    const { walletAddress, isAuthenticated } = useCivicWallet();
     const { success, error } = useToast();
 
     useEffect(() => {
@@ -43,8 +43,8 @@ export default function ProductReviews({ productId }: { productId: string }) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!wallet.connected) {
-            error("Error", "Please connect wallet to review");
+        if (!walletAddress) {
+            error("Error", "Please sign in to leave a review");
             return;
         }
 
@@ -55,7 +55,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     productId,
-                    address: wallet.publicKey?.toString(),
+                    address: walletAddress,
                     rating,
                     content,
                 }),
@@ -81,7 +81,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
             <h2 className="text-2xl font-bold text-black">Reviews ({reviews.length})</h2>
 
             {/* Review Form */}
-            {wallet.connected ? (
+            {isAuthenticated ? (
                 <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl border border-border-gray space-y-4">
                     <h3 className="font-semibold text-lg">Write a Review</h3>
                     <div>
@@ -118,7 +118,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
                 </form>
             ) : (
                 <div className="p-4 bg-gray-50 rounded-lg text-center">
-                    <p className="text-muted-text">Connect your wallet to leave a review.</p>
+                    <p className="text-muted-text">Sign in to leave a review.</p>
                 </div>
             )}
 

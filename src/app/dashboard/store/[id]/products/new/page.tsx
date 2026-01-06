@@ -2,18 +2,19 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useToast } from "@/hooks/useToast";
 import ImageUpload from "@/components/ImageUpload";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { ArrowLeft, Package } from "lucide-react";
 import Link from "next/link";
+import { CATEGORIES } from "@/lib/categories";
 
 export default function NewProductPage() {
     const params = useParams();
     const router = useRouter();
-    const wallet = useWallet();
+    const { walletAddress, isAuthenticated } = useCivicWallet();
     const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [imageUrl, setImageUrl] = useState("");
@@ -22,8 +23,8 @@ export default function NewProductPage() {
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
-        if (!wallet.connected) {
-            toast.error("Error", "Please connect your wallet");
+        if (!walletAddress) {
+            toast.error("Error", "Please sign in first");
             return;
         }
 
@@ -31,7 +32,7 @@ export default function NewProductPage() {
 
         const formData = new FormData(e.currentTarget);
         const payload = {
-            address: wallet.publicKey?.toString(),
+            address: walletAddress,
             storeId: params.id,
             name: formData.get("name"),
             category: category || "Other",
@@ -62,16 +63,7 @@ export default function NewProductPage() {
         }
     }
 
-    const categories = [
-        "Electronics",
-        "Books & Textbooks",
-        "Clothing",
-        "Food & Beverages",
-        "Stationery",
-        "Sports & Fitness",
-        "Home & Living",
-        "Other",
-    ];
+
 
     return (
         <div className="min-h-screen bg-soft-gray-bg p-8">
@@ -130,7 +122,7 @@ export default function NewProductPage() {
                                 className="w-full px-4 py-2 border border-border-gray rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
                             >
                                 <option value="">Select a category</option>
-                                {categories.map((cat) => (
+                                {CATEGORIES.map((cat) => (
                                     <option key={cat} value={cat}>
                                         {cat}
                                     </option>

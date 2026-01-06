@@ -2,17 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import Badge from "@/components/ui/Badge";
-
-const categories = [
-  "All",
-  "Electronics",
-  "Books",
-  "Food",
-  "Clothing",
-  "Stationery",
-  "Sports",
-  "Other",
-];
+import { FILTER_CATEGORIES } from "@/lib/categories";
 
 interface CategoryFilterProps {
   selected?: string;
@@ -42,7 +32,7 @@ export default function CategoryFilter({ selected, onChange }: CategoryFilterPro
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-      {categories.map((category) => {
+      {FILTER_CATEGORIES.map((category) => {
         const isActive = currentCategory === category || (currentCategory === "" && category === "All");
         return (
           <button

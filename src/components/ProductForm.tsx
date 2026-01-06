@@ -7,8 +7,9 @@ import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import ImageUpload from "@/components/ImageUpload";
 import { useToast } from "@/hooks/useToast";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { X } from "lucide-react";
+import { CATEGORIES } from "@/lib/categories";
 
 type ProductFormProps = {
   storeId?: string;
@@ -16,18 +17,7 @@ type ProductFormProps = {
   onSuccess?: () => void;
 };
 
-const CATEGORIES = [
-  "Electronics",
-  "Books & Textbooks",
-  "Clothing & Fashion",
-  "Food & Beverages",
-  "Sports & Fitness",
-  "Home & Living",
-  "Beauty & Personal Care",
-  "Stationery & Supplies",
-  "Services",
-  "Other",
-];
+
 
 export default function ProductForm({ storeId, initial, onSuccess }: ProductFormProps) {
   const [loading, setLoading] = useState(false);
@@ -35,12 +25,12 @@ export default function ProductForm({ storeId, initial, onSuccess }: ProductForm
   const [category, setCategory] = useState(initial?.category || "");
   const router = useRouter();
   const toast = useToast();
-  const wallet = useWallet();
+  const { walletAddress, isAuthenticated } = useCivicWallet();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!wallet.connected || !wallet.publicKey) {
-      toast.error("Error", "Please connect your wallet first");
+    if (!walletAddress) {
+      toast.error("Error", "Please wait for your wallet to be ready");
       return;
     }
 
@@ -55,7 +45,7 @@ export default function ProductForm({ storeId, initial, onSuccess }: ProductForm
     }
 
     const payload = {
-      address: wallet.publicKey.toString(),
+      address: walletAddress,
       storeId: storeId || String(formData.get("storeId")),
       name: formData.get("name"),
       description: String(formData.get("description")) || undefined,

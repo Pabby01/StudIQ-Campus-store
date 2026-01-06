@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import PricingCard from "@/components/PricingCard";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -10,7 +10,7 @@ import { Calculator, Check, Crown, Star, TrendingUp } from "lucide-react";
 
 export default function PricingPage() {
     const router = useRouter();
-    const wallet = useWallet();
+    const { isAuthenticated } = useCivicWallet();
     const [monthlySales, setMonthlySales] = useState(1000);
     const [avgOrderValue, setAvgOrderValue] = useState(50);
 
@@ -74,7 +74,7 @@ export default function PricingPage() {
     ];
 
     const handleSelectPlan = (planName: string) => {
-        if (!wallet.connected) {
+        if (!isAuthenticated) {
             router.push("/");
             return;
         }

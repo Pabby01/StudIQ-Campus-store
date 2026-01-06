@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import {
@@ -48,7 +48,7 @@ interface Withdrawal {
 }
 
 export default function EarningsPage() {
-    const wallet = useWallet();
+    const { walletAddress, isAuthenticated } = useCivicWallet();
     const toast = useToast();
     const [loading, setLoading] = useState(true);
     const [earnings, setEarnings] = useState<Earnings | null>(null);
@@ -59,7 +59,7 @@ export default function EarningsPage() {
     const [selectedCurrency, setSelectedCurrency] = useState<"SOL" | "USDC">("SOL");
     const [activeCurrencyTab, setActiveCurrencyTab] = useState<"SOL" | "USDC">("SOL");
 
-    const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
+    const address = walletAddress;
 
     useEffect(() => {
         if (address) {
@@ -164,13 +164,13 @@ export default function EarningsPage() {
         }
     };
 
-    if (!wallet.connected) {
+    if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
                 <Card className="p-8 text-center max-w-md">
                     <Wallet className="w-16 h-16 text-primary-blue mx-auto mb-4" />
-                    <h2 className="text-2xl font-bold text-black mb-2">Connect Wallet</h2>
-                    <p className="text-muted-text">Please connect your wallet to view earnings</p>
+                    <h2 className="text-2xl font-bold text-black mb-2">Sign In Required</h2>
+                    <p className="text-muted-text">Please sign in to view earnings</p>
                 </Card>
             </div>
         );
@@ -200,8 +200,8 @@ export default function EarningsPage() {
                     <button
                         onClick={() => setActiveCurrencyTab("SOL")}
                         className={`px-6 py-3 font-medium text-sm transition-colors relative ${activeCurrencyTab === "SOL"
-                                ? "text-primary-blue border-b-2 border-primary-blue"
-                                : "text-muted-text hover:text-black"
+                            ? "text-primary-blue border-b-2 border-primary-blue"
+                            : "text-muted-text hover:text-black"
                             }`}
                     >
                         SOL Earnings
@@ -214,8 +214,8 @@ export default function EarningsPage() {
                     <button
                         onClick={() => setActiveCurrencyTab("USDC")}
                         className={`px-6 py-3 font-medium text-sm transition-colors relative ${activeCurrencyTab === "USDC"
-                                ? "text-primary-blue border-b-2 border-primary-blue"
-                                : "text-muted-text hover:text-black"
+                            ? "text-primary-blue border-b-2 border-primary-blue"
+                            : "text-muted-text hover:text-black"
                             }`}
                     >
                         USDC Earnings

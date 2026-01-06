@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import StoreForm from "@/components/StoreForm";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -13,22 +13,24 @@ export default function DashboardStorePage() {
   const [showForm, setShowForm] = useState(false);
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const wallet = useWallet();
+
+  // Use Civic wallet hook for unified auth
+  const { walletAddress, isAuthenticated, isLoading: authLoading } = useCivicWallet();
 
   useEffect(() => {
     fetchStores();
-  }, [wallet.connected]);
+  }, [walletAddress, isAuthenticated]);
 
   async function fetchStores() {
-    if (!wallet.connected) {
+    if (authLoading) return;
+
+    if (!walletAddress) {
       setLoading(false);
       return;
     }
 
     try {
-      if (!wallet.publicKey) return;
-      const address = wallet.publicKey.toString();
-      const res = await fetch(`/api/store/list?address=${address}`);
+      const res = await fetch(`/api/store/list?address=${walletAddress}`);
       if (res.ok) {
         const data = await res.json();
         setStores(data.stores || []);
@@ -45,7 +47,7 @@ export default function DashboardStorePage() {
     fetchStores(); // Refresh the list
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary-blue animate-spin" />

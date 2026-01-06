@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useWallet } from "@solana/react-hooks";
 import { Package, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
@@ -11,7 +10,6 @@ import Card from "@/components/ui/Card";
 export default function StoreProductsPage() {
     const params = useParams();
     const router = useRouter();
-    const wallet = useWallet();
     const [store, setStore] = useState<any>(null);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);

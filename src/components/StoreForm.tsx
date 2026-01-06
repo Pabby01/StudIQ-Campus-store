@@ -1,42 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import ImageUpload from "@/components/ImageUpload";
 import { useToast } from "@/hooks/useToast";
+import { CATEGORIES } from "@/lib/categories";
+import { AlertCircle } from "lucide-react";
 
 type StoreFormProps = {
   onSuccess?: () => void;
 };
 
-const STORE_CATEGORIES = [
-  "Food & Dining",
-  "Groceries",
-  "Academic",
-  "Electronics",
-  "Fashion & Clothing",
-  "Books & Media",
-  "Sports & Recreation",
-  "Health & Beauty",
-  "Services",
-  "Other",
-];
+
 
 export default function StoreForm({ onSuccess }: StoreFormProps) {
   const [loading, setLoading] = useState(false);
   const [bannerUrl, setBannerUrl] = useState("");
   const [category, setCategory] = useState("");
   const toast = useToast();
-  const wallet = useWallet();
+
+  // Use Civic wallet hook for unified auth
+  const { walletAddress, isAuthenticated, isCreatingWallet } = useCivicWallet();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!wallet.connected || !wallet.publicKey) {
-      toast.error("Wallet not connected", "Please connect your wallet first");
+    if (!walletAddress) {
+      toast.error("Wallet not ready", "Please wait for your wallet to be created");
       return;
     }
 
@@ -44,7 +37,7 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
 
     const formData = new FormData(e.currentTarget);
     const payload = {
-      address: wallet.publicKey.toString(),
+      address: walletAddress,
       name: String(formData.get("name")),
       description: String(formData.get("description")) || undefined,
       category: category || "Other",
@@ -67,8 +60,7 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
         // Redirect to product management for the new store
         window.location.href = `/dashboard/store/${data.id}/products`;
       } else {
-        const error = await res.json();
-        toast.error("Failed to create store", error.error || "Please try again");
+        toast.error("Failed to create store", data.error || "Please try again");
       }
     } catch (error) {
       toast.error("Error", "Failed to create store");
@@ -80,6 +72,22 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
   return (
     <Card>
       <h3 className="text-lg font-semibold text-black mb-6">Create Your Store</h3>
+
+      {/* Show wallet status */}
+      {isCreatingWallet && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-blue-700">Creating your wallet...</span>
+        </div>
+      )}
+
+      {!walletAddress && !isCreatingWallet && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-yellow-600" />
+          <span className="text-sm text-yellow-700">Waiting for wallet to be ready...</span>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Store Banner */}
         <div>
@@ -113,7 +121,7 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
             className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
           >
             <option value="">Select a category</option>
-            {STORE_CATEGORIES.map((cat) => (
+            {CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
               </option>
@@ -146,9 +154,9 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
           type="submit"
           variant="primary"
           className="w-full"
-          disabled={loading}
+          disabled={loading || !walletAddress || isCreatingWallet}
         >
-          {loading ? "Creating..." : "Create Store"}
+          {loading ? "Creating..." : !walletAddress ? "Waiting for wallet..." : "Create Store"}
         </Button>
       </form>
     </Card>

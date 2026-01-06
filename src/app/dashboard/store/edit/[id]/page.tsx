@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
+import { CATEGORIES } from "@/lib/categories";
 
 export default function EditStorePage() {
     const router = useRouter();
     const params = useParams();
-    const wallet = useWallet();
+    const { walletAddress, isAuthenticated } = useCivicWallet();
     const toast = useToast();
     const storeId = params?.id as string;
 
@@ -25,7 +26,7 @@ export default function EditStorePage() {
         banner_url: ""
     });
 
-    const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
+    const address = walletAddress;
 
     useEffect(() => {
         if (storeId && address) {
@@ -77,7 +78,7 @@ export default function EditStorePage() {
         e.preventDefault();
 
         if (!address) {
-            toast.error("Please connect your wallet");
+            toast.error("Please sign in first");
             return;
         }
 
@@ -113,12 +114,12 @@ export default function EditStorePage() {
         }
     };
 
-    if (!wallet.connected) {
+    if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
                 <Card className="p-8 text-center">
-                    <h2 className="text-xl font-bold mb-4">Connect Wallet</h2>
-                    <p className="text-muted-text">Please connect your wallet to edit your store</p>
+                    <h2 className="text-xl font-bold mb-4">Sign In Required</h2>
+                    <p className="text-muted-text">Please sign in to edit your store</p>
                 </Card>
             </div>
         );
@@ -183,12 +184,9 @@ export default function EditStorePage() {
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
                             >
                                 <option value="">Select a category</option>
-                                <option value="Electronics">Electronics</option>
-                                <option value="Fashion">Fashion</option>
-                                <option value="Books">Books</option>
-                                <option value="Food">Food</option>
-                                <option value="Services">Services</option>
-                                <option value="Other">Other</option>
+                                {CATEGORIES.map((cat) => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
                             </select>
                         </div>
 

@@ -7,7 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { Plus, Package, Loader2, Edit } from "lucide-react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useToast } from "@/hooks/useToast";
 
 type Store = {
@@ -33,18 +33,18 @@ export default function DashboardProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
-  const wallet = useWallet();
+  const { walletAddress, isAuthenticated, isLoading: authLoading } = useCivicWallet();
   const toast = useToast();
 
   useEffect(() => {
-    if (wallet.connected && wallet.publicKey) {
+    if (walletAddress) {
       fetchStores();
     }
-  }, [wallet.connected]);
+  }, [walletAddress]);
 
   const fetchStores = async () => {
     try {
-      const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : "";
+      const address = walletAddress || "";
       const res = await fetch("/api/store/all?limit=100");
       const data = await res.json();
 
@@ -108,18 +108,18 @@ export default function DashboardProductsPage() {
     }
   };
 
-  if (!wallet.connected) {
+  if (!isAuthenticated || authLoading) {
     return (
       <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
         <Card className="p-8 text-center">
-          <h2 className="text-xl font-bold mb-4">Connect Wallet</h2>
-          <p className="text-muted-text">Please connect your wallet to manage products.</p>
+          <h2 className="text-xl font-bold mb-4">Sign In Required</h2>
+          <p className="text-muted-text">Please sign in to manage products.</p>
         </Card>
       </div>
     );
   }
 
-  const sellerAddress = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : "";
+  const sellerAddress = walletAddress || "";
 
   return (
     <div className="min-h-screen bg-soft-gray-bg p-8">

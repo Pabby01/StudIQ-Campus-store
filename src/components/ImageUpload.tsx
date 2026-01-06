@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { Upload, X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 
 interface ImageUploadProps {
     onUploadComplete: (url: string) => void;
@@ -23,15 +23,21 @@ export default function ImageUpload({
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const wallet = useWallet();
+
+    // Use Civic wallet hook for unified auth
+    const { walletAddress, isAuthenticated, isCreatingWallet } = useCivicWallet();
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         // Check wallet connection
-        if (!wallet.connected || !wallet.publicKey) {
-            setError("Please connect your wallet first");
+        if (!walletAddress) {
+            if (isCreatingWallet) {
+                setError("Please wait, wallet is being created...");
+            } else {
+                setError("Please sign in first");
+            }
             return;
         }
 
@@ -65,7 +71,7 @@ export default function ImageUpload({
             const formData = new FormData();
             formData.append("file", file);
             formData.append("folder", folder);
-            formData.append("address", wallet.publicKey.toString());
+            formData.append("address", walletAddress);
 
             const res = await fetch("/api/storage", {
                 method: "POST",
@@ -146,7 +152,7 @@ export default function ImageUpload({
                             capture="environment"
                             onChange={handleFileSelect}
                             className="hidden"
-                            disabled={uploading}
+                            disabled={uploading || !walletAddress}
                         />
                     </label>
                 )}
@@ -173,12 +179,17 @@ export default function ImageUpload({
                     variant="outline"
                     className="w-full"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
+                    disabled={uploading || !walletAddress}
                 >
                     {uploading ? (
                         <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             Uploading...
+                        </>
+                    ) : !walletAddress ? (
+                        <>
+                            <AlertCircle className="w-4 h-4 mr-2" />
+                            {isCreatingWallet ? "Creating wallet..." : "Waiting for wallet..."}
                         </>
                     ) : (
                         <>

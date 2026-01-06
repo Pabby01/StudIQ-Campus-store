@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Trophy, Medal, Award, Crown, TrendingUp, Loader2 } from "lucide-react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import Card from "@/components/ui/Card";
 
 type LeaderboardEntry = {
@@ -20,13 +20,13 @@ type UserRank = {
 };
 
 export default function LeaderboardPage() {
-    const wallet = useWallet();
+    const { walletAddress } = useCivicWallet();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [userRank, setUserRank] = useState<UserRank | null>(null);
     const [range, setRange] = useState<"all" | "month" | "week">("all");
     const [loading, setLoading] = useState(true);
 
-    const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
+    const address = walletAddress;
 
     useEffect(() => {
         fetchLeaderboard();

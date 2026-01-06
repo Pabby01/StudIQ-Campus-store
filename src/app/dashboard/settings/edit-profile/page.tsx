@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/useToast";
 
 export default function EditProfilePage() {
     const router = useRouter();
-    const wallet = useWallet();
+    const { walletAddress, isAuthenticated, email: userEmail } = useCivicWallet();
     const toast = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -24,7 +24,7 @@ export default function EditProfilePage() {
         phone: "",
     });
 
-    const address = wallet.connected && wallet.publicKey ? wallet.publicKey.toString() : null;
+    const address = walletAddress;
 
     useEffect(() => {
         if (address) {
@@ -69,7 +69,7 @@ export default function EditProfilePage() {
         e.preventDefault();
 
         if (!address) {
-            toast.error("Error", "Please connect your wallet");
+            toast.error("Error", "Please sign in first");
             return;
         }
 
@@ -100,12 +100,12 @@ export default function EditProfilePage() {
         }
     };
 
-    if (!wallet.connected) {
+    if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
                 <Card className="p-8 text-center">
-                    <h2 className="text-xl font-bold mb-4">Connect Wallet</h2>
-                    <p className="text-muted-text">Please connect your wallet to edit your profile</p>
+                    <h2 className="text-xl font-bold mb-4">Sign In Required</h2>
+                    <p className="text-muted-text">Please sign in to edit your profile</p>
                 </Card>
             </div>
         );
