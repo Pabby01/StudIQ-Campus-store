@@ -11,7 +11,8 @@ import {
     Heart,
     Plus,
     X,
-    Menu
+    Menu,
+    Wallet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
@@ -56,6 +57,18 @@ export default function Sidebar() {
                         >
                             <LayoutDashboard className="w-5 h-5" />
                             Overview
+                        </Link>
+                        <Link
+                            href="/dashboard/wallet"
+                            className={cn(
+                                "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                                pathname === "/dashboard/wallet"
+                                    ? "bg-blue-50 text-primary-blue"
+                                    : "text-muted-text hover:bg-soft-gray-bg hover:text-black"
+                            )}
+                        >
+                            <Wallet className="w-5 h-5" />
+                            My Wallet
                         </Link>
                         <Link
                             href="/dashboard/orders"

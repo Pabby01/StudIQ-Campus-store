@@ -30,6 +30,21 @@ const SOLANA_WSS_URL = SOLANA_RPC_URL.replace("http", "ws"); // Simple replaceme
 export const rpc = createSolanaRpc(SOLANA_RPC_URL);
 export const rpcSubscriptions = createSolanaRpcSubscriptions(SOLANA_WSS_URL);
 
+export function getClusterUrl(cluster: 'devnet' | 'mainnet') {
+    if (cluster === 'mainnet') {
+        return process.env.NEXT_PUBLIC_SOLANA_MAINNET_RPC_URL || "https://api.mainnet-beta.solana.com";
+    }
+    return process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+}
+
+export function getRpc(cluster: 'devnet' | 'mainnet' = 'devnet') {
+    return createSolanaRpc(getClusterUrl(cluster));
+}
+
+export function getRpcSubscriptions(cluster: 'devnet' | 'mainnet' = 'devnet') {
+    return createSolanaRpcSubscriptions(getClusterUrl(cluster).replace("http", "ws"));
+}
+
 /**
  * Create a SOL or SPL Token transfer transaction
  */
@@ -37,7 +52,8 @@ export async function createTransferTransaction(
     from: string,
     to: string,
     amount: number,
-    mint?: string // Optional mint address for SPL tokens
+    mint?: string, // Optional mint address for SPL tokens
+    cluster: 'devnet' | 'mainnet' = 'devnet'
 ) {
     if (mint && mint !== "SOL") {
         return createSplTransferTransaction(from, to, amount, mint);
@@ -56,7 +72,7 @@ export async function createTransferTransaction(
     console.log("Lamports:", amountLamports);
 
     // Get latest blockhash
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+    const { value: latestBlockhash } = await getRpc(cluster).getLatestBlockhash().send();
 
     // Create a transaction message
     const transactionMessage = pipe(
