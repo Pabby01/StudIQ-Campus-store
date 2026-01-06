@@ -15,15 +15,19 @@ export function useCivicWallet() {
     const userContext = useUser();
     const { user, isLoading: civicLoading } = userContext;
     const wallet = useWallet();
-    const hasUpdatedProfile = useRef(false);
     const hasTriedWalletCreation = useRef(false);
+    const hasUpdatedProfile = useRef(false);
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
 
-    // Check if user has an embedded wallet
-    const hasWallet = checkUserHasWallet(user);
+    // Get the Solana context from userContext
+    const solanaContext = (userContext as any).solana;
+    const walletCreationInProgress = (userContext as any).walletCreationInProgress;
 
-    // Get wallet address from the user context if available
-    const civicWalletAddress = hasWallet ? (user as any).solana?.address : null;
+    // Check if user has an embedded wallet
+    const hasWallet = checkUserHasWallet(user) || (solanaContext?.address ? true : false);
+
+    // Get wallet address from Civic's solana context or user object
+    const civicWalletAddress = solanaContext?.address || (user as any)?.solana?.address || null;
 
     // Get wallet address from Civic embedded wallet OR Solana wallet adapter
     const walletAddress = civicWalletAddress || wallet.publicKey?.toBase58() || null;
@@ -37,49 +41,50 @@ export function useCivicWallet() {
     useEffect(() => {
         if (user && !civicLoading) {
             console.log('[useCivicWallet] User exists, hasWallet:', hasWallet);
-            console.log('[useCivicWallet] userContext keys:', Object.keys(userContext));
-            console.log('[useCivicWallet] createWallet available:', typeof (userContext as any).createWallet === 'function');
+            console.log('[useCivicWallet] solanaContext:', solanaContext);
+            console.log('[useCivicWallet] solanaContext keys:', solanaContext ? Object.keys(solanaContext) : 'null');
+            console.log('[useCivicWallet] walletCreationInProgress:', walletCreationInProgress);
+            console.log('[useCivicWallet] createWallet on solana:', typeof solanaContext?.createWallet === 'function');
         }
-    }, [user, civicLoading, hasWallet, userContext]);
+    }, [user, civicLoading, hasWallet, solanaContext, walletCreationInProgress]);
 
     // Try to create embedded wallet if user exists but no wallet
     useEffect(() => {
         async function createEmbeddedWallet() {
             // Skip if already has wallet, already tried, or still loading
-            if (hasWallet || hasTriedWalletCreation.current || isCreatingWallet || civicLoading || !user) {
+            if (hasWallet || hasTriedWalletCreation.current || isCreatingWallet || civicLoading || !user || walletCreationInProgress) {
                 return;
             }
 
-            const contextAny = userContext as any;
-
-            // Check if createWallet method exists on user context
-            if (typeof contextAny.createWallet === 'function') {
+            // Check if createWallet exists on solanaContext
+            if (solanaContext && typeof solanaContext.createWallet === 'function') {
                 hasTriedWalletCreation.current = true;
                 setIsCreatingWallet(true);
 
-                console.log('[useCivicWallet] 🚀 Creating embedded wallet...');
+                console.log('[useCivicWallet] 🚀 Creating embedded wallet via solanaContext...');
 
                 try {
-                    await contextAny.createWallet();
+                    await solanaContext.createWallet();
                     console.log('[useCivicWallet] ✅ Embedded wallet created!');
-                    // The userContext should now have the wallet
                 } catch (error) {
                     console.error('[useCivicWallet] ❌ Wallet creation failed:', error);
                 } finally {
                     setIsCreatingWallet(false);
                 }
             } else {
-                console.log('[useCivicWallet] ⚠️ createWallet not available on context');
-                console.log('[useCivicWallet] Available methods:',
-                    Object.entries(contextAny)
-                        .filter(([_, v]) => typeof v === 'function')
-                        .map(([k]) => k)
-                );
+                console.log('[useCivicWallet] ⚠️ createWallet not available on solanaContext');
+                if (solanaContext) {
+                    console.log('[useCivicWallet] solanaContext methods:',
+                        Object.entries(solanaContext)
+                            .filter(([_, v]) => typeof v === 'function')
+                            .map(([k]) => k)
+                    );
+                }
             }
         }
 
         createEmbeddedWallet();
-    }, [user, civicLoading, hasWallet, userContext, isCreatingWallet]);
+    }, [user, civicLoading, hasWallet, solanaContext, isCreatingWallet, walletCreationInProgress]);
 
     // Update profile with wallet address when available
     useEffect(() => {
@@ -115,8 +120,8 @@ export function useCivicWallet() {
         user,
         email,
         civicUserId,
-        userName: user && 'name' in user ? (user.name as string) : null,
-        userPicture: user && 'picture' in user ? (user.picture as string) : null,
+        userName: userAny?.name || null,
+        userPicture: userAny?.picture || null,
 
         // Wallet info
         wallet,
@@ -124,13 +129,13 @@ export function useCivicWallet() {
         hasEmbeddedWallet: hasWallet,
         isConnected: !!walletAddress,
         isAuthenticated: !!user,
-        isCreatingWallet,
+        isCreatingWallet: isCreatingWallet || walletCreationInProgress,
 
         // Create wallet function for manual trigger
-        createWallet: (userContext as any).createWallet,
+        createWallet: solanaContext?.createWallet,
 
         // Loading states
-        isLoading: civicLoading || wallet.connecting || isCreatingWallet,
+        isLoading: civicLoading || wallet.connecting || isCreatingWallet || walletCreationInProgress,
 
         // For transaction signing
         signTransaction: wallet.signTransaction,
