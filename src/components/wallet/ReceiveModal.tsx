@@ -30,12 +30,15 @@ export default function ReceiveModal({ isOpen, onClose }: ReceiveModalProps) {
 
                 <div className="text-center space-y-6">
                     <div className="bg-gray-50 p-8 rounded-xl flex items-center justify-center">
-                        {/* Simple Placeholder for QR Code if library not added */}
-                        <div className="w-48 h-48 bg-white border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400">
-                            <QrCode className="w-12 h-12 mb-2" />
-                            <span className="text-xs">Scan to Pay</span>
+                        {/* QR Code */}
+                        <div className="bg-white p-2 rounded-lg border border-gray-200 shadow-inner">
+                            <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${walletAddress}`}
+                                alt="Wallet QR Code"
+                                className="w-48 h-48 object-contain"
+                            />
                         </div>
-                        {/* If we had qrcode.react, we'd render it here */}
+                        <p className="text-xs text-gray-400 mt-2">Scan to send SOL</p>
                     </div>
 
                     <div>
