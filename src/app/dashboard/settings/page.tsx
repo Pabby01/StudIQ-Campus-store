@@ -32,7 +32,7 @@ export default function DashboardSettingsPage() {
 function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { walletAddress, user } = useCivicWallet();
+  const { walletAddress, user, email } = useCivicWallet();
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [storeLimit, setStoreLimit] = useState<any>(null);
@@ -40,14 +40,19 @@ function SettingsContent() {
   const [loading, setLoading] = useState(true);
   const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null);
 
+  // Use wallet address or email as identifier
+  const identifier = walletAddress || (email ? `email:${email}` : null);
+
   useEffect(() => {
-    if (walletAddress) {
+    if (identifier) {
       fetchSubscription();
       fetchProfile();
       fetchStoreLimit();
       fetchBillingHistory();
+    } else if (user) {
+      setLoading(false);
     }
-  }, [walletAddress]);
+  }, [identifier, user]);
 
   useEffect(() => {
     const target = searchParams?.get("upgrade");
@@ -57,10 +62,10 @@ function SettingsContent() {
   }, [searchParams]);
 
   const fetchSubscription = async () => {
-    if (!walletAddress) return;
+    if (!identifier) return;
 
     try {
-      const res = await fetch(`/api/subscription/status?address=${walletAddress}`);
+      const res = await fetch(`/api/subscription/status?address=${encodeURIComponent(identifier)}`);
       const data = await res.json();
       setSubscription(data);
     } catch (error) {
@@ -71,10 +76,10 @@ function SettingsContent() {
   };
 
   const fetchProfile = async () => {
-    if (!walletAddress) return;
+    if (!identifier) return;
 
     try {
-      const res = await fetch(`/api/profile?address=${walletAddress}`);
+      const res = await fetch(`/api/profile?address=${encodeURIComponent(identifier)}`);
       const data = await res.json();
       setProfile(data.profile);
     } catch (error) {
@@ -83,10 +88,10 @@ function SettingsContent() {
   };
 
   const fetchStoreLimit = async () => {
-    if (!walletAddress) return;
+    if (!identifier) return;
 
     try {
-      const res = await fetch(`/api/store/check-limit?address=${walletAddress}`);
+      const res = await fetch(`/api/store/check-limit?address=${encodeURIComponent(identifier)}`);
       const data = await res.json();
       setStoreLimit(data);
     } catch (error) {
@@ -95,10 +100,10 @@ function SettingsContent() {
   };
 
   const fetchBillingHistory = async () => {
-    if (!walletAddress) return;
+    if (!identifier) return;
 
     try {
-      const res = await fetch(`/api/subscription/billing-history?address=${walletAddress}`);
+      const res = await fetch(`/api/subscription/billing-history?address=${encodeURIComponent(identifier)}`);
       const data = await res.json();
       setBillingHistory(data.transactions || []);
     } catch (error) {
@@ -110,7 +115,8 @@ function SettingsContent() {
     router.push(`/pricing`);
   };
 
-  if (!user || !walletAddress) {
+  // Only check for user authentication, not wallet address
+  if (!user) {
     return (
       <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
         <Card className="p-8 text-center">

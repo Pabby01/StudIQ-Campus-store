@@ -20,7 +20,7 @@ export default function CartPage() {
   const updateQty = useCart((s) => s.updateQty);
 
   // Use Civic wallet hook for unified access
-  const { walletAddress, email, wallet } = useCivicWallet();
+  const { walletAddress, email, wallet, isAuthenticated, user } = useCivicWallet();
 
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +45,15 @@ export default function CartPage() {
   }, [email]);
 
   async function checkout() {
-    if (!walletAddress) {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
       setError("Please sign in to complete checkout");
       return;
     }
 
+    // For crypto payment, wallet must be ready
     if (paymentMethod === "solana" && !wallet.publicKey) {
-      setError("Wallet not ready for crypto payment");
+      setError("Wallet not ready for crypto payment. Please wait or use Pay on Delivery.");
       return;
     }
 

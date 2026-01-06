@@ -28,34 +28,40 @@ type AnalyticsData = {
 };
 
 export default function DashboardPage() {
-  const { walletAddress, user, isLoading: authLoading } = useCivicWallet();
+  const { walletAddress, user, email, isLoading: authLoading } = useCivicWallet();
   const [isBuyer, setIsBuyer] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Use walletAddress if available, otherwise use email as identifier
+  const identifier = walletAddress || (email ? `email:${email}` : null);
+
   useEffect(() => {
-    if (walletAddress) {
+    if (identifier) {
       fetchDashboardData();
+    } else if (!authLoading && user) {
+      // User is authenticated but no identifier yet, show empty state
+      setLoading(false);
     } else if (!authLoading) {
       setLoading(false);
     }
-  }, [walletAddress, authLoading]);
+  }, [identifier, authLoading, user]);
 
   const fetchDashboardData = async (silent = false) => {
-    if (!walletAddress) return;
+    if (!identifier) return;
 
     if (!silent) setLoading(true);
     setRefreshing(true);
 
     try {
-      // Fetch stats
-      const statsRes = await fetch(`/api/dashboard/stats?address=${walletAddress}`);
+      // Fetch stats - use identifier (could be wallet address or email:xxx)
+      const statsRes = await fetch(`/api/dashboard/stats?address=${encodeURIComponent(identifier)}`);
       const statsData = await statsRes.json();
 
       // Fetch analytics
-      const analyticsRes = await fetch(`/api/dashboard/analytics?address=${walletAddress}&range=30`);
+      const analyticsRes = await fetch(`/api/dashboard/analytics?address=${encodeURIComponent(identifier)}&range=30`);
       const analyticsData = await analyticsRes.json();
 
       setStats(isBuyer ? statsData.buyer : statsData.seller);
@@ -85,7 +91,8 @@ export default function DashboardPage() {
     }
   }, [isBuyer]);
 
-  if (!user || !walletAddress) {
+  // Only check for user, not walletAddress (wallet may still be loading)
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">

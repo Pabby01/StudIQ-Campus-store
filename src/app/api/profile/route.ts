@@ -2,6 +2,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
 // GET /api/profile?address=xxx - Get user profile
+// address can be a wallet address or "email:xxx" format
 export async function GET(req: Request) {
     const url = new URL(req.url);
     const address = url.searchParams.get("address");
@@ -13,11 +14,17 @@ export async function GET(req: Request) {
     const supabase = getSupabaseServerClient();
 
     try {
-        const { data: profile, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("address", address)
-            .maybeSingle();
+        let query = supabase.from("profiles").select("*");
+
+        // Check if address is in email:xxx format
+        if (address.startsWith("email:")) {
+            const email = address.replace("email:", "");
+            query = query.eq("email", email);
+        } else {
+            query = query.eq("address", address);
+        }
+
+        const { data: profile, error } = await query.maybeSingle();
 
         if (error && error.code !== 'PGRST116') { // PGRST116 = not found (okay)
             console.error("Profile fetch error:", error);

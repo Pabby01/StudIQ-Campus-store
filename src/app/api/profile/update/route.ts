@@ -7,6 +7,7 @@ export async function POST(req: Request) {
     const parsed = updateProfileSchema.safeParse(body);
 
     if (!parsed.success) {
+      console.error("Profile validation error:", parsed.error);
       return Response.json(
         { ok: false, error: "Invalid input" },
         { status: 400 }
@@ -15,13 +16,29 @@ export async function POST(req: Request) {
 
     const supabase = getSupabaseServerClient();
 
-    // Check if this is profile completion (has all required fields)
-    const { data: existing } = await supabase
+    // Check if profile already exists (by address or email)
+    let existing = null;
+
+    // First try to find by address
+    const { data: byAddress } = await supabase
       .from("profiles")
       .select("*")
       .eq("address", parsed.data.address)
       .maybeSingle();
 
+    existing = byAddress;
+
+    // If not found by address and email provided, check by email
+    if (!existing && parsed.data.email) {
+      const { data: byEmail } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("email", parsed.data.email)
+        .maybeSingle();
+      existing = byEmail;
+    }
+
+    const isNewProfile = !existing;
     const wasIncomplete = existing && (!existing.school || !existing.campus || !existing.name);
 
     const { data, error } = await supabase
@@ -49,20 +66,18 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if profile is now complete and award points
+    // Award points for new profile or profile completion
     const isComplete = data.name && data.school && data.campus;
 
-    if (wasIncomplete && isComplete) {
+    if ((isNewProfile || wasIncomplete) && isComplete) {
       try {
-        await fetch(`${req.headers.get("origin")}/api/points/award`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            address: parsed.data.address,
-            points: 50,
-            reason: "Profile completed",
-          }),
+        // Award welcome/profile completion points directly to database
+        await supabase.from("points_log").insert({
+          address: data.address,
+          points: 50,
+          reason: isNewProfile ? "Welcome bonus - Profile created" : "Profile completed",
         });
+        console.log(`[Profile] Awarded 50 points to ${data.address}`);
       } catch (e) {
         console.error("Points award failed:", e);
       }

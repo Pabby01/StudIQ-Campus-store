@@ -1,17 +1,38 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { getWalletAddress } from "@/lib/addressResolver";
 
 export async function GET(req: Request) {
     const url = new URL(req.url);
-    const address = url.searchParams.get("address");
+    const addressParam = url.searchParams.get("address");
     const range = url.searchParams.get("range") || "30"; // days
 
-    if (!address) {
+    if (!addressParam) {
         return NextResponse.json({ error: "Address required" }, { status: 400 });
     }
 
-    const supabase = getSupabaseServerClient();
+    // Resolve email:xxx format to wallet address
+    const address = await getWalletAddress(addressParam);
     const days = parseInt(range);
+
+    if (!address) {
+        // Return empty analytics for users without profiles
+        const emptyLabels = Array.from({ length: days }, (_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - (days - i - 1));
+            return formatDateLabel(date);
+        });
+        const emptyData = Array(days).fill(0);
+
+        return NextResponse.json({
+            labels: emptyLabels,
+            buyer: { orders: emptyData, revenue: emptyData },
+            seller: { orders: emptyData, revenue: emptyData },
+            points: emptyData
+        });
+    }
+
+    const supabase = getSupabaseServerClient();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
