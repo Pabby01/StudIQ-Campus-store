@@ -8,6 +8,7 @@ import SendModal from "@/components/wallet/SendModal";
 import ReceiveModal from "@/components/wallet/ReceiveModal";
 import TransactionHistory from "@/components/wallet/TransactionHistory";
 import { Loader2 } from "lucide-react";
+import TokenList from "@/components/wallet/TokenList";
 import { Cluster } from "@/hooks/useSolanaBalance";
 
 export default function WalletPage() {
@@ -15,7 +16,7 @@ export default function WalletPage() {
     const [cluster, setCluster] = useState<Cluster>('devnet');
 
     // Updated to use Multi-Token Hook
-    const { tokens, totalUsd, loading: balanceLoading } = useTokenBalances(walletAddress);
+    const { tokens, totalUsd, loading: balanceLoading } = useTokenBalances(walletAddress, cluster);
 
     const [isSendOpen, setIsSendOpen] = useState(false);
     const [isReceiveOpen, setIsReceiveOpen] = useState(false);
@@ -48,6 +49,8 @@ export default function WalletPage() {
                 onReceive={() => setIsReceiveOpen(true)}
                 onDeposit={() => setIsDepositOpen(true)}
             />
+
+            <TokenList tokens={tokens} loading={balanceLoading} />
 
             <TransactionHistory address={walletAddress} cluster={cluster} />
 

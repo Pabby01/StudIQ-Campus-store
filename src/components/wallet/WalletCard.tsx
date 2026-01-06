@@ -124,46 +124,7 @@ export default function WalletCard({
                     </button>
                 </div>
 
-                {/* Token List */}
-                <div className="bg-black/20 rounded-2xl p-4 backdrop-blur-sm">
-                    <h3 className="text-sm font-semibold text-blue-100 mb-3 flex items-center gap-2">
-                        <Coins className="w-4 h-4" />
-                        Your Assets
-                    </h3>
-                    <div className="space-y-2">
-                        {loading && tokens.length === 0 ? (
-                            <div className="text-center py-4 text-white/50 text-sm">Loading assets...</div>
-                        ) : tokens.length === 0 ? (
-                            <div className="text-center py-4 text-white/50 text-sm">No assets found</div>
-                        ) : (
-                            tokens.map((token) => (
-                                <div key={token.mint} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-xl transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        {token.logo ? (
-                                            <img src={token.logo} alt={token.name} className="w-8 h-8 rounded-full bg-white/10" />
-                                        ) : (
-                                            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold">
-                                                {token.symbol[0]}
-                                            </div>
-                                        )}
-                                        <div>
-                                            <div className="font-semibold text-sm">{token.symbol}</div>
-                                            <div className="text-xs text-blue-200">{token.name}</div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="font-semibold text-sm">
-                                            {showBalance ? token.balance.toLocaleString() : "••••"}
-                                        </div>
-                                        <div className="text-xs text-blue-200">
-                                            {showBalance ? `$${token.usdValue.toFixed(2)}` : "••••"}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
+                {/* Token List removed - moved to separate component */}
             </div>
         </Card>
     );
