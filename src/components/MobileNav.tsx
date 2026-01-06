@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, LayoutDashboard, ShoppingCart, Package, User, TrendingUp } from "lucide-react";
+import { Home, LayoutDashboard, ShoppingCart, Package, User, TrendingUp, Trophy } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/store/cart";
@@ -15,6 +15,7 @@ export default function MobileNav() {
         { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", match: "/dashboard" },
         { icon: TrendingUp, label: "Predict", href: "/prediction", match: "/prediction" },
         { icon: Package, label: "Track", href: "/track", match: "/track" },
+        { icon: Trophy, label: "Board", href: "/leaderboard", match: "/leaderboard" },
         { icon: User, label: "Profile", href: "/dashboard/settings", match: "/dashboard/settings" }
     ];
 
