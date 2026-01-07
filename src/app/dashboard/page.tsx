@@ -14,6 +14,11 @@ import Card from "@/components/ui/Card";
 type DashboardStats = {
   totalOrders: number;
   revenue: number;
+  revenueBreakdown?: { // Optional breakdown
+    sol: number;
+    usdc: number;
+    usd: number;
+  };
   currency: string;
   points: number;
   growth: number;
@@ -172,12 +177,15 @@ export default function DashboardPage() {
               />
               <DashboardCard
                 title={isBuyer ? "Total Spent" : "Revenue"}
-                value={
-                  stats?.currency === "SOL"
-                    ? `${stats.revenue.toFixed(2)} SOL`
-                    : stats?.currency === "USDC"
-                      ? `$${stats.revenue.toFixed(2)}`
-                      : `$${(stats?.revenue || 0).toFixed(2)}`
+                value={`$${(stats?.revenue || 0).toFixed(2)}`}
+                subtitle={
+                  stats?.revenueBreakdown ? (
+                    <div className="text-[10px] sm:text-xs text-muted-text mt-1 space-y-0.5">
+                      {stats.revenueBreakdown.sol > 0 && <div>{stats.revenueBreakdown.sol} SOL</div>}
+                      {stats.revenueBreakdown.usdc > 0 && <div>${stats.revenueBreakdown.usdc} USDC</div>}
+                      {stats.revenueBreakdown.usd > 0 && <div>${stats.revenueBreakdown.usd} USD</div>}
+                    </div>
+                  ) : undefined
                 }
                 icon={DollarSign}
                 trend={{

@@ -24,28 +24,28 @@ function StoreCard({ store }: StoreCardProps) {
                     <img
                         src={store.banner_url}
                         alt={store.name}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                 ) : (
-                    <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-                        <Store className="w-16 h-16 text-primary-blue opacity-20" />
+                    <div className="w-full h-32 bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                        <Store className="w-12 h-12 text-primary-blue opacity-20" />
                     </div>
                 )}
-                <div className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-bold text-black group-hover:text-primary-blue transition-colors">
+                <div className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                        <h3 className="text-base font-bold text-black group-hover:text-primary-blue transition-colors truncate">
                             {store.name}
                         </h3>
-                        <span className="px-2 py-1 bg-blue-50 text-primary-blue text-xs font-medium rounded">
+                        <span className="px-1.5 py-0.5 bg-blue-50 text-primary-blue text-[10px] font-medium rounded shrink-0">
                             {store.category}
                         </span>
                     </div>
-                    <p className="text-sm text-muted-text line-clamp-2 mb-3">
+                    <p className="text-xs text-muted-text line-clamp-2 mb-2">
                         {store.description}
                     </p>
                     {store.profiles?.name && (
-                        <p className="text-xs text-muted-text flex items-center gap-1">
-                            <Store className="w-3 h-3" />
+                        <p className="text-[10px] text-muted-text flex items-center gap-1">
+                            <Store className="w-2.5 h-2.5" />
                             by {store.profiles.name}
                         </p>
                     )}
@@ -65,7 +65,7 @@ export default function FeaturedStores() {
 
     async function fetchStores() {
         try {
-            const res = await fetch("/api/store/all?limit=6&featured=true");
+            const res = await fetch("/api/store/all?limit=3&featured=true");
             if (res.ok) {
                 const data = await res.json();
                 setStores(data.stores || []);
@@ -94,22 +94,22 @@ export default function FeaturedStores() {
     }
 
     return (
-        <section className="py-16 bg-white">
+        <section className="py-12 bg-white">
             <div className="max-w-7xl mx-auto px-4">
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h2 className="text-3xl font-bold text-black mb-2">Featured Stores</h2>
-                        <p className="text-muted-text">Discover amazing stores from your campus community</p>
+                        <h2 className="text-2xl font-bold text-black mb-1">Featured Stores</h2>
+                        <p className="text-sm text-muted-text">Discover amazing stores from your campus community</p>
                     </div>
                     <Link
                         href="/stores"
-                        className="flex items-center gap-2 text-primary-blue hover:gap-3 transition-all font-medium"
+                        className="flex items-center gap-1 text-sm text-primary-blue hover:gap-2 transition-all font-medium"
                     >
-                        View All <ArrowRight className="w-4 h-4" />
+                        View All <ArrowRight className="w-3 h-3" />
                     </Link>
                 </div>
 
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {stores.map((store) => (
                         <StoreCard key={store.id} store={store} />
                     ))}

@@ -156,11 +156,11 @@ export default function ProductCard({ p }: { p: Product }) {
         </div>
 
         {/* Product Details */}
-        <div className="p-3 flex-1 flex flex-col">
+        <div className="p-2 flex-1 flex flex-col">
           {/* Premium Badge + Category */}
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between mb-0.5">
             {p.category && (
-              <span className="text-[10px] text-muted-text uppercase tracking-wide truncate pr-2">
+              <span className="text-[9px] text-muted-text uppercase tracking-wide truncate pr-1">
                 {p.category}
               </span>
             )}
@@ -168,32 +168,32 @@ export default function ProductCard({ p }: { p: Product }) {
               <PremiumBadge size="sm" />
             )}
           </div>
-          <h3 className="font-medium text-black text-xs sm:text-sm line-clamp-2 mb-2 min-h-[32px] sm:min-h-[40px] leading-tight group-hover:text-primary-blue transition-colors">
+          <h3 className="font-medium text-black text-[10px] sm:text-xs line-clamp-2 mb-1 min-h-[28px] leading-tight group-hover:text-primary-blue transition-colors">
             {p.name}
           </h3>
-          <div className="flex items-center gap-1 mb-2">
-            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-            <span className="text-xs font-medium text-black">
+          <div className="flex items-center gap-0.5 mb-1">
+            <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
+            <span className="text-[10px] font-medium text-black">
               {p.rating?.toFixed?.(1) ?? "0.0"}
             </span>
-            <span className="text-[10px] text-muted-text ml-0.5">({p.reviews_count || 0})</span>
+            <span className="text-[9px] text-muted-text">({p.reviews_count || 0})</span>
           </div>
 
           {/* Pricing */}
-          <div className="space-y-1 mt-auto">
-            <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-base sm:text-lg font-bold text-black">
+          <div className="space-y-0.5 mt-auto">
+            <div className="flex items-baseline gap-1 flex-wrap">
+              <span className="text-sm sm:text-base font-bold text-black">
                 ${Number(p.price).toFixed(2)}
               </span>
               {hasDiscount && (
-                <span className="text-[10px] sm:text-xs text-muted-text line-through">
+                <span className="text-[9px] sm:text-[10px] text-muted-text line-through">
                   ${originalPrice!.toFixed(2)}
                 </span>
               )}
             </div>
 
             {hasDiscount && (
-              <div className="text-[10px] text-green-600 font-medium">
+              <div className="text-[9px] text-green-600 font-medium">
                 Save ${(originalPrice! - p.price).toFixed(2)}
               </div>
             )}
@@ -201,18 +201,18 @@ export default function ProductCard({ p }: { p: Product }) {
 
           {/* Stock Count - Show for sellers */}
           {isOwnProduct && p.inventory !== undefined && (
-            <div className="mt-2 text-[10px] text-muted-text">
+            <div className="mt-1 text-[9px] text-muted-text">
               Stock: {p.inventory}
             </div>
           )}
 
           {/* Add to Cart Button or Sold Out / Own Product Message */}
-          <div className="mt-3">
+          <div className="mt-2">
             {isSoldOut ? (
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full text-xs py-1.5 h-8 cursor-not-allowed opacity-60"
+                className="w-full text-[10px] py-1 h-7 cursor-not-allowed opacity-60"
                 disabled
               >
                 Sold Out
@@ -221,7 +221,7 @@ export default function ProductCard({ p }: { p: Product }) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full text-xs py-1.5 h-8 cursor-not-allowed"
+                className="w-full text-[10px] py-1 h-7 cursor-not-allowed"
                 disabled
               >
                 Your Product
@@ -230,7 +230,7 @@ export default function ProductCard({ p }: { p: Product }) {
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full text-xs py-1.5 h-8"
+                className="w-full text-[10px] py-1 h-7"
                 onClick={handleAddToCart}
               >
                 Add to cart

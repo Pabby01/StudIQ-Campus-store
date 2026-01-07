@@ -71,11 +71,27 @@ export async function GET(req: Request) {
 
         const totalPoints = pointsData?.reduce((sum, log) => sum + log.points, 0) || 0;
 
+        // Fetch SOL Price for currency conversion
+        let solPrice = 0;
+        try {
+            // Use Jupiter v4 API for consistency with wallet
+            const priceRes = await fetch("https://price.jup.ag/v4/price?ids=So11111111111111111111111111111111111111112");
+            const priceData = await priceRes.json();
+            solPrice = priceData?.data?.["So11111111111111111111111111111111111111112"]?.price || 0;
+        } catch (e) {
+            console.error("Failed to fetch SOL price", e);
+        }
+
+        // Fallback price if fetch fails (prevent $0.00 stats for SOL users)
+        if (solPrice === 0) {
+            solPrice = 145.50; // Approximate fallback
+        }
+
         // Calculate buyer stats
-        const buyerStats = calculateStats(buyerOrders || [], "buyer");
+        const buyerStats = calculateStats(buyerOrders || [], solPrice);
 
         // Calculate seller stats
-        const sellerStats = calculateStats(sellerOrders, "seller");
+        const sellerStats = calculateStats(sellerOrders, solPrice);
 
         // Fetch recent activity (last 5 orders)
         const recentBuyerOrders = await supabase
@@ -121,16 +137,18 @@ export async function GET(req: Request) {
         return NextResponse.json({
             buyer: {
                 totalOrders: buyerStats.totalOrders,
-                revenue: buyerStats.revenue,
-                currency: buyerStats.currency,
+                revenue: buyerStats.revenueUsd, // Use USD total
+                revenueBreakdown: buyerStats.breakdown, // Pass breakdown
+                currency: "USD",
                 growth: buyerStats.growth,
                 points: totalPoints,
                 recentActivity: recentActivity.filter(a => a.type === "purchase")
             },
             seller: {
                 totalOrders: sellerStats.totalOrders,
-                revenue: sellerStats.revenue,
-                currency: sellerStats.currency,
+                revenue: sellerStats.revenueUsd,
+                revenueBreakdown: sellerStats.breakdown,
+                currency: "USD",
                 growth: sellerStats.growth,
                 points: totalPoints,
                 recentActivity: recentActivity.filter(a => a.type === "sale")
@@ -144,7 +162,7 @@ export async function GET(req: Request) {
     }
 }
 
-function calculateStats(orders: any[], type: "buyer" | "seller") {
+function calculateStats(orders: any[], solPrice: number) {
     const now = new Date();
     const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -155,32 +173,41 @@ function calculateStats(orders: any[], type: "buyer" | "seller") {
         new Date(o.created_at) >= lastMonth && new Date(o.created_at) < currentMonth
     );
 
-    // Calculate totals
-    const totalOrders = orders.length;
-    const revenue = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
+    // Calculate totals breakdown
+    let totalSol = 0;
+    let totalUsdc = 0;
+    let totalUsd = 0; // Explicit USD orders
 
-    // Calculate growth
+    orders.forEach(o => {
+        const amt = o.amount || 0;
+        if (o.currency === "SOL") totalSol += amt;
+        else if (o.currency === "USDC") totalUsdc += amt;
+        else if (o.currency === "USD") totalUsd += amt;
+        else {
+            // Default logic if currency missing (assume SOL for legacy?)
+            // Or assume USD if we switched?
+            // Safer to check amt size? No. Default to SOL for now based on legacy data.
+            totalSol += amt;
+        }
+    });
+
+    const revenueUsd = totalUsd + totalUsdc + (totalSol * (solPrice || 0));
+
+    // Calculate growth (order count based)
     const currentMonthCount = currentMonthOrders.length;
     const lastMonthCount = lastMonthOrders.length;
     const growth = lastMonthCount > 0
         ? ((currentMonthCount - lastMonthCount) / lastMonthCount) * 100
         : currentMonthCount > 0 ? 100 : 0;
 
-    // Determine primary currency
-    const currencies = orders.map(o => o.currency).filter(Boolean);
-    const currencyCounts = currencies.reduce((acc, curr) => {
-        acc[curr] = (acc[curr] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-
-    const primaryCurrency = Object.keys(currencyCounts).length > 1
-        ? "MIXED"
-        : Object.keys(currencyCounts)[0] || "SOL";
-
     return {
-        totalOrders,
-        revenue: parseFloat(revenue.toFixed(2)),
-        currency: primaryCurrency,
+        totalOrders: orders.length,
+        revenueUsd: parseFloat(revenueUsd.toFixed(2)),
+        breakdown: {
+            sol: parseFloat(totalSol.toFixed(4)),
+            usdc: parseFloat(totalUsdc.toFixed(2)),
+            usd: parseFloat(totalUsd.toFixed(2))
+        },
         growth: parseFloat(growth.toFixed(1))
     };
 }

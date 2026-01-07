@@ -120,7 +120,7 @@ export default function DashboardOrdersPage() {
                       {order.status}
                     </span>
                     <Link href={`/checkout/success/${order.id}`}>
-                      <Button variant="outline" size="sm" className="hidden sm:flex">
+                      <Button variant="outline" size="sm" className="h-8 text-xs">
                         View Receipt
                       </Button>
                     </Link>

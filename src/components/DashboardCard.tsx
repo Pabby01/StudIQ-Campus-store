@@ -10,6 +10,7 @@ interface DashboardCardProps extends HTMLAttributes<HTMLDivElement> {
         value: string;
         isPositive: boolean;
     };
+    subtitle?: React.ReactNode;
     iconColor?: string;
 }
 
@@ -18,6 +19,7 @@ export default function DashboardCard({
     value,
     icon: Icon,
     trend,
+    subtitle,
     iconColor = "text-primary-blue",
     className,
     ...props
@@ -34,6 +36,7 @@ export default function DashboardCard({
                 <div className="space-y-2 min-w-0 flex-1">
                     <p className="text-xs md:text-sm font-medium text-muted-text truncate">{title}</p>
                     <p className="text-2xl md:text-3xl font-bold text-black break-words">{value}</p>
+                    {subtitle}
                     {trend && (
                         <p
                             className={cn(

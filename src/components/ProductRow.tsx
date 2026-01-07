@@ -91,7 +91,7 @@ export default function ProductRow({
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                     {products.map((product) => (
-                        <div key={product.id} className="flex-shrink-0 w-[280px] relative">
+                        <div key={product.id} className="flex-shrink-0 w-[160px] sm:w-[200px] relative">
                             {badgeText && (
                                 <div
                                     className={`absolute top-3 left-3 z-10 ${badgeColor} text-white text-xs font-bold px-3 py-1 rounded`}
