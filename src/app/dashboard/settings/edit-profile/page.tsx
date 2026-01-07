@@ -205,7 +205,6 @@ export default function EditProfilePage() {
                             placeholder="+1 (555) 123-4567"
                             value={formData.phone}
                             onChange={handleChange}
-                            required
                         />
 
                         <div className="flex gap-3 pt-4">
