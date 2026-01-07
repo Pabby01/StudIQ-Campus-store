@@ -54,10 +54,10 @@ export default function Footer() {
                         <h3 className="font-semibold text-black mb-6">Support</h3>
                         <ul className="space-y-4 text-sm text-muted-text">
                             <li><Link href="/dashboard/orders" className="hover:text-primary-blue transition-colors">Track Order</Link></li>
-                            <li><Link href="#" className="hover:text-primary-blue transition-colors">Help Center</Link></li>
-                            <li><Link href="#" className="hover:text-primary-blue transition-colors">Selling Guidelines</Link></li>
-                            <li><Link href="#" className="hover:text-primary-blue transition-colors">Returns & Refunds</Link></li>
-                            <li><Link href="#" className="hover:text-primary-blue transition-colors">Safety Tips</Link></li>
+                            <li><Link href="/faq" className="hover:text-primary-blue transition-colors">Help Center & FAQ</Link></li>
+                            <li><Link href="/selling-guidelines" className="hover:text-primary-blue transition-colors">Selling Guidelines</Link></li>
+                            <li><Link href="/returns" className="hover:text-primary-blue transition-colors">Returns & Refunds</Link></li>
+                            <li><Link href="/safety" className="hover:text-primary-blue transition-colors">Safety Tips</Link></li>
                         </ul>
                     </div>
 
@@ -85,9 +85,9 @@ export default function Footer() {
                 <div className="border-t border-border-gray pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-text">
                     <p>&copy; {new Date().getFullYear()} StudIQ Campus Store. All rights reserved.</p>
                     <div className="flex gap-6">
-                        <Link href="#" className="hover:text-black transition-colors">Privacy Policy</Link>
-                        <Link href="#" className="hover:text-black transition-colors">Terms of Service</Link>
-                        <Link href="#" className="hover:text-black transition-colors">Cookie Policy</Link>
+                        <Link href="/privacy" className="hover:text-black transition-colors">Privacy Policy</Link>
+                        <Link href="/terms" className="hover:text-black transition-colors">Terms of Service</Link>
+                        <Link href="/cookies" className="hover:text-black transition-colors">Cookie Policy</Link>
                     </div>
                 </div>
             </div>

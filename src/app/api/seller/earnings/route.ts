@@ -89,13 +89,35 @@ export async function GET(req: Request) {
             .eq("seller_address", address)
             .in("status", ["pending", "processing"]);
 
+        // 5. Get user's active subscription to determine platform fee
+        const { data: subscription } = await supabase
+            .from("user_subscriptions")
+            .select("plan_id")
+            .eq("user_address", address)
+            .eq("status", "active")
+            .gte("expires_at", new Date().toISOString())
+            .maybeSingle();
+
+        // Determine fee percentage
+        // Default to Free (5%) if no subscription
+        let feePercentage = 0.05;
+
+        if (subscription?.plan_id) {
+            // Map plan IDs to fee percentages
+            // Ideally import SUBSCRIPTION_PLANS but simpler to map here or fetch plan details
+            // Assuming plan_id matches keys in SUBSCRIPTION_PLANS or we fetch plan details
+            // Let's safe fetch plan details if we have the ID, or just map common IDs
+            if (subscription.plan_id === 'premium_monthly' || subscription.plan_id === 'premium_yearly' || subscription.plan_id === 'premium') feePercentage = 0.02;
+            else if (subscription.plan_id === 'enterprise_monthly' || subscription.plan_id === 'enterprise_yearly' || subscription.plan_id === 'enterprise') feePercentage = 0.00;
+        }
+
         // Calculate for SOL
         const solOrders = completedOrders?.filter(o => o.currency === "SOL") || [];
         const solRevenue = solOrders.reduce((sum, order) => {
             return sum + (parseFloat(order.amount.toString()) || 0);
         }, 0);
-        const solPlatformFee = solRevenue * 0.05;
-        const solSellerShare = solRevenue * 0.95;
+        const solPlatformFee = solRevenue * feePercentage;
+        const solSellerShare = solRevenue * (1 - feePercentage);
 
         const solWithdrawn = completedWithdrawals
             ?.filter(w => w.currency === "SOL")
@@ -112,8 +134,8 @@ export async function GET(req: Request) {
         const usdcRevenue = usdcOrders.reduce((sum, order) => {
             return sum + (parseFloat(order.amount.toString()) || 0);
         }, 0);
-        const usdcPlatformFee = usdcRevenue * 0.05;
-        const usdcSellerShare = usdcRevenue * 0.95;
+        const usdcPlatformFee = usdcRevenue * feePercentage;
+        const usdcSellerShare = usdcRevenue * (1 - feePercentage);
 
         const usdcWithdrawn = completedWithdrawals
             ?.filter(w => w.currency === "USDC")
