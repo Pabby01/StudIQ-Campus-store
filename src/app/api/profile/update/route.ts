@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { updateProfileSchema } from "@/lib/validators";
+import { POINTS } from "@/lib/constants";
 
 export async function POST(req: Request) {
   try {
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
           // Award welcome/profile completion points
           const { error: pointsError } = await supabase.from("points_log").insert({
             address: data.address,
-            points: 50,
+            points: POINTS.PROFILE_COMPLETE,
             reason: isNewProfile ? "Welcome bonus - Profile created" : "Profile completed",
           });
 

@@ -156,11 +156,11 @@ export default function ProductCard({ p }: { p: Product }) {
         </div>
 
         {/* Product Details */}
-        <div className="p-4 flex-1 flex flex-col">
+        <div className="p-3 flex-1 flex flex-col">
           {/* Premium Badge + Category */}
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-1">
             {p.category && (
-              <span className="text-xs text-muted-text uppercase tracking-wide">
+              <span className="text-[10px] text-muted-text uppercase tracking-wide truncate pr-2">
                 {p.category}
               </span>
             )}
@@ -168,50 +168,41 @@ export default function ProductCard({ p }: { p: Product }) {
               <PremiumBadge size="sm" />
             )}
           </div>
-          <h3 className="font-medium text-black text-sm line-clamp-2 mb-2 min-h-[40px]">
+          <h3 className="font-medium text-black text-xs sm:text-sm line-clamp-2 mb-2 min-h-[32px] sm:min-h-[40px] leading-tight group-hover:text-primary-blue transition-colors">
             {p.name}
           </h3>
-          <div className="flex items-center gap-1 mb-3">
-            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm font-medium text-black">
+          <div className="flex items-center gap-1 mb-2">
+            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+            <span className="text-xs font-medium text-black">
               {p.rating?.toFixed?.(1) ?? "0.0"}
             </span>
-            <span className="text-xs text-muted-text ml-1">({p.reviews_count || 0})</span>
+            <span className="text-[10px] text-muted-text ml-0.5">({p.reviews_count || 0})</span>
           </div>
 
           {/* Pricing */}
-          <div className="space-y-2">
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold text-black">
-                {p.currency === "SOL"
-                  ? `${Number(p.price).toFixed(2)} SOL`
-                  : `$${Number(p.price).toFixed(2)}`
-                }
+          <div className="space-y-1 mt-auto">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-base sm:text-lg font-bold text-black">
+                ${Number(p.price).toFixed(2)}
               </span>
               {hasDiscount && (
-                <span className="text-sm text-muted-text line-through">
-                  {p.currency === "SOL"
-                    ? `${originalPrice!.toFixed(2)} SOL`
-                    : `$${originalPrice!.toFixed(2)}`
-                  }
+                <span className="text-[10px] sm:text-xs text-muted-text line-through">
+                  ${originalPrice!.toFixed(2)}
                 </span>
               )}
             </div>
 
             {hasDiscount && (
-              <div className="text-xs text-green-600 font-medium">
-                Save {p.currency === "SOL"
-                  ? `${(originalPrice! - p.price).toFixed(2)} SOL`
-                  : `$${(originalPrice! - p.price).toFixed(2)}`
-                }
+              <div className="text-[10px] text-green-600 font-medium">
+                Save ${(originalPrice! - p.price).toFixed(2)}
               </div>
             )}
           </div>
 
           {/* Stock Count - Show for sellers */}
           {isOwnProduct && p.inventory !== undefined && (
-            <div className="mt-2 text-xs text-muted-text">
-              Stock: {p.inventory} {p.inventory === 1 ? 'unit' : 'units'}
+            <div className="mt-2 text-[10px] text-muted-text">
+              Stock: {p.inventory}
             </div>
           )}
 
@@ -221,7 +212,7 @@ export default function ProductCard({ p }: { p: Product }) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full cursor-not-allowed opacity-60"
+                className="w-full text-xs py-1.5 h-8 cursor-not-allowed opacity-60"
                 disabled
               >
                 Sold Out
@@ -230,7 +221,7 @@ export default function ProductCard({ p }: { p: Product }) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full cursor-not-allowed"
+                className="w-full text-xs py-1.5 h-8 cursor-not-allowed"
                 disabled
               >
                 Your Product
@@ -239,7 +230,7 @@ export default function ProductCard({ p }: { p: Product }) {
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full"
+                className="w-full text-xs py-1.5 h-8"
                 onClick={handleAddToCart}
               >
                 Add to cart

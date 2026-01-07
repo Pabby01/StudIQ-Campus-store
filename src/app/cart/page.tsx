@@ -132,11 +132,37 @@ export default function CartPage() {
 
       // Step 2: Create Solana transaction
       setCheckoutStatus("signing");
+
+      let transferAmount = total;
+      let mint = orderData.currency === "USDC" ? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" : undefined;
+
+      // Handle USD Conversion
+      if (orderData.currency === "USD") {
+        try {
+          // Fetch current SOL price
+          const priceRes = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112");
+          const priceData = await priceRes.json();
+          const solPrice = Number(priceData.data["So11111111111111111111111111111111111111112"]?.price);
+
+          if (!solPrice || isNaN(solPrice)) throw new Error("Failed to fetch SOL price");
+
+          // Convert USD to SOL
+          transferAmount = total / solPrice;
+          console.log(`[Checkout] Converted $${total} USD to ${transferAmount.toFixed(4)} SOL (Rate: $${solPrice})`);
+
+          // Ensure we don't accidentally send USDC if it was somehow set
+          mint = undefined;
+        } catch (priceError) {
+          console.error("Price fetch error:", priceError);
+          throw new Error("Failed to calculate SOL amount. Please try again.");
+        }
+      }
+
       const transaction = await createTransferTransaction(
         walletAddress,
         orderData.payTo,
-        total,
-        orderData.currency === "USDC" ? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" : undefined
+        transferAmount,
+        mint
       );
 
       // Step 3: Sign and send transaction

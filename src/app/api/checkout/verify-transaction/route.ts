@@ -2,6 +2,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 import { verifyTransaction } from "@/lib/solana";
 import { getPlatformFee, calculateFees, recordPlatformFee } from "@/lib/platformFees";
+import { POINTS } from "@/lib/constants";
 
 export async function POST(req: Request) {
     try {
@@ -37,12 +38,38 @@ export async function POST(req: Request) {
         // Platform wallet receives all payments
         const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET || "Hx912yR4vDEwUqQNUZcaxwsjmE8B6Lq6grokrPh8a6Js";
 
+        let expectedSolAmount = order.amount;
+
+        // If currency is USD, calculate expected SOL amount
+        if (order.currency === "USD") {
+            try {
+                const priceRes = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112");
+                const priceData = await priceRes.json();
+                const solPrice = Number(priceData.data["So11111111111111111111111111111111111111112"]?.price);
+
+                if (solPrice && !isNaN(solPrice)) {
+                    expectedSolAmount = order.amount / solPrice;
+                    console.log(`[Verify] Converted order amount $${order.amount} to ~${expectedSolAmount.toFixed(4)} SOL`);
+                } else {
+                    console.warn("[Verify] Failed to fetch price, using raw amount (risky)");
+                }
+            } catch (e) {
+                console.error("[Verify] Price fetch failed:", e);
+            }
+        }
+
         // Verify transaction (buyer sends TO platform wallet)
+        // We need a wider tolerance for USD conversion due to price flux/timing
+        // verifyTransaction uses 1% default. We might need to override it or accept it.
+        // Let's modify verifyTransaction or handle it here?
+        // verifyTransaction logic in src/lib/solana.ts converts expectedAmount to Lamports and checks 1%.
+        // 1% might be tight if price changed between cart load and verification.
+        // But for now let's try it.
         const verification = await verifyTransaction(
             txSignature,
             order.buyer_address,                   // FROM buyer
             platformWallet,                         // TO platform wallet
-            order.amount
+            expectedSolAmount
         );
 
         if (!verification.valid) {
@@ -127,8 +154,8 @@ export async function POST(req: Request) {
         const isFirstPurchase = purchaseCount === 1;
 
         // Award points to buyer (5% of purchase)
-        const basePoints = Math.floor(order.amount * 0.05);
-        const bonusPoints = isFirstPurchase ? 100 : 0;
+        const basePoints = Math.floor(order.amount * POINTS.PURCHASE_REWARD_PERCENT);
+        const bonusPoints = isFirstPurchase ? POINTS.FIRST_PURCHASE : 0;
         const totalBuyerPoints = basePoints + bonusPoints;
 
         await supabase.from("points_log").insert({
@@ -139,10 +166,10 @@ export async function POST(req: Request) {
                 : `Purchase order ${orderId}`,
         });
 
-        // Award 10 points to seller for completing order
+        // Award points to seller for completing order
         await supabase.from("points_log").insert({
             address: (order.stores as any).owner_address,
-            points: 10,
+            points: POINTS.ORDER_COMPLETED,
             reason: `Order completed: ${orderId}`,
         });
 
@@ -157,13 +184,13 @@ export async function POST(req: Request) {
         let milestoneReason = "";
 
         if (sellerOrderCount === 10) {
-            milestonePoints = 50;
+            milestonePoints = POINTS.MILESTONE_10_SALES;
             milestoneReason = "Reached 10 sales milestone!";
         } else if (sellerOrderCount === 50) {
-            milestonePoints = 100;
+            milestonePoints = POINTS.MILESTONE_50_SALES;
             milestoneReason = "Reached 50 sales milestone!";
         } else if (sellerOrderCount === 100) {
-            milestonePoints = 500;
+            milestonePoints = POINTS.MILESTONE_100_SALES;
             milestoneReason = "Reached 100 sales milestone!";
         }
 

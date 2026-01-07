@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { POINTS } from "@/lib/constants";
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 address,
-                points: 10,
+                points: POINTS.REVIEW,
                 reason: "Product review",
             }),
         });
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             address: ownerAddress,
-                            points: 25,
+                            points: POINTS.REVIEW_5_STAR,
                             reason: "Received 5-star review",
                         }),
                     });

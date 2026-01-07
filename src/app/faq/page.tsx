@@ -15,6 +15,54 @@ type FAQSection = {
     items: FAQItem[];
 };
 
+import { HandCoins, Gift, Store as StoreIcon, ShoppingBag, Star, UserCheck, MessageSquare } from "lucide-react";
+import Badge from "@/components/ui/Badge";
+
+const rewards = [
+    {
+        action: "Create Profile",
+        points: 150,
+        icon: UserCheck,
+        description: "Complete your profile with school details",
+    },
+    {
+        action: "First Purchase",
+        points: 100,
+        icon: Gift,
+        description: "Bonus points for your first order",
+    },
+    {
+        action: "Shop & Earn",
+        points: "5%",
+        icon: ShoppingBag,
+        description: "Get 5 points for every $1 spent",
+    },
+    {
+        action: "Review Product",
+        points: 10,
+        icon: MessageSquare,
+        description: "Leave a review for a product you bought",
+    },
+    {
+        action: "List Product",
+        points: 5,
+        icon: StoreIcon,
+        description: "List a new item for sale in your store",
+    },
+    {
+        action: "Order Completed",
+        points: 10,
+        icon: HandCoins,
+        description: "Earn points for every completed sale",
+    },
+    {
+        action: "Quality Seller",
+        points: 25,
+        icon: Star,
+        description: "Receive a 5-star review from a buyer",
+    },
+];
+
 const faqData: FAQSection[] = [
     {
         title: "Getting Started",
@@ -30,7 +78,7 @@ const faqData: FAQSection[] = [
             },
             {
                 question: "How do I create a profile?",
-                answer: "After connecting your wallet, click on 'Dashboard' and navigate to settings. Fill in your details including name, school, and campus to complete your profile and earn 50 bonus points!"
+                answer: "After connecting your wallet, click on 'Dashboard' and navigate to settings. Fill in your details including name, school, and campus to complete your profile and earn 150 bonus points!"
             }
         ]
     },
@@ -62,7 +110,7 @@ const faqData: FAQSection[] = [
         items: [
             {
                 question: "How do I create a store?",
-                answer: "Navigate to Dashboard → My Store → Create Store. Fill in your store details, category, and location. Creating a store earns you 100 reward points!"
+                answer: "Navigate to Dashboard → My Store → Create Store. Fill in your store details, category, and location. Creating a store earns you 50 reward points!"
             },
             {
                 question: "How much does it cost to sell?",
@@ -88,7 +136,7 @@ const faqData: FAQSection[] = [
         items: [
             {
                 question: "How do I earn points?",
-                answer: "Earn points through various activities: Making purchases (5% of order value), Listing products (+5pts), Creating a store (+100pts), Writing reviews (+10pts), Adding to wishlist (+2pts), Completing your profile (+50pts), Getting 5-star reviews (+25pts), and reaching sales milestones (+50/100/500pts)."
+                answer: "Earn points through various activities: Making purchases (5% of order value), First Purchase (+100pts), Listing products (+5pts), Creating a store (+50pts), Writing reviews (+10pts), Completing your profile (+150pts), Getting 5-star reviews (+25pts), and reaching sales milestones (+50/100/500pts)."
             },
             {
                 question: "What can I use points for?",
@@ -186,6 +234,34 @@ export default function FAQPage() {
                     </p>
                 </div>
 
+                {/* Reward Table */}
+                <div className="bg-white rounded-2xl border border-border-gray overflow-hidden shadow-sm mb-12">
+                    <div className="p-6 border-b border-border-gray bg-gray-50/50">
+                        <h2 className="text-xl font-bold text-black flex items-center gap-2">
+                            <Gift className="w-5 h-5 text-primary-blue" />
+                            How to Earn Points
+                        </h2>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                        {rewards.map((reward, i) => (
+                            <div key={i} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-primary-blue/10 flex items-center justify-center">
+                                        <reward.icon className="w-5 h-5 text-primary-blue" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-black">{reward.action}</h3>
+                                        <p className="text-sm text-muted-text">{reward.description}</p>
+                                    </div>
+                                </div>
+                                <Badge variant="blue" className="font-bold">
+                                    +{reward.points} PTS
+                                </Badge>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Search */}
                 <div className="mb-8">
                     <div className="relative">
@@ -251,7 +327,7 @@ export default function FAQPage() {
                 {/* No results */}
                 {filteredData.length === 0 && (
                     <Card className="p-12 text-center">
-                        <HelpCircle className="w-12 h-12 text-m uted-text mx-auto mb-4" />
+                        <HelpCircle className="w-12 h-12 text-muted-text mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-black mb-2">No matching questions found</h3>
                         <p className="text-muted-text">Try searching with different keywords</p>
                     </Card>

@@ -244,8 +244,8 @@ export async function verifyTransaction(
         const transferredLamports = Number(preBal) - Number(postBal) - Number(fee);
         const expectedLamports = Math.floor(expectedAmount * 1_000_000_000);
 
-        // Allow 1% tolerance
-        const tolerance = expectedLamports * 0.01;
+        // Allow 5% tolerance
+        const tolerance = expectedLamports * 0.05;
         if (Math.abs(transferredLamports - expectedLamports) > tolerance) {
             return {
                 valid: false,

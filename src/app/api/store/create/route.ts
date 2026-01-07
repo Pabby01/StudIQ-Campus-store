@@ -100,7 +100,7 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         address,
-        points: 100,
+        points: 50, // Bonus for starting a store
         reason: "Store created",
       }),
     });

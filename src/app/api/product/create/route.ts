@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { createProductSchema } from "@/lib/validators";
+import { POINTS } from "@/lib/constants";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         address,
-        points: 5,
+        points: POINTS.PRODUCT_LISTED,
         reason: "Product listed",
       }),
     });
