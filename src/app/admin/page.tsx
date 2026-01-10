@@ -129,7 +129,7 @@ export default function AdminPage() {
 
     const checkAccessCode = () => {
         // Hardcoded safety check or Env Var
-        const validCode = process.env.NEXT_PUBLIC_ADMIN_ACCESS_CODE || "123456";
+        const validCode = process.env.NEXT_PUBLIC_ADMIN_ACCESS_CODE || "";
 
         if (accessCode === validCode) {
             setIsVerified(true);
