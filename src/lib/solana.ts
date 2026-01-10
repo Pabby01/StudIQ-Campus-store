@@ -18,6 +18,7 @@ import {
     Signature,
     getProgramDerivedAddress,
     getBase64EncodedWireTransaction,
+    getAddressEncoder,
 } from '@solana/kit';
 import { getTransferSolInstruction } from '@solana-program/system';
 import { getTransferInstruction } from '@solana-program/token';
@@ -118,9 +119,9 @@ async function getAssociatedTokenAddress(mint: string, owner: string) {
     const { 0: ata } = await getProgramDerivedAddress({
         programAddress: ASSOCIATED_TOKEN_PROGRAM_ID,
         seeds: [
-            ownerAddress,
-            TOKEN_PROGRAM_ID,
-            mintAddress,
+            getAddressEncoder().encode(ownerAddress),
+            getAddressEncoder().encode(TOKEN_PROGRAM_ID),
+            getAddressEncoder().encode(mintAddress),
         ],
     });
 

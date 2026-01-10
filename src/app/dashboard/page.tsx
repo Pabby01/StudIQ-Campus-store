@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import DashboardCard from "@/components/DashboardCard";
-import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet } from "lucide-react";
+import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet, Share2, Check } from "lucide-react";
 import RevenueChart from "@/components/charts/RevenueChart";
 import OrdersChart from "@/components/charts/OrdersChart";
 import PointsChart from "@/components/charts/PointsChart";
@@ -23,6 +23,7 @@ type DashboardStats = {
   points: number;
   growth: number;
   recentActivity: any[];
+  storeId?: string;
 };
 
 type AnalyticsData = {
@@ -143,6 +144,25 @@ export default function DashboardPage() {
                 Seller
               </button>
             </div>
+
+            {/* Share Store Button (Seller Only) */}
+            {!isBuyer && stats?.storeId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const url = `${window.location.origin}/store/${stats.storeId}`;
+                  navigator.clipboard.writeText(url);
+                  // Optional: You could add a temporary "Copied!" state here if you wanted to be fancy,
+                  // but for now a toast or just simple feedback is fine. 
+                  // Since we don't have toast imported here easily (need hook), let's just assume user knows.
+                  // Actually, let's use a simple state for visual feedback.
+                }}
+                className="min-h-[44px]"
+              >
+                <ShareStoreButton storeId={stats.storeId} />
+              </Button>
+            )}
 
             {/* Refresh Button */}
             <Button
@@ -281,6 +301,25 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function ShareStoreButton({ storeId }: { storeId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/store/${storeId}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex items-center gap-2" onClick={handleShare}>
+      {copied ? <Check className="w-4 h-4 text-green-600" /> : <Share2 className="w-4 h-4" />}
+      <span className="hidden sm:inline">{copied ? "Copied!" : "Share Store"}</span>
     </div>
   );
 }

@@ -26,7 +26,7 @@ type Product = Readonly<{
   owner_address?: string; // Seller's address
   isPremiumSeller?: boolean; // Whether seller has premium subscription
   reviews_count?: number; // Total reviews
-
+  stores?: { name: string } | null;
 }>;
 
 export default function ProductCard({ p }: { p: Product }) {
@@ -112,6 +112,12 @@ export default function ProductCard({ p }: { p: Product }) {
     }
   };
 
+  const formatPrice = (price: number) => {
+    return p.currency === "SOL"
+      ? `SOL ${price.toFixed(2)}`
+      : `$${price.toFixed(2)}`;
+  };
+
   return (
     <Link href={`/product/${p.id}`} className="block h-full">
       <div className="bg-white rounded-xl border border-border-gray overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative">
@@ -168,6 +174,16 @@ export default function ProductCard({ p }: { p: Product }) {
               <PremiumBadge size="sm" />
             )}
           </div>
+
+          {p.stores?.name && (
+            <Link
+              href={`/store/${p.store_id}`}
+              className="text-[10px] text-primary-blue mb-1 hover:underline block w-fit"
+              onClick={(e) => e.stopPropagation()}
+            >
+              For {p.stores.name}
+            </Link>
+          )}
           <h3 className="font-medium text-black text-[10px] sm:text-xs line-clamp-2 mb-1 min-h-[28px] leading-tight group-hover:text-primary-blue transition-colors">
             {p.name}
           </h3>
@@ -183,18 +199,18 @@ export default function ProductCard({ p }: { p: Product }) {
           <div className="space-y-0.5 mt-auto">
             <div className="flex items-baseline gap-1 flex-wrap">
               <span className="text-sm sm:text-base font-bold text-black">
-                ${Number(p.price).toFixed(2)}
+                {formatPrice(Number(p.price))}
               </span>
               {hasDiscount && (
                 <span className="text-[9px] sm:text-[10px] text-muted-text line-through">
-                  ${originalPrice!.toFixed(2)}
+                  {formatPrice(originalPrice!)}
                 </span>
               )}
             </div>
 
             {hasDiscount && (
               <div className="text-[9px] text-green-600 font-medium">
-                Save ${(originalPrice! - p.price).toFixed(2)}
+                Save {formatPrice(originalPrice! - p.price)}
               </div>
             )}
           </div>

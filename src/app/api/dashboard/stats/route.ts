@@ -151,7 +151,8 @@ export async function GET(req: Request) {
                 currency: "USD",
                 growth: sellerStats.growth,
                 points: totalPoints,
-                recentActivity: recentActivity.filter(a => a.type === "sale")
+                recentActivity: recentActivity.filter(a => a.type === "sale"),
+                storeId: store?.id
             },
             hasStore: !!store
         });

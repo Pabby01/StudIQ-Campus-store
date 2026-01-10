@@ -37,6 +37,31 @@ export default function CartPage() {
     zip: "",
   });
 
+  const [paymentCurrency, setPaymentCurrency] = useState<"SOL" | "USDC">("SOL");
+  const [solPrice, setSolPrice] = useState<number | null>(null);
+
+  // Set default payment currency based on items
+  useEffect(() => {
+    if (items.length > 0) {
+      setPaymentCurrency((items[0]?.currency === "USDC") ? "USDC" : "SOL");
+    }
+  }, [items]);
+
+  // Fetch SOL Price for conversion
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112");
+        const data = await res.json();
+        const price = Number(data.data["So11111111111111111111111111111111111111112"]?.price);
+        setSolPrice(price);
+      } catch (err) {
+        console.error("Failed to fetch SOL price:", err);
+      }
+    };
+    fetchPrice();
+  }, []);
+
   // Pre-fill email when Civic user loads
   useEffect(() => {
     if (email && !deliveryDetails.email) {
@@ -133,30 +158,42 @@ export default function CartPage() {
       // Step 2: Create Solana transaction
       setCheckoutStatus("signing");
 
+      // Calculate Final Transfer Amount & Mint
       let transferAmount = total;
-      let mint = orderData.currency === "USDC" ? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" : undefined;
+      let mint: string | undefined = undefined;
 
-      // Handle USD Conversion
-      if (orderData.currency === "USD") {
-        try {
-          // Fetch current SOL price
-          const priceRes = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112");
-          const priceData = await priceRes.json();
-          const solPrice = Number(priceData.data["So11111111111111111111111111111111111111112"]?.price);
+      // Logic:
+      // 1. If paying in USDC, use USDC Mint.
+      // 2. If paying in SOL, use undefined mint.
+      // 3. Conversion:
+      //    - Item is SOL, Paying USDC -> Amount * SolPrice
+      //    - Item is USDC, Paying SOL -> Amount / SolPrice
 
-          if (!solPrice || isNaN(solPrice)) throw new Error("Failed to fetch SOL price");
+      const itemCurrency = orderData.currency as "SOL" | "USDC" | "USD"; // USD handled as USDC logic mostly
+      const payIn = paymentCurrency;
 
-          // Convert USD to SOL
+      if (payIn === "USDC") {
+        mint = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // Devnet USDC
+        if (itemCurrency === "SOL") {
+          if (!solPrice) throw new Error("Unable to fetch SOL price for conversion");
+          transferAmount = total * solPrice;
+        } else {
+          // Already in USDC (or USD)
+          transferAmount = total;
+        }
+      } else {
+        // Paying in SOL
+        mint = undefined;
+        if (itemCurrency === "USDC" || itemCurrency === "USD") {
+          if (!solPrice) throw new Error("Unable to fetch SOL price for conversion");
           transferAmount = total / solPrice;
-          console.log(`[Checkout] Converted $${total} USD to ${transferAmount.toFixed(4)} SOL (Rate: $${solPrice})`);
-
-          // Ensure we don't accidentally send USDC if it was somehow set
-          mint = undefined;
-        } catch (priceError) {
-          console.error("Price fetch error:", priceError);
-          throw new Error("Failed to calculate SOL amount. Please try again.");
+        } else {
+          // Already in SOL
+          transferAmount = total;
         }
       }
+
+      console.log(`[Checkout] Payment: ${payIn}, Item: ${itemCurrency}, Total: ${total}, Final: ${transferAmount}, Rate: ${solPrice}`);
 
       const transaction = await createTransferTransaction(
         walletAddress,
@@ -411,6 +448,49 @@ export default function CartPage() {
                         <span className="font-medium">Cash on Delivery</span>
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {paymentMethod === "solana" && deliveryMethod === "shipping" && (
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Pay With</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setPaymentCurrency("SOL")}
+                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${paymentCurrency === "SOL"
+                          ? "border-primary-blue bg-blue-50 ring-1 ring-primary-blue"
+                          : "border-gray-200 hover:bg-gray-50"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center">
+                            <img src="https://cryptologos.cc/logos/solana-sol-logo.png" className="w-4 h-4" alt="SOL" />
+                          </div>
+                          <span className="font-medium text-sm">SOL</span>
+                        </div>
+                        {paymentCurrency === "SOL" && <div className="w-2 h-2 rounded-full bg-primary-blue" />}
+                      </button>
+                      <button
+                        onClick={() => setPaymentCurrency("USDC")}
+                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${paymentCurrency === "USDC"
+                          ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500"
+                          : "border-gray-200 hover:bg-gray-50"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold">
+                            $
+                          </div>
+                          <span className="font-medium text-sm">USDC</span>
+                        </div>
+                        {paymentCurrency === "USDC" && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+                      </button>
+                    </div>
+                    {solPrice && (
+                      <p className="text-xs text-muted-text mt-2">
+                        Exchange Rate: 1 SOL ≈ ${solPrice.toFixed(2)} USDC
+                      </p>
+                    )}
                   </div>
                 )}
                 {/* Auto-set to POD if Pickup? Or confirm? Let's default pickup to POD usually or allow both */}

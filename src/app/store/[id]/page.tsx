@@ -38,7 +38,7 @@ export default function StoreDetailPage() {
         const storeRes = await fetch(`/api/store/${params?.id}`);
         if (storeRes.ok) {
           const storeData = await storeRes.json();
-          setStore(storeData);
+          setStore(storeData.store);
         }
 
         // Fetch store products

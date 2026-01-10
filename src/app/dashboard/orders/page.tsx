@@ -24,6 +24,7 @@ type Order = {
   amount: number;
   currency: string;
   items: OrderItem[];
+  store_id: string; // Added field
   store: {
     name: string;
   };
@@ -109,7 +110,13 @@ export default function DashboardOrdersPage() {
                     </div>
                     <div>
                       <span className="block text-xs uppercase font-bold">Sold By</span>
-                      <span className="text-primary-blue font-medium">{order.store?.name || "Unknown Store"}</span>
+                      {order.store_id ? (
+                        <Link href={`/store/${order.store_id}`} className="text-primary-blue font-medium hover:underline">
+                          {order.store?.name || "Unknown Store"}
+                        </Link>
+                      ) : (
+                        <span className="text-primary-blue font-medium">{order.store?.name || "Unknown Store"}</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
