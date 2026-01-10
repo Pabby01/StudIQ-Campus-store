@@ -5,7 +5,8 @@ import { useCivicWallet } from "@/hooks/useCivicWallet";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PremiumBadge from "@/components/PremiumBadge";
-import { Settings, Crown, TrendingUp, CreditCard, AlertCircle, Check } from "lucide-react";
+import { Settings, Crown, TrendingUp, CreditCard, AlertCircle, Check, Bell } from "lucide-react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 type SubscriptionData = {
   plan: {
@@ -20,6 +21,46 @@ type SubscriptionData = {
   autoRenew?: boolean;
   isFreeTier?: boolean;
 };
+
+function NotificationsCard({ walletAddress }: { walletAddress: string }) {
+  const { isSupported, subscription, subscribe } = usePushNotifications();
+  const [loading, setLoading] = useState(false);
+
+  const handleSubscribe = async () => {
+    setLoading(true);
+    await subscribe(walletAddress);
+    setLoading(false);
+  };
+
+  if (!isSupported) return null;
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-black mb-2 flex items-center gap-2">
+            <Bell className="w-5 h-5 text-primary-blue" />
+            Push Notifications
+          </h3>
+          <p className="text-sm text-muted-text">
+            {subscription ? "You are subscribed to order updates." : "Get notified about new orders and updates."}
+          </p>
+        </div>
+        <div>
+          {!subscription ? (
+            <Button variant="outline" size="sm" onClick={handleSubscribe} disabled={loading}>
+              {loading ? "Enabling..." : "Enable Notifications"}
+            </Button>
+          ) : (
+            <span className="text-sm text-green-600 font-medium px-3 py-1 bg-green-50 rounded-full border border-green-200">
+              Enabled
+            </span>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export default function DashboardSettingsPage() {
   return (
@@ -250,6 +291,9 @@ function SettingsContent() {
           )}
         </Card>
 
+        {/* Notifications */}
+        <NotificationsCard walletAddress={walletAddress || ''} />
+
         {/* Store Management */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-black mb-4">Store Management</h3>
@@ -287,7 +331,7 @@ function SettingsContent() {
                     Store Limit Reached
                   </p>
                   <p className="text-sm text-amber-700 mb-3">
-                    You've created the maximum number of stores allowed on the {storeLimit.planName} plan.
+                    You&apos;ve created the maximum number of stores allowed on the {storeLimit.planName} plan.
                   </p>
                   {storeLimit.planName === "Free" && (
                     <Button variant="primary" size="sm" onClick={() => router.push("/pricing")}>
@@ -300,7 +344,7 @@ function SettingsContent() {
               {storeLimit.isNearLimit && storeLimit.allowed && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-900">
-                    You're near your store limit. Consider upgrading for more capacity.
+                    You&apos;re near your store limit. Consider upgrading for more capacity.
                   </p>
                 </div>
               )}
@@ -456,7 +500,7 @@ function SettingsContent() {
             <div>
               <h4 className="font-semibold text-black mb-1">Need Help?</h4>
               <p className="text-sm text-gray-700 mb-3">
-                Have questions about your subscription or need assistance? We're here to help!
+                Have questions about your subscription or need assistance? We&apos;re here to help!
               </p>
               <Button
                 variant="outline"

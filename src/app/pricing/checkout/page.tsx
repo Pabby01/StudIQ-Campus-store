@@ -20,7 +20,7 @@ export default function CheckoutPage() {
 function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { walletAddress, isAuthenticated, wallet } = useCivicWallet();
+    const { walletAddress, isAuthenticated, signTransaction } = useCivicWallet();
     const toast = useToast();
 
     const plan = (searchParams?.get('plan') || 'premium') as PlanName;
@@ -32,7 +32,7 @@ function CheckoutContent() {
     const solPrice = convertUSDtoSOL(usdPrice);
 
     const handlePayment = async () => {
-        if (!walletAddress || !wallet.publicKey) {
+        if (!walletAddress) {
             toast.error('Please sign in first');
             return;
         }
@@ -61,10 +61,12 @@ function CheckoutContent() {
             // Convert SOL to lamports
             const lamports = Math.floor(solPrice * 1000000000);
 
+            const payerPublicKey = new PublicKey(walletAddress);
+
             // Create transaction
             const transaction = new Transaction().add(
                 SystemProgram.transfer({
-                    fromPubkey: wallet.publicKey,
+                    fromPubkey: payerPublicKey,
                     toPubkey: new PublicKey(platformWallet),
                     lamports: lamports
                 })
@@ -73,10 +75,10 @@ function CheckoutContent() {
             // Get recent blockhash
             const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
             transaction.recentBlockhash = blockhash;
-            transaction.feePayer = wallet.publicKey;
+            transaction.feePayer = payerPublicKey;
 
             // Sign and send transaction
-            const signedTransaction = await wallet.signTransaction!(transaction);
+            const signedTransaction = await signTransaction(transaction);
             const rawTransaction = signedTransaction.serialize();
             const txSignature = await connection.sendRawTransaction(rawTransaction, {
                 skipPreflight: false,
