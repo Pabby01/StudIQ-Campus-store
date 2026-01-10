@@ -7,7 +7,7 @@ export async function POST(req: Request) {
         const { admin, withdrawalId, action, transactionSignature, notes } = body;
 
         // Verify admin access
-        requireAdmin(admin);
+        await requireAdmin(admin);
 
         if (!withdrawalId || !action) {
             return Response.json(

@@ -7,7 +7,7 @@ export async function GET(req: Request) {
         const adminAddress = searchParams.get("admin");
 
         // Verify admin access
-        requireAdmin(adminAddress);
+        await requireAdmin(adminAddress);
 
         const supabase = getSupabaseServerClient();
 

@@ -8,7 +8,7 @@ export async function GET(req: Request) {
         const status = searchParams.get("status") || "pending";
 
         // Verify admin access
-        requireAdmin(adminAddress);
+        await requireAdmin(adminAddress);
 
         const supabase = getSupabaseServerClient();
 

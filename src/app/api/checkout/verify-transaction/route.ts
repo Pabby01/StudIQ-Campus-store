@@ -202,6 +202,63 @@ export async function POST(req: Request) {
             });
         }
 
+        // Send Email Notifications (Success)
+        try {
+            const { sendOrderConfirmation, sendSellerNotification } = await import('@/lib/email');
+
+            // Fetch full order details including items
+            const { data: fullOrder } = await supabase
+                .from('orders')
+                .select('*, order_items(*, products(*)), stores(name, owner_address)')
+                .eq('id', orderId)
+                .single();
+
+            if (fullOrder) {
+                const buyerEmail = fullOrder.buyer_email; // We stored this in create
+                const store = fullOrder.stores;
+
+                // Get seller email
+                const { data: sellerProfile } = await supabase.from('profiles').select('email').eq('address', store?.owner_address).single();
+
+                const productsList = fullOrder.order_items.map((i: any) => ({
+                    name: i.products.name,
+                    imageUrl: i.products.image_url,
+                    price: i.price,
+                    qty: i.qty
+                }));
+
+                const orderDetails = {
+                    orderId: fullOrder.id,
+                    buyerName: (fullOrder.delivery_info as any)?.name || 'Customer',
+                    buyerEmail: buyerEmail,
+                    products: productsList,
+                    total: fullOrder.amount,
+                    currency: fullOrder.currency,
+                    deliveryMethod: fullOrder.delivery_method,
+                    deliveryAddress: fullOrder.delivery_method === 'shipping' ? {
+                        name: (fullOrder.delivery_info as any)?.name || 'Customer',
+                        address: (fullOrder.delivery_info as any)?.address || '',
+                        city: (fullOrder.delivery_info as any)?.city || '',
+                        zip: (fullOrder.delivery_info as any)?.zip || '',
+                    } : undefined,
+                };
+
+                if (buyerEmail) {
+                    sendOrderConfirmation(orderDetails).catch(console.error);
+                }
+
+                if (sellerProfile?.email) {
+                    sendSellerNotification({
+                        ...orderDetails,
+                        sellerEmail: sellerProfile.email,
+                        storeName: store?.name || 'Store'
+                    }).catch(console.error);
+                }
+            }
+        } catch (e) {
+            console.error("Email sending failed in verify:", e);
+        }
+
         return NextResponse.json({
             ok: true,
             orderId,

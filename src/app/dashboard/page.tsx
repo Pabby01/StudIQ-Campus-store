@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import DashboardCard from "@/components/DashboardCard";
-import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet, Share2, Check } from "lucide-react";
+import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet } from "lucide-react";
+import ShareStoreButton from "@/components/ShareStoreButton";
 import RevenueChart from "@/components/charts/RevenueChart";
 import OrdersChart from "@/components/charts/OrdersChart";
 import PointsChart from "@/components/charts/PointsChart";
@@ -305,21 +306,4 @@ export default function DashboardPage() {
   );
 }
 
-function ShareStoreButton({ storeId }: { storeId: string }) {
-  const [copied, setCopied] = useState(false);
 
-  const handleShare = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const url = `${window.location.origin}/store/${storeId}`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="flex items-center gap-2" onClick={handleShare}>
-      {copied ? <Check className="w-4 h-4 text-green-600" /> : <Share2 className="w-4 h-4" />}
-      <span className="hidden sm:inline">{copied ? "Copied!" : "Share Store"}</span>
-    </div>
-  );
-}

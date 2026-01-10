@@ -69,6 +69,16 @@ export default function CartPage() {
     }
   }, [email]);
 
+
+
+  // Calculate final amount and currency for display & transaction
+  const { finalAmount, finalCurrency, exchangeRate, isRateReady } = calculatePayment(
+    total,
+    items[0]?.currency,
+    paymentCurrency,
+    solPrice
+  );
+
   async function checkout() {
     // Determine final payment method: if pickup, force POD/POP logic
     const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
@@ -156,44 +166,28 @@ export default function CartPage() {
       }
 
       // Step 2: Create Solana transaction
+      // Calulated in render, but recalculate or use ref to ensure freshness? State is fine.
+
+      // ...
+      // Step 2: Create Solana transaction
       setCheckoutStatus("signing");
 
-      // Calculate Final Transfer Amount & Mint
-      let transferAmount = total;
-      let mint: string | undefined = undefined;
-
-      // Logic:
-      // 1. If paying in USDC, use USDC Mint.
-      // 2. If paying in SOL, use undefined mint.
-      // 3. Conversion:
-      //    - Item is SOL, Paying USDC -> Amount * SolPrice
-      //    - Item is USDC, Paying SOL -> Amount / SolPrice
-
-      const itemCurrency = orderData.currency as "SOL" | "USDC" | "USD"; // USD handled as USDC logic mostly
-      const payIn = paymentCurrency;
-
-      if (payIn === "USDC") {
-        mint = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // Devnet USDC
-        if (itemCurrency === "SOL") {
-          if (!solPrice) throw new Error("Unable to fetch SOL price for conversion");
-          transferAmount = total * solPrice;
-        } else {
-          // Already in USDC (or USD)
-          transferAmount = total;
-        }
-      } else {
-        // Paying in SOL
-        mint = undefined;
-        if (itemCurrency === "USDC" || itemCurrency === "USD") {
-          if (!solPrice) throw new Error("Unable to fetch SOL price for conversion");
-          transferAmount = total / solPrice;
-        } else {
-          // Already in SOL
-          transferAmount = total;
-        }
+      // Verify rate availability if conversion needed
+      if (!isRateReady && finalAmount === 0 && paymentMethod === 'solana') {
+        throw new Error("Exchange rate not active. Please refresh.");
       }
 
-      console.log(`[Checkout] Payment: ${payIn}, Item: ${itemCurrency}, Total: ${total}, Final: ${transferAmount}, Rate: ${solPrice}`);
+      // Use the calculated amounts
+      const transferAmount = finalAmount;
+      let mint: string | undefined = undefined;
+
+      if (finalCurrency === "USDC") {
+        mint = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // Devnet USDC
+      } else {
+        mint = undefined; // SOL
+      }
+
+      console.log(`[Checkout] Paying ${finalAmount.toFixed(6)} ${finalCurrency} (Rate: ${exchangeRate})`);
 
       const transaction = await createTransferTransaction(
         walletAddress,
@@ -201,6 +195,8 @@ export default function CartPage() {
         transferAmount,
         mint
       );
+      // ... same as before
+
 
       // Step 3: Sign and send transaction
       if (!walletAddress || !signTransaction) {
@@ -574,16 +570,23 @@ export default function CartPage() {
                     </div>
                   )}
                   <div className="border-t border-border-gray pt-3">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="font-semibold text-black">
-                        Total ({items[0]?.currency || "SOL"})
+                        Total {finalCurrency !== items[0]?.currency ? `(Pay ${finalCurrency})` : ""}
                       </span>
-                      <span className="text-2xl font-bold text-primary-blue">
-                        {items[0]?.currency === "SOL"
-                          ? `${total.toFixed(2)} SOL`
-                          : `$${total.toFixed(2)}`
-                        }
-                      </span>
+                      <div className="text-right">
+                        <span className="text-2xl font-bold text-primary-blue block">
+                          {finalCurrency === "SOL"
+                            ? `${finalAmount.toFixed(4)} SOL`
+                            : `$${finalAmount.toFixed(2)}`
+                          }
+                        </span>
+                        {finalCurrency !== items[0]?.currency && (
+                          <span className="text-xs text-muted-text">
+                            (Original: {items[0]?.currency === "SOL" ? `${total.toFixed(2)} SOL` : `$${total.toFixed(2)}`})
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -592,9 +595,12 @@ export default function CartPage() {
                     variant="primary"
                     className="w-full"
                     onClick={() => void checkout()}
-                    disabled={checkoutStatus !== "idle" && checkoutStatus !== "error"}
+                    disabled={
+                      (checkoutStatus !== "idle" && checkoutStatus !== "error") ||
+                      (!isRateReady && paymentMethod === 'solana')
+                    }
                   >
-                    {getButtonText()}
+                    {!isRateReady && paymentMethod === 'solana' ? "Fetching Rates..." : getButtonText()}
                   </Button>
                   <Button
                     variant="outline"
@@ -613,3 +619,47 @@ export default function CartPage() {
     </div>
   );
 }
+
+function calculatePayment(
+  orderTotal: number,
+  orderCurrency: string | undefined,
+  payCurrency: "SOL" | "USDC",
+  solToUsdcRate: number | null
+) {
+  if (!orderCurrency) return { finalAmount: orderTotal, finalCurrency: payCurrency, exchangeRate: null, isRateReady: true };
+
+  // Case 1: Same Currency
+  if (orderCurrency === payCurrency || (orderCurrency === "USD" && payCurrency === "USDC")) {
+    return {
+      finalAmount: orderTotal,
+      finalCurrency: payCurrency,
+      exchangeRate: 1,
+      isRateReady: true
+    };
+  }
+
+  // Case 2: Item SOL -> Pay USDC
+  if (orderCurrency === "SOL" && payCurrency === "USDC") {
+    if (!solToUsdcRate) return { finalAmount: 0, finalCurrency: payCurrency, exchangeRate: null, isRateReady: false };
+    return {
+      finalAmount: orderTotal * solToUsdcRate,
+      finalCurrency: "USDC",
+      exchangeRate: solToUsdcRate,
+      isRateReady: true
+    };
+  }
+
+  // Case 3: Item USDC/USD -> Pay SOL
+  if ((orderCurrency === "USDC" || orderCurrency === "USD") && payCurrency === "SOL") {
+    if (!solToUsdcRate) return { finalAmount: 0, finalCurrency: payCurrency, exchangeRate: null, isRateReady: false };
+    return {
+      finalAmount: orderTotal / solToUsdcRate,
+      finalCurrency: "SOL",
+      exchangeRate: solToUsdcRate,
+      isRateReady: true
+    };
+  }
+
+  return { finalAmount: orderTotal, finalCurrency: payCurrency, exchangeRate: null, isRateReady: true };
+}
+

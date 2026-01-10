@@ -7,6 +7,7 @@ import StoreForm from "@/components/StoreForm";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { Store, Plus, MapPin, Edit, Loader2 } from "lucide-react";
+import ShareStoreButton from "@/components/ShareStoreButton";
 
 export default function DashboardStorePage() {
   const router = useRouter();
@@ -110,14 +111,22 @@ export default function DashboardStorePage() {
                       <span>Location: {store.lat}, {store.lon}</span>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/dashboard/store/edit/${store.id}`)}
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <ShareStoreButton
+                      storeId={store.id}
+                      storeName={store.name}
+                      variant="ghost"
+                      size="sm"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/store/edit/${store.id}`)}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))}

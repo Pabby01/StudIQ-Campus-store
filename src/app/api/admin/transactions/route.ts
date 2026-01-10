@@ -9,7 +9,7 @@ export async function GET(req: Request) {
         const limit = parseInt(searchParams.get("limit") || "100");
 
         // Verify admin access
-        requireAdmin(adminAddress);
+        await requireAdmin(adminAddress);
 
         const supabase = getSupabaseServerClient();
 

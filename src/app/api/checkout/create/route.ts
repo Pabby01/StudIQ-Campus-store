@@ -256,78 +256,81 @@ export async function POST(req: Request) {
       });
     }
 
-    // Step 8: Send email notifications
-    try {
-      // Import email functions
-      const { sendOrderConfirmation, sendSellerNotification } = await import('@/lib/email');
+    // Step 8: Send email notifications (Only for non-crypto orders immediately)
+    // For crypto, we send after verification in /api/checkout/verify-transaction
+    if (parsed.data.paymentMethod !== 'solana') {
+      try {
+        // Import email functions
+        const { sendOrderConfirmation, sendSellerNotification } = await import('@/lib/email');
 
-      console.log("[Checkout Email] Sending confirmations. Buyer Email:", parsed.data.buyerEmail);
+        console.log("[Checkout Email] Sending confirmations. Buyer Email:", parsed.data.buyerEmail);
 
-      // Get store information for seller email
-      const { data: store } = await supabase
-        .from('stores')
-        .select('name, owner_address')
-        .eq('id', storeId) // Changed from parsed.data.storeId to storeId
-        .single();
+        // Get store information for seller email
+        const { data: store } = await supabase
+          .from('stores')
+          .select('name, owner_address')
+          .eq('id', storeId) // Changed from parsed.data.storeId to storeId
+          .single();
 
-      // Get store owner's email
-      const { data: ownerProfile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('address', store?.owner_address)
-        .single();
+        // Get store owner's email
+        const { data: ownerProfile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('address', store?.owner_address)
+          .single();
 
-      // Prepare order details for emails
-      const orderDetails = {
-        orderId: newOrder.id,
-        buyerName: parsed.data.deliveryDetails?.name || 'Customer',
-        buyerEmail: parsed.data.buyerEmail,
-        products: items.map(i => {
-          const product = prods.find(p => p.id === i.productId)!;
-          return {
-            name: product.name,
-            imageUrl: product.image_url,
-            price: product.price,
-            qty: i.qty,
-          };
-        }),
-        total: amount,
-        currency: parsed.data.currency,
-        deliveryMethod: parsed.data.deliveryMethod,
-        deliveryAddress: parsed.data.deliveryMethod === 'shipping' ? {
-          address: parsed.data.deliveryDetails?.address || '',
-          city: parsed.data.deliveryDetails?.city || '',
-          zip: parsed.data.deliveryDetails?.zip || '',
-        } : undefined,
-      };
-
-      // Send buyer confirmation (non-blocking)
-      sendOrderConfirmation(orderDetails).catch(err =>
-        console.error('[Checkout] Failed to send buyer confirmation:', err)
-      );
-
-      // Send seller notification if we have their email (non-blocking)
-      if (ownerProfile?.email && store) {
-        sendSellerNotification({
+        // Prepare order details for emails
+        const orderDetails = {
           orderId: newOrder.id,
-          sellerEmail: ownerProfile.email,
-          storeName: store.name,
           buyerName: parsed.data.deliveryDetails?.name || 'Customer',
+          buyerEmail: parsed.data.buyerEmail,
+          products: items.map(i => {
+            const product = prods.find(p => p.id === i.productId)!;
+            return {
+              name: product.name,
+              imageUrl: product.image_url,
+              price: product.price,
+              qty: i.qty,
+            };
+          }),
+          total: amount,
+          currency: parsed.data.currency,
+          deliveryMethod: parsed.data.deliveryMethod,
           deliveryAddress: parsed.data.deliveryMethod === 'shipping' ? {
-            name: parsed.data.deliveryDetails?.name || '',
             address: parsed.data.deliveryDetails?.address || '',
             city: parsed.data.deliveryDetails?.city || '',
             zip: parsed.data.deliveryDetails?.zip || '',
           } : undefined,
-          products: orderDetails.products,
-          total: amount,
-          currency: parsed.data.currency,
-        }).catch(err =>
-          console.error('[Checkout] Failed to send seller notification:', err)
+        };
+
+        // Send buyer confirmation (non-blocking)
+        sendOrderConfirmation(orderDetails).catch(err =>
+          console.error('[Checkout] Failed to send buyer confirmation:', err)
         );
+
+        // Send seller notification if we have their email (non-blocking)
+        if (ownerProfile?.email && store) {
+          sendSellerNotification({
+            orderId: newOrder.id,
+            sellerEmail: ownerProfile.email,
+            storeName: store.name,
+            buyerName: parsed.data.deliveryDetails?.name || 'Customer',
+            deliveryAddress: parsed.data.deliveryMethod === 'shipping' ? {
+              name: parsed.data.deliveryDetails?.name || '',
+              address: parsed.data.deliveryDetails?.address || '',
+              city: parsed.data.deliveryDetails?.city || '',
+              zip: parsed.data.deliveryDetails?.zip || '',
+            } : undefined,
+            products: orderDetails.products,
+            total: amount,
+            currency: parsed.data.currency,
+          }).catch(err =>
+            console.error('[Checkout] Failed to send seller notification:', err)
+          );
+        }
+      } catch (emailError) {
+        console.error('[Checkout] Email notification error:', emailError);
       }
-    } catch (emailError) {
-      console.error('[Checkout] Email notification error:', emailError);
     }
 
     // Step 9: Create In-App Notifications (New)
