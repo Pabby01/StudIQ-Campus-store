@@ -1,4 +1,4 @@
-# StudiQ Campus Store
+# StudIQ Campus Store
 
 ## 🎥 Demo Video
 
@@ -13,40 +13,40 @@
 
 ---
 
-A decentralized campus marketplace built on Solana and Next.js.
+A decentralized campus marketplace built on Solana and Next.js, bridging the gap between web2 and web3 commerce for students.
 
-## 🚀 Features
+## 🚀 Key Features
 
-### For Buyers
-- **Browse Products**: Explore a wide range of campus essentials.
-- **Crypto Payments**: Securely pay with SOL or USDC via Solana Pay.
-- **Pay on Delivery (POD)**: Option to pay in cash upon receipt/pickup for verified items
-- **Shopping Cart**: Manage items and checkout seamlessly.
-- **Receipts**: Download professional PDF receipts for all orders.
-- **Wallet Connection**: Connect Phantom or Solflare for seamless web3 integration.
+### 🛒 Checkout & Payments
+- **Hybrid Checkout**: Pay seamlessly with **SOL** or **USDC**. Prices are automatically converted in real-time.
+- **Dynamic Pricing**: Products listed in USD are accurately converted to crypto at the moment of purchase.
+- **Pay on Delivery (POD)**: Option for cash payments on delivery for verified campus locations.
+- **Optimized Performance**: Instant price fetching via global state caching for a lightning-fast checkout experience.
 
-### For Sellers
-- **Store Dashboard**: Manage your store, products, and incoming orders.
-- **Product Management**: 
-    - Upload multiple product images (Gallery view).
-    - Edit and Delete products.
-    - specialized categories.
-- **Order Management**: View new orders, mark as Shipped or Completed.
-- **Inventory Tracking**: Real-time stock management.
+### 🏪 For Sellers
+- **Store Dashboard**: Comprehensive view of sales, orders, and products.
+- **Shareable Stores**: Custom storefront links to share directly with customers.
+- **Inventory Management**: Real-time stock tracking and editing.
+- **Secure Withdrawals**: Request payouts directly to your Solana wallet.
+
+### 👤 Identity & Security
+- **Civic Auth Integration**: Secure login using Email or Wallet, verified on-chain.
+- **Admin Security**: Server-side authentication verifying admin credentials against the database.
+- **Verified Profiles**: Student identity verification for trust and safety.
 
 ## 🛠 Tech Stack
 - **Framework**: Next.js 15 (App Router)
 - **Database**: Supabase (PostgreSQL)
-- **Blockchain**: Solana (Web3.js)
+- **Blockchain**: Solana (Web3.js + Jupiter API)
 - **Styling**: TailwindCSS
 - **State Management**: Zustand
-- **PDF Generation**: jsPDF + html2canvas
+- **Auth**: Civic Auth + Supabase
 
 ## 📦 Installation
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/your-repo/campus-store.git
+   git clone https://github.com/stud-iq/campus-store.git
    ```
 2. Install dependencies:
    ```bash
@@ -58,6 +58,7 @@ A decentralized campus marketplace built on Solana and Next.js.
    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
    SUPABASE_SERVICE_ROLE_KEY=...
    NEXT_PUBLIC_SOLANA_RPC_URL=...
+   NEXT_PUBLIC_ADMIN_EMAIL=your_email@example.com
    ```
 4. Run the development server:
    ```bash
@@ -65,7 +66,6 @@ A decentralized campus marketplace built on Solana and Next.js.
    ```
 
 ## 📝 Recent Updates
-- **Multi-Image Support**: Products now support up to 10 images with a carousel view.
-- **Pay on Delivery**: Integrated POD availability for products and checkout flow.
-- **Order Receipts**: Automated PDF receipt validation and download page.
-- **Seller Tools**: Enhanced dashboard for order tracking and product editing.
+- **v1.2 - Optimization**: Added global price caching to speed up checkout flow significantly.
+- **v1.1 - Admin Security**: Enhanced admin route protection with email-based verification.
+- **v1.0 - Hybrid Payments**: Launched support for USDC and SOL dynamic payments.
