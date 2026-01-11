@@ -22,24 +22,54 @@ export async function POST(request: NextRequest) {
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-        // Use upsert to handle concurrent requests gracefully
-        // This prevents duplicate key errors when multiple sync requests arrive
-        const { error } = await supabase
+        // Check if profile exists
+        const { data: existing } = await supabase
             .from('profiles')
-            .upsert({
-                address: walletAddress,
-                name: displayName || 'Student',
-                school: null,
-                campus: null,
-                updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'address',  // Specify which column is unique
-                ignoreDuplicates: false  // Update existing row instead of ignoring
-            })
+            .select('*')
+            .eq('address', walletAddress)
+            .maybeSingle()
 
-        if (error) {
-            console.error('Profile sync error:', error)
-            throw error
+        if (existing) {
+            // Update existing profile - only update provided fields
+            const updates: any = {
+                updated_at: new Date().toISOString()
+            }
+            // Only update name if provided and not "Student" (unless that's really their name, but usually it's a default)
+            // Actually, if main app sends "Student" as default, we might not want to overwrite a custom name here.
+            // But let's assume if displayName is provided and truthy, we use it.
+            if (displayName) updates.name = displayName
+            if (email) updates.email = email
+            if (phone) updates.phone = phone
+
+            // Do NOT touch school or campus here as this sync endpoint doesn't have that data
+
+            const { error } = await supabase
+                .from('profiles')
+                .update(updates)
+                .eq('address', walletAddress)
+
+            if (error) {
+                console.error('Profile update error:', error)
+                throw error
+            }
+        } else {
+            // Create new profile with defaults
+            const { error } = await supabase
+                .from('profiles')
+                .insert({
+                    address: walletAddress,
+                    name: displayName || 'Student',
+                    email: email || null,
+                    phone: phone || null,
+                    school: null,
+                    campus: null,
+                    updated_at: new Date().toISOString()
+                })
+
+            if (error) {
+                console.error('Profile insert error:', error)
+                throw error
+            }
         }
 
         return NextResponse.json({
