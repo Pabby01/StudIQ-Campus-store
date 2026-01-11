@@ -38,7 +38,9 @@ export default function CartPage() {
   });
 
   const [paymentCurrency, setPaymentCurrency] = useState<"SOL" | "USDC">("SOL");
-  const [solPrice, setSolPrice] = useState<number | null>(null);
+
+  const solPrice = useCart((s) => s.solPrice);
+  const fetchSolPrice = useCart((s) => s.fetchSolPrice);
 
   // Set default payment currency based on items
   useEffect(() => {
@@ -47,19 +49,9 @@ export default function CartPage() {
     }
   }, [items]);
 
-  // Fetch SOL Price for conversion
+  // Ensure price is fetched if missing or stale (Store handles caching)
   useEffect(() => {
-    const fetchPrice = async () => {
-      try {
-        const res = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112");
-        const data = await res.json();
-        const price = Number(data.data["So11111111111111111111111111111111111111112"]?.price);
-        setSolPrice(price);
-      } catch (err) {
-        console.error("Failed to fetch SOL price:", err);
-      }
-    };
-    fetchPrice();
+    fetchSolPrice();
   }, []);
 
   // Pre-fill email when Civic user loads

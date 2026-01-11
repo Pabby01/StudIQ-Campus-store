@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { Search, ShoppingCart, LayoutDashboard, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft, Bell } from "lucide-react";
 import { useUser } from "@civic/auth-web3/react";
 import CivicAuthButton from "@/components/CivicAuthButton";
@@ -9,6 +10,12 @@ import { useCart } from "@/store/cart";
 export default function Navbar() {
   const { user } = useUser();
   const items = useCart((s) => s.items);
+  const fetchSolPrice = useCart((s) => s.fetchSolPrice);
+
+  // Pre-fetch SOL price on mount to warm cache for checkout
+  useEffect(() => {
+    fetchSolPrice();
+  }, []);
 
   const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
 
