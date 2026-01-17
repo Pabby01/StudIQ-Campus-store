@@ -49,49 +49,26 @@ export const useCart = create<CartState>((set, get) => ({
     const now = Date.now();
     const { lastSolPriceFetch, solPrice } = get();
 
-    // Cache for 60 seconds
+    // Cache for 60 seconds (Client-side cache)
     if (solPrice && (now - lastSolPriceFetch < 60000)) {
       return;
     }
 
     try {
-      // Primary: Jupiter Price API V2
-      // Note: Adding explicit headers to potentially bypass simple 401s
-      const res = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112", {
-        headers: { 'Accept': 'application/json' }
-      });
-
-      if (!res.ok) {
-        throw new Error(`Jupiter API error: ${res.status}`);
-      }
+      // Use our internal secure proxy (Handles Jupiter -> CoinGecko fallback on server)
+      const res = await fetch("/api/price/sol");
+      if (!res.ok) throw new Error(`Price proxy error: ${res.status}`);
 
       const data = await res.json();
-      const price = Number(data.data["So11111111111111111111111111111111111111112"]?.price);
+      const price = Number(data.price);
 
       if (price && !isNaN(price)) {
         set({ solPrice: price, lastSolPriceFetch: now });
-        return;
+      } else {
+        console.error("Invalid price data from proxy");
       }
-      throw new Error("Invalid Jupiter price data");
     } catch (err) {
-      console.warn("Jupiter price fetch failed, switching to fallback:", err);
-
-      try {
-        // Fallback: CoinGecko
-        const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
-        if (!res.ok) throw new Error(`CoinGecko status: ${res.status}`);
-
-        const data = await res.json();
-        const price = Number(data.solana?.usd);
-
-        if (price && !isNaN(price)) {
-          set({ solPrice: price, lastSolPriceFetch: now });
-        } else {
-          console.error("CoinGecko returned invalid price data");
-        }
-      } catch (fallbackErr) {
-        console.error("All price fetches failed:", fallbackErr);
-      }
+      console.error("Failed to fetch SOL price:", err);
     }
   }
 }));
