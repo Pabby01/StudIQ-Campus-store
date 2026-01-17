@@ -41,20 +41,51 @@ export async function POST(req: Request) {
         let expectedSolAmount = order.amount;
 
         // If currency is USD, calculate expected SOL amount
-        if (order.currency === "USD") {
-            try {
-                const priceRes = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112");
-                const priceData = await priceRes.json();
-                const solPrice = Number(priceData.data["So11111111111111111111111111111111111111112"]?.price);
+        // If currency is not SOL, calculate expected SOL amount
+        if (order.currency !== "SOL") {
+            let solPrice = null;
 
-                if (solPrice && !isNaN(solPrice)) {
-                    expectedSolAmount = order.amount / solPrice;
-                    console.log(`[Verify] Converted order amount $${order.amount} to ~${expectedSolAmount.toFixed(4)} SOL`);
-                } else {
-                    console.warn("[Verify] Failed to fetch price, using raw amount (risky)");
+            try {
+                // Primary: Jupiter Price API V2
+                const jupiterRes = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112", {
+                    headers: { 'Accept': 'application/json', 'User-Agent': 'CampusStore/1.0' }
+                });
+
+                if (jupiterRes.ok) {
+                    const priceData = await jupiterRes.json();
+                    solPrice = Number(priceData.data["So11111111111111111111111111111111111111112"]?.price);
                 }
             } catch (e) {
-                console.error("[Verify] Price fetch failed:", e);
+                console.warn("[Verify] Jupiter fetch failed:", e);
+            }
+
+            if (!solPrice || isNaN(solPrice)) {
+                console.log("[Verify] Switching to CoinGecko fallback");
+                try {
+                    // Fallback: CoinGecko
+                    const cgRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", {
+                        headers: { 'Accept': 'application/json', 'User-Agent': 'CampusStore/1.0' }
+                    });
+                    if (cgRes.ok) {
+                        const data = await cgRes.json();
+                        solPrice = Number(data.solana?.usd);
+                    }
+                } catch (e) {
+                    console.error("[Verify] CoinGecko fetch failed:", e);
+                }
+            }
+
+            if (solPrice && !isNaN(solPrice)) {
+                // Allow a slightly wider margin for error (5%) due to potential rate differences
+                // between checkout time and verification time.
+                expectedSolAmount = order.amount / solPrice;
+                console.log(`[Verify] Converted order amount $${order.amount} to ~${expectedSolAmount.toFixed(4)} SOL (Rate: ${solPrice})`);
+            } else {
+                console.error("[Verify] Failed to fetch price from all sources");
+                return Response.json(
+                    { ok: false, error: "Unable to verify currency conversion rate. Please contact support." },
+                    { status: 500 }
+                );
             }
         }
 
