@@ -122,6 +122,20 @@ export async function POST(req: Request) {
             })
             .eq("id", swapId);
 
+        // Notify user
+        try {
+            const { triggerNotification } = await import('@/lib/notifications');
+            await triggerNotification({
+                user_id: swap.user_address,
+                title: 'Token Swap Successful! 🔄',
+                message: `Your swap of ${swap.from_amount} ${swap.from_token} for ${swap.to_amount} ${swap.to_token} is complete.`,
+                type: 'success',
+                url: '/dashboard/wallet'
+            });
+        } catch (notifErr) {
+            console.error("[Swap Complete] Notification failed:", notifErr);
+        }
+
         console.log("[Swap Complete] Swap completed successfully!");
         console.log(`  User -> Platform: ${userSignature}`);
         console.log(`  Platform -> User: ${platformSignature}`);

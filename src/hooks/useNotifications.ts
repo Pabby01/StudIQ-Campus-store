@@ -32,7 +32,9 @@ export function useNotifications() {
                 .eq('user_id', walletAddress)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             setNotifications(data || []);
             setUnreadCount(data?.filter((n: Notification) => !n.read).length || 0);

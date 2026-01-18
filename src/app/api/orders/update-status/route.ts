@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { triggerNotification } from "@/lib/notifications";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
   // Update order status
   await supabase.from("orders").update({ status }).eq("id", orderId);
 
-  // Send email notifications based on status change
+  // Send notifications based on status change
   try {
     const { sendShippingConfirmation, sendOrderCompleted } = await import('@/lib/email');
 
@@ -44,21 +45,37 @@ export async function POST(req: Request) {
     const buyerName = buyerProfile?.name || 'Customer';
     const buyerEmail = o.buyer_email;
 
-    if (!buyerEmail) {
-      console.warn('[Order Status] No buyer email found for order:', orderId);
-    } else {
-      // Send appropriate email based on status
-      if (status === 'shipped') {
+    // Trigger In-App & Push Notifications
+    if (status === 'shipped') {
+      await triggerNotification({
+        user_id: o.buyer_address,
+        title: 'Order Shipped! 📦',
+        message: `Your order #${orderId.slice(0, 8)} has been shipped.`,
+        type: 'success',
+        url: '/dashboard/purchases'
+      });
+
+      if (buyerEmail) {
         sendShippingConfirmation(orderId, buyerName, buyerEmail)
           .catch(err => console.error('[Order Status] Failed to send shipping email:', err));
-      } else if (status === 'completed') {
+      }
+    } else if (status === 'completed') {
+      await triggerNotification({
+        user_id: o.buyer_address,
+        title: 'Order Delivered! ✨',
+        message: `Your order #${orderId.slice(0, 8)} has been marked as completed.`,
+        type: 'success',
+        url: '/dashboard/purchases'
+      });
+
+      if (buyerEmail) {
         sendOrderCompleted(orderId, buyerName, buyerEmail)
           .catch(err => console.error('[Order Status] Failed to send completion email:', err));
       }
     }
-  } catch (emailError) {
-    // Don't fail the status update if email fails
-    console.error('[Order Status] Email notification error:', emailError);
+  } catch (notifyError) {
+    // Don't fail the status update if notification fails
+    console.error('[Order Status] Notification error:', notifyError);
   }
 
   return Response.json({ ok: true });
