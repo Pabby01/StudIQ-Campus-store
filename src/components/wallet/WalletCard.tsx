@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Send, ArrowDown, Wallet, Eye, EyeOff, ChevronDown, Coins } from "lucide-react";
+import { Copy, Send, ArrowDown, Wallet, Eye, EyeOff, ChevronDown, Coins, ArrowLeftRight } from "lucide-react";
 import Card from "@/components/ui/Card";
 import { Cluster } from "@/hooks/useSolanaBalance";
 import { TokenBalance } from "@/hooks/useTokenBalances";
@@ -14,6 +14,7 @@ interface WalletCardProps {
     onSend: () => void;
     onReceive: () => void;
     onDeposit: () => void;
+    onSwap: () => void;
 }
 
 export default function WalletCard({
@@ -25,7 +26,8 @@ export default function WalletCard({
     onClusterChange,
     onSend,
     onReceive,
-    onDeposit
+    onDeposit,
+    onSwap
 }: WalletCardProps) {
     const [showBalance, setShowBalance] = useState(true);
 
@@ -92,7 +94,7 @@ export default function WalletCard({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mb-8">
+                <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-8">
                     <button
                         onClick={onSend}
                         className="group flex flex-col items-center justify-center gap-2 bg-white text-blue-900 hover:bg-blue-50 active:scale-95 rounded-xl p-4 transition-all shadow-lg shadow-blue-900/20"
@@ -100,7 +102,7 @@ export default function WalletCard({
                         <div className="bg-blue-100 p-2 rounded-full group-hover:bg-blue-200 transition-colors">
                             <Send className="w-5 h-5 text-blue-700" />
                         </div>
-                        <span className="font-semibold">Send</span>
+                        <span className="font-semibold text-sm">Send</span>
                     </button>
                     <button
                         onClick={onReceive}
@@ -109,7 +111,25 @@ export default function WalletCard({
                         <div className="bg-white/10 p-2 rounded-full group-hover:bg-white/20 transition-colors">
                             <ArrowDown className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-semibold text-white">Receive</span>
+                        <span className="font-semibold text-white text-sm">Receive</span>
+                    </button>
+                    <button
+                        onClick={onSwap}
+                        className="group flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 active:scale-95 rounded-xl p-4 transition-all shadow-lg shadow-purple-500/20"
+                    >
+                        <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
+                            <ArrowLeftRight className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="font-semibold text-white text-sm">Swap</span>
+                    </button>
+                    <button
+                        onClick={onDeposit}
+                        className="group flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 active:scale-95 rounded-xl p-4 transition-all shadow-lg shadow-green-500/20"
+                    >
+                        <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
+                            <Wallet className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="font-semibold text-white text-sm">Deposit</span>
                     </button>
                 </div>
 

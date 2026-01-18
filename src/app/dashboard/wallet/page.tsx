@@ -6,6 +6,7 @@ import { useTokenBalances } from "@/hooks/useTokenBalances";
 import WalletCard from "@/components/wallet/WalletCard";
 import SendModal from "@/components/wallet/SendModal";
 import ReceiveModal from "@/components/wallet/ReceiveModal";
+import SwapModal from "@/components/wallet/SwapModal";
 import TransactionHistory from "@/components/wallet/TransactionHistory";
 import { Loader2 } from "lucide-react";
 import TokenList from "@/components/wallet/TokenList";
@@ -21,6 +22,7 @@ export default function WalletPage() {
     const [isSendOpen, setIsSendOpen] = useState(false);
     const [isReceiveOpen, setIsReceiveOpen] = useState(false);
     const [isDepositOpen, setIsDepositOpen] = useState(false);
+    const [isSwapOpen, setIsSwapOpen] = useState(false);
 
     // If loading user or not authenticated
     if (!walletAddress) {
@@ -48,6 +50,7 @@ export default function WalletPage() {
                 onSend={() => setIsSendOpen(true)}
                 onReceive={() => setIsReceiveOpen(true)}
                 onDeposit={() => setIsDepositOpen(true)}
+                onSwap={() => setIsSwapOpen(true)}
             />
 
             <TokenList tokens={tokens} loading={balanceLoading} />
@@ -66,6 +69,15 @@ export default function WalletPage() {
             <ReceiveModal
                 isOpen={isReceiveOpen}
                 onClose={() => setIsReceiveOpen(false)}
+            />
+
+            <SwapModal
+                isOpen={isSwapOpen}
+                onClose={() => setIsSwapOpen(false)}
+                onSuccess={() => {
+                    // Balances auto-refresh via hooks
+                }}
+                cluster={cluster}
             />
         </div>
     );
