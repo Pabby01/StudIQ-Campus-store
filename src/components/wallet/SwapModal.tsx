@@ -158,12 +158,16 @@ export default function SwapModal({ isOpen, onClose, onSuccess, cluster }: SwapM
             const signedTx = await signTransaction(userTx);
 
             // Step 4: Send to backend to complete swap
+            // Serialize and convert to array for JSON transmission
+            const serialized = signedTx.serialize();
+            const txArray = Array.from(serialized);
+
             const completeRes = await fetch("/api/swap/complete", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     swapId,
-                    userSignedTx: signedTx.serialize(),
+                    userSignedTx: txArray,
                 }),
             });
 

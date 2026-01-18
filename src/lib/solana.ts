@@ -270,22 +270,46 @@ export async function verifyTransaction(
  */
 export async function broadcastTransaction(signedTransaction: any) {
     try {
+        console.log("[Broadcast] Input type:", typeof signedTransaction);
+        console.log("[Broadcast] Is array:", Array.isArray(signedTransaction));
+        console.log("[Broadcast] Is Buffer:", Buffer.isBuffer(signedTransaction));
+
         // Framework Kit 'rpc.sendTransaction' takes a base64 string
         // The wallet adapter 'signTransaction' returns a compiled transaction object
 
         let base64Tx: string;
 
-        if ('serialize' in signedTransaction && typeof signedTransaction.serialize === 'function') {
+        // Handle different input types
+        if (Array.isArray(signedTransaction)) {
+            // Plain array (from JSON)
+            console.log("[Broadcast] Converting array to base64");
+            base64Tx = Buffer.from(signedTransaction).toString('base64');
+        } else if (Buffer.isBuffer(signedTransaction)) {
+            // Raw buffer (from serialize())
+            console.log("[Broadcast] Converting Buffer to base64");
+            base64Tx = signedTransaction.toString('base64');
+        } else if (ArrayBuffer.isView(signedTransaction)) {
+            // Uint8Array or other typed array
+            console.log("[Broadcast] Converting typed array to base64");
+            base64Tx = Buffer.from(signedTransaction as Uint8Array).toString('base64');
+        } else if (typeof signedTransaction === 'string') {
+            // Already base64
+            console.log("[Broadcast] Already base64 string");
+            base64Tx = signedTransaction;
+        } else if ('serialize' in signedTransaction && typeof signedTransaction.serialize === 'function') {
             // Legacy Transaction or VersionedTransaction from old wallet adapters
+            console.log("[Broadcast] Serializing transaction object");
             const serialized = signedTransaction.serialize();
             base64Tx = Buffer.from(serialized).toString('base64');
         } else {
             // Framework Kit Transaction (compiled transaction object)
             // Use the helper to serialize it properly
+            console.log("[Broadcast] Using getBase64EncodedWireTransaction");
             base64Tx = getBase64EncodedWireTransaction(signedTransaction) as string;
         }
 
-        console.log("Broadcasting transaction...");
+        console.log("[Broadcast] Broadcasting transaction...");
+        console.log("[Broadcast] Base64 length:", base64Tx.length);
 
         // Send (cast to any to bypass Base64EncodedWireTransaction branded type)
         const signature = await rpc.sendTransaction(base64Tx as any, {
@@ -293,11 +317,11 @@ export async function broadcastTransaction(signedTransaction: any) {
             preflightCommitment: 'confirmed'
         }).send();
 
-        console.log("Transaction sent:", signature);
+        console.log("[Broadcast] Transaction sent:", signature);
 
         return signature;
     } catch (error) {
-        console.error("Broadcast failed:", error);
+        console.error("[Broadcast] Broadcast failed:", error);
         throw error;
     }
 }

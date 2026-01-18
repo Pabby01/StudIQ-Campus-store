@@ -66,6 +66,32 @@ export async function POST(req: Request) {
         const feeAmount = outputBeforeFee * (PLATFORM_FEE_PERCENT / 100);
         const outputAmount = outputBeforeFee - feeAmount;
 
+        // Check platform wallet liquidity
+        try {
+            const balanceRes = await fetch(
+                `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/swap/platform-balance?cluster=${cluster}`
+            );
+
+            if (balanceRes.ok) {
+                const { balances } = await balanceRes.json();
+                const requiredBalance = outputAmount;
+                const availableBalance = toToken === "SOL" ? balances.SOL : balances.USDC;
+
+                if (availableBalance < requiredBalance) {
+                    return NextResponse.json(
+                        {
+                            error: `Insufficient platform liquidity. Required: ${requiredBalance.toFixed(4)} ${toToken}, Available: ${availableBalance.toFixed(4)} ${toToken}. Please contact support.`,
+                            code: "INSUFFICIENT_LIQUIDITY"
+                        },
+                        { status: 400 }
+                    );
+                }
+            }
+        } catch (error) {
+            console.warn("[Swap Execute] Failed to check platform balance:", error);
+            // Continue anyway - don't block swaps if balance check fails
+        }
+
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
         // Record swap transaction in database
