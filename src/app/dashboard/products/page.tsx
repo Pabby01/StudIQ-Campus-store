@@ -220,23 +220,12 @@ export default function DashboardProductsPage() {
               };
 
               return (
-                <div key={product.id} className="relative group">
-                  <ProductCard p={productWithOwner} />
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-20">
-                    <Button variant="outline" size="sm" onClick={(e) => {
-                      e.preventDefault();
-                      router.push(`/dashboard/products/edit/${product.id}`);
-                    }}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={(e) => {
-                      e.preventDefault();
-                      handleDeleteProduct(product.id);
-                    }}>
-                      Delete
-                    </Button>
-                  </div>
-                </div>
+                <ProductCard
+                  key={product.id}
+                  p={productWithOwner}
+                  onEdit={() => router.push(`/dashboard/products/edit/${product.id}`)}
+                  onDelete={() => handleDeleteProduct(product.id)}
+                />
               );
             })}
           </div>

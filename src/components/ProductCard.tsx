@@ -29,7 +29,13 @@ type Product = Readonly<{
   stores?: { name: string } | null;
 }>;
 
-export default function ProductCard({ p }: { p: Product }) {
+interface ProductCardProps {
+  p: Product;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}
+
+export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
 
@@ -234,14 +240,36 @@ export default function ProductCard({ p }: { p: Product }) {
                 Sold Out
               </Button>
             ) : isOwnProduct ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-[10px] py-1 h-7 cursor-not-allowed"
-                disabled
-              >
-                Your Product
-              </Button>
+              <div className="flex gap-2">
+                {onEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-[10px] py-1 h-7"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onEdit();
+                    }}
+                  >
+                    Edit
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="flex-1 text-[10px] py-1 h-7"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDelete();
+                    }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </div>
             ) : (
               <Button
                 variant="primary"
