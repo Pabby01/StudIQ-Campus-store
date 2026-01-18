@@ -94,42 +94,42 @@ export default function WalletCard({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-8">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-2xl mx-auto mb-8">
                     <button
                         onClick={onSend}
-                        className="group flex flex-col items-center justify-center gap-2 bg-white text-blue-900 hover:bg-blue-50 active:scale-95 rounded-xl p-4 transition-all shadow-lg shadow-blue-900/20"
+                        className="group flex flex-col items-center justify-center gap-1.5 bg-white text-blue-900 hover:bg-blue-50 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-blue-900/20"
                     >
                         <div className="bg-blue-100 p-2 rounded-full group-hover:bg-blue-200 transition-colors">
-                            <Send className="w-5 h-5 text-blue-700" />
+                            <Send className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700" />
                         </div>
-                        <span className="font-semibold text-sm">Send</span>
+                        <span className="font-semibold text-xs sm:text-sm">Send</span>
                     </button>
                     <button
                         onClick={onReceive}
-                        className="group flex flex-col items-center justify-center gap-2 bg-white/10 hover:bg-white/20 active:bg-white/5 border border-white/10 backdrop-blur-md rounded-xl p-4 transition-all"
+                        className="group flex flex-col items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 active:bg-white/5 border border-white/10 backdrop-blur-md rounded-xl p-3 sm:p-4 transition-all"
                     >
                         <div className="bg-white/10 p-2 rounded-full group-hover:bg-white/20 transition-colors">
-                            <ArrowDown className="w-5 h-5 text-white" />
+                            <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </div>
-                        <span className="font-semibold text-white text-sm">Receive</span>
+                        <span className="font-semibold text-white text-xs sm:text-sm">Receive</span>
                     </button>
                     <button
                         onClick={onSwap}
-                        className="group flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 active:scale-95 rounded-xl p-4 transition-all shadow-lg shadow-purple-500/20"
+                        className="group flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-purple-500/20"
                     >
                         <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
-                            <ArrowLeftRight className="w-5 h-5 text-white" />
+                            <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </div>
-                        <span className="font-semibold text-white text-sm">Swap</span>
+                        <span className="font-semibold text-white text-xs sm:text-sm">Swap</span>
                     </button>
                     <button
                         onClick={onDeposit}
-                        className="group flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 active:scale-95 rounded-xl p-4 transition-all shadow-lg shadow-green-500/20"
+                        className="group flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-green-500/20"
                     >
                         <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
-                            <Wallet className="w-5 h-5 text-white" />
+                            <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </div>
-                        <span className="font-semibold text-white text-sm">Deposit</span>
+                        <span className="font-semibold text-white text-xs sm:text-sm">Deposit</span>
                     </button>
                 </div>
 
