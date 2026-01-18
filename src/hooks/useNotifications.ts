@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getSupabaseClient } from "@/lib/supabase";
+import { useCivicWallet } from "@/hooks/useCivicWallet";
 
 export interface Notification {
     id: string;
@@ -14,18 +15,21 @@ export function useNotifications() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
+    const { walletAddress } = useCivicWallet();
 
     const supabase = getSupabaseClient();
 
     const fetchNotifications = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            if (!walletAddress) {
+                setLoading(false);
+                return;
+            }
 
             const { data, error } = await supabase
                 .from('notifications')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', walletAddress)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -57,13 +61,12 @@ export function useNotifications() {
 
     const markAllAsRead = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            if (!walletAddress) return;
 
             await supabase
                 .from('notifications')
                 .update({ read: true })
-                .eq('user_id', user.id);
+                .eq('user_id', walletAddress);
 
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
             setUnreadCount(0);
@@ -87,10 +90,12 @@ export function useNotifications() {
     };
 
     useEffect(() => {
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
-    }, []);
+        if (walletAddress) {
+            fetchNotifications();
+            const interval = setInterval(fetchNotifications, 30000);
+            return () => clearInterval(interval);
+        }
+    }, [walletAddress]);
 
     return {
         notifications,
