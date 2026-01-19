@@ -1,5 +1,7 @@
-import { X, Copy, QrCode } from "lucide-react";
+import { Copy, QrCode, Check, Info } from "lucide-react";
+import { useState } from "react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
+import Dialog from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
 
 interface ReceiveModalProps {
@@ -9,59 +11,80 @@ interface ReceiveModalProps {
 
 export default function ReceiveModal({ isOpen, onClose }: ReceiveModalProps) {
     const { walletAddress } = useCivicWallet();
-
-    if (!isOpen) return null;
+    const [copied, setCopied] = useState(false);
 
     const copyAddress = () => {
         if (walletAddress) {
             navigator.clipboard.writeText(walletAddress);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
         }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-black">Receive SOL</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                        <X className="w-5 h-5 text-gray-500" />
-                    </button>
-                </div>
-
-                <div className="text-center space-y-6">
-                    <div className="bg-gray-50 p-8 rounded-xl flex items-center justify-center">
-                        {/* QR Code */}
-                        <div className="bg-white p-2 rounded-lg border border-gray-200 shadow-inner">
+        <Dialog isOpen={isOpen} onClose={onClose} title="Receive SOL">
+            <div className="flex flex-col items-center gap-8 py-2">
+                {/* QR Code Section */}
+                <div className="relative group">
+                    <div className="absolute -inset-4 bg-gradient-to-tr from-blue-500/10 to-purple-500/10 rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="relative bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
+                        <div className="bg-gray-50/50 p-3 rounded-2xl">
                             <img
                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${walletAddress}`}
                                 alt="Wallet QR Code"
-                                className="w-48 h-48 object-contain"
+                                className="w-44 h-44 object-contain"
                             />
                         </div>
-                        <p className="text-xs text-gray-400 mt-2">Scan to send SOL</p>
                     </div>
+                    <div className="mt-4 flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">
+                            Your Personal QR Code
+                        </span>
+                        <p className="text-sm text-gray-500 font-medium">Scan to send funds to this wallet</p>
+                    </div>
+                </div>
 
-                    <div>
-                        <p className="text-sm text-gray-500 mb-2">My Wallet Address</p>
-                        <div className="bg-gray-100 p-3 rounded-lg flex items-center justify-between gap-2 overflow-hidden">
-                            <code className="text-sm font-mono truncate text-black flex-1 text-left">
+                {/* Address Section */}
+                <div className="w-full space-y-3">
+                    <div className="flex items-center justify-between px-1">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Your Wallet Address</label>
+                    </div>
+                    <div className="group relative">
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                        <div className="relative flex items-center gap-3 bg-white border border-gray-200 p-1.5 pl-4 rounded-xl shadow-sm transition-all">
+                            <code className="text-[13px] font-mono font-medium text-gray-800 truncate flex-1">
                                 {walletAddress}
                             </code>
                             <button
                                 onClick={copyAddress}
-                                className="p-2 bg-white rounded-md shadow-sm hover:bg-gray-50 transition-colors"
-                                title="Copy Address"
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all ${copied
+                                        ? "bg-green-500 text-white shadow-lg shadow-green-200"
+                                        : "bg-gray-900 text-white hover:bg-black shadow-lg shadow-gray-200 active:scale-95"
+                                    }`}
                             >
-                                <Copy className="w-4 h-4 text-primary-blue" />
+                                {copied ? (
+                                    <><Check className="w-3.5 h-3.5" /> Copied</>
+                                ) : (
+                                    <><Copy className="w-3.5 h-3.5" /> Copy</>
+                                )}
                             </button>
                         </div>
                     </div>
+                </div>
 
-                    <div className="text-sm text-gray-500 bg-blue-50 p-3 rounded-lg">
-                        Send only <strong>Solana (SOL)</strong> or SPL tokens to this address. Sending other assets may result in permanent loss.
+                {/* Notice Section */}
+                <div className="w-full flex gap-3 bg-blue-50/50 border border-blue-100/50 p-4 rounded-2xl">
+                    <div className="bg-blue-100 p-2 rounded-xl self-start">
+                        <Info className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-xs font-bold text-blue-900 uppercase tracking-tight">Security Notice</p>
+                        <p className="text-xs text-blue-700 leading-relaxed font-medium">
+                            Send only <strong className="font-bold">Solana (SOL)</strong> or SPL tokens to this address. Sending other assets may result in permanent loss.
+                        </p>
                     </div>
                 </div>
             </div>
-        </div>
+        </Dialog>
     );
 }
