@@ -18,34 +18,39 @@ const COMMON_TOKENS: Record<string, { symbol: string, name: string, logo: string
     "So11111111111111111111111111111111111111112": {
         symbol: "SOL",
         name: "Solana",
-        logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png"
+        logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png"
     },
-    // Devnet USDC (Often this one)
+    // Devnet USDC
     "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU": {
         symbol: "USDC",
         name: "USD Coin (Dev)",
-        logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png"
+        logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png"
     },
     // Mainnet USDC
     "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": {
         symbol: "USDC",
         name: "USD Coin",
-        logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png"
+        logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png"
     },
     "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB": {
         symbol: "USDT",
         name: "USDT",
-        logo: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.png"
+        logo: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png"
     },
     "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263": {
         symbol: "BONK",
         name: "Bonk",
-        logo: "https://arweave.net/hQiPZOsRZXGXBJd_82PhVdlM_hACsT_q6wqwf5cSY7I"
+        logo: "https://h6pumh4vcbp76v6j4smgh3c2id6wa2v4w4shszf3p6ioiyvbe6sa.arweave.net/hQiPZOsRZXGXBJd_82PhVdlM_hACsT_q6wqwf5cSY7I"
     },
     "JUPyiwrYJFskUPiHa7hkeR8VUtkTrVMkTrD525dCor5": {
         symbol: "JUP",
         name: "Jupiter",
         logo: "https://static.jup.ag/jup/icon.png"
+    },
+    "ukRST9onrp8YxG6t7rS6yGvMsnfAexR5L6mYc33oStH": {
+        symbol: "PYTH",
+        name: "Pyth Network",
+        logo: "https://raw.githubusercontent.com/pyth-network/pyth-client/main/pyth_logo.png"
     }
 };
 

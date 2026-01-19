@@ -225,9 +225,13 @@ export default function SwapModal({ isOpen, onClose, onSuccess, cluster }: SwapM
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-100 min-w-[100px]">
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] text-white ${fromToken === 'SOL' ? 'bg-gradient-to-br from-purple-500 to-blue-500' : 'bg-green-500'}`}>
-                                            {fromToken.charAt(0)}
-                                        </div>
+                                        {tokens.find(t => t.symbol === fromToken)?.logo ? (
+                                            <img src={tokens.find(t => t.symbol === fromToken)?.logo} alt={fromToken} className="w-6 h-6 object-contain" />
+                                        ) : (
+                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] text-white ${fromToken === 'SOL' ? 'bg-gradient-to-br from-purple-500 to-blue-500' : 'bg-green-500'}`}>
+                                                {fromToken.charAt(0)}
+                                            </div>
+                                        )}
                                         <span className="font-black text-sm">{fromToken}</span>
                                     </div>
                                     <Input
@@ -260,9 +264,13 @@ export default function SwapModal({ isOpen, onClose, onSuccess, cluster }: SwapM
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-100 min-w-[100px]">
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] text-white ${toToken === 'SOL' ? 'bg-gradient-to-br from-purple-500 to-blue-500' : 'bg-green-500'}`}>
-                                            {toToken.charAt(0)}
-                                        </div>
+                                        {tokens.find(t => t.symbol === toToken)?.logo ? (
+                                            <img src={tokens.find(t => t.symbol === toToken)?.logo} alt={toToken} className="w-6 h-6 object-contain" />
+                                        ) : (
+                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] text-white ${toToken === 'SOL' ? 'bg-gradient-to-br from-purple-500 to-blue-500' : 'bg-green-500'}`}>
+                                                {toToken.charAt(0)}
+                                            </div>
+                                        )}
                                         <span className="font-black text-sm">{toToken}</span>
                                     </div>
                                     <div className="flex-1 text-right">

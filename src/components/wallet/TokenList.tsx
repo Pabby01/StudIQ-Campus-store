@@ -25,9 +25,17 @@ export default function TokenList({ tokens, loading }: TokenListProps) {
                         tokens.map((token) => (
                             <div key={token.mint} className="flex items-center justify-between p-4 hover:bg-soft-gray-bg rounded-xl transition-colors group">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 border border-gray-100 group-hover:border-primary-blue/20 transition-colors">
+                                    <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 border border-gray-100 group-hover:border-primary-blue/20 transition-all group-hover:scale-105 shadow-sm">
                                         {token.logo ? (
-                                            <img src={token.logo} alt={token.name} className="w-full h-full object-cover" />
+                                            <img
+                                                src={token.logo}
+                                                alt={token.name}
+                                                className="w-7 h-7 object-contain"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                    (e.target as HTMLImageElement).parentElement!.innerHTML = `<span class="text-xs font-bold text-gray-400">${token.symbol[0]}</span>`;
+                                                }}
+                                            />
                                         ) : (
                                             <span className="text-xs font-bold text-gray-400">{token.symbol[0]}</span>
                                         )}

@@ -28,12 +28,20 @@ export default function ReceiveModal({ isOpen, onClose }: ReceiveModalProps) {
                 <div className="relative group">
                     <div className="absolute -inset-4 bg-gradient-to-tr from-blue-500/10 to-purple-500/10 rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
-                        <div className="bg-gray-50/50 p-3 rounded-2xl">
+                        <div className="relative bg-gray-50/50 p-3 rounded-2xl overflow-hidden">
                             <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${walletAddress}`}
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${walletAddress}`}
                                 alt="Wallet QR Code"
                                 className="w-44 h-44 object-contain"
                             />
+                            {/* Floating Coin Icon */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-2 rounded-xl shadow-lg border border-gray-100">
+                                <img
+                                    src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png"
+                                    alt="SOL"
+                                    className="w-6 h-6 object-contain"
+                                />
+                            </div>
                         </div>
                     </div>
                     <div className="mt-4 flex flex-col items-center gap-1">
@@ -58,8 +66,8 @@ export default function ReceiveModal({ isOpen, onClose }: ReceiveModalProps) {
                             <button
                                 onClick={copyAddress}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all ${copied
-                                        ? "bg-green-500 text-white shadow-lg shadow-green-200"
-                                        : "bg-gray-900 text-white hover:bg-black shadow-lg shadow-gray-200 active:scale-95"
+                                    ? "bg-green-500 text-white shadow-lg shadow-green-200"
+                                    : "bg-gray-900 text-white hover:bg-black shadow-lg shadow-gray-200 active:scale-95"
                                     }`}
                             >
                                 {copied ? (

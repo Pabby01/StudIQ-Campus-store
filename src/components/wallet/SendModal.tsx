@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Loader2, Send, CheckCircle2, AlertCircle, ArrowRight, Wallet, Info } from "lucide-react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
+import { useTokenBalances } from "@/hooks/useTokenBalances";
 import { createTransferTransaction, broadcastTransaction, waitForConfirmation } from "@/lib/solana";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -17,10 +18,15 @@ interface SendModalProps {
 
 export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendModalProps) {
     const { walletAddress, signTransaction } = useCivicWallet();
+    const { tokens } = useTokenBalances(walletAddress, cluster);
     const [recipient, setRecipient] = useState("");
     const [amount, setAmount] = useState("");
     const [status, setStatus] = useState<"idle" | "creating" | "signing" | "sending" | "success" | "error">("idle");
     const [error, setError] = useState<string | null>(null);
+
+    const solToken = tokens.find(t => t.symbol === "SOL");
+    const solBalance = solToken?.balance || 0;
+    const solLogo = solToken?.logo;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -137,10 +143,18 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Amount to Send</label>
+                                <div className="flex justify-between items-center ml-1">
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Amount to Send</label>
+                                    <span className="text-[10px] font-bold text-gray-400">Balance: {solBalance.toFixed(4)} SOL</span>
+                                </div>
                                 <div className="relative">
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 bg-white border border-gray-100 rounded-lg text-[10px] font-bold text-gray-400">
-                                        SOL
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-white border border-gray-100 rounded-lg px-2 py-1 shadow-sm">
+                                        {solLogo ? (
+                                            <img src={solLogo} alt="SOL" className="w-3.5 h-3.5 object-contain" />
+                                        ) : (
+                                            <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-purple-500 to-blue-500" />
+                                        )}
+                                        <span className="text-[10px] font-bold text-gray-400">SOL</span>
                                     </div>
                                     <Input
                                         className="h-12 bg-gray-50/50 border-gray-100 focus:bg-white transition-all rounded-xl font-bold text-lg"
@@ -159,7 +173,10 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => {/* Potentially get max balance */ }}
+                                        onClick={() => {
+                                            const maxAmount = Math.max(0, solBalance - 0.000005);
+                                            setAmount(maxAmount.toString());
+                                        }}
                                         className="text-[10px] font-bold text-gray-400 hover:text-blue-600 transition-colors uppercase"
                                     >
                                         Use Max
