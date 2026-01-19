@@ -29,6 +29,7 @@ export async function POST(req: Request) {
             .single();
 
         if (!planData) {
+            console.error(`[Subscription Checkout] Plan not found: "${plan}"`);
             return NextResponse.json(
                 { error: "Invalid plan" },
                 { status: 400 }
