@@ -115,8 +115,11 @@ export default function WalletCard({
                     </button>
                     <button
                         onClick={onSwap}
-                        className="group flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-purple-500/20"
+                        className="group relative flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-purple-500/20"
                     >
+                        <div className="absolute -top-1 -right-1 bg-yellow-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-20">
+                            SOON
+                        </div>
                         <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
                             <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </div>
@@ -124,8 +127,11 @@ export default function WalletCard({
                     </button>
                     <button
                         onClick={onDeposit}
-                        className="group flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-green-500/20"
+                        className="group relative flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-green-500/20"
                     >
+                        <div className="absolute -top-1 -right-1 bg-yellow-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-20">
+                            SOON
+                        </div>
                         <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
                             <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </div>
@@ -138,6 +144,9 @@ export default function WalletCard({
                         onClick={onDeposit}
                         className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95 relative overflow-hidden group"
                     >
+                        <div className="absolute top-0 right-0 bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-bl-lg shadow-sm z-20">
+                            SOON
+                        </div>
                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                         <Wallet className="w-5 h-5" />
                         <span>Deposit w/ Naira (Paj Cash)</span>

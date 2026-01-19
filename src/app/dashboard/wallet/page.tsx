@@ -8,9 +8,11 @@ import SendModal from "@/components/wallet/SendModal";
 import ReceiveModal from "@/components/wallet/ReceiveModal";
 import SwapModal from "@/components/wallet/SwapModal";
 import TransactionHistory from "@/components/wallet/TransactionHistory";
-import { Loader2 } from "lucide-react";
+import { Loader2, Rocket } from "lucide-react";
 import TokenList from "@/components/wallet/TokenList";
 import { Cluster } from "@/hooks/useSolanaBalance";
+import Dialog from "@/components/ui/Dialog";
+import Button from "@/components/ui/Button";
 
 export default function WalletPage() {
     const { walletAddress, isAuthenticated } = useCivicWallet();
@@ -21,8 +23,8 @@ export default function WalletPage() {
 
     const [isSendOpen, setIsSendOpen] = useState(false);
     const [isReceiveOpen, setIsReceiveOpen] = useState(false);
-    const [isDepositOpen, setIsDepositOpen] = useState(false);
-    const [isSwapOpen, setIsSwapOpen] = useState(false);
+    const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
+    const [comingSoonFeature, setComingSoonFeature] = useState("");
 
     // If loading user or not authenticated
     if (!walletAddress) {
@@ -49,8 +51,14 @@ export default function WalletPage() {
                 onClusterChange={setCluster}
                 onSend={() => setIsSendOpen(true)}
                 onReceive={() => setIsReceiveOpen(true)}
-                onDeposit={() => setIsDepositOpen(true)}
-                onSwap={() => setIsSwapOpen(true)}
+                onDeposit={() => {
+                    setComingSoonFeature("Deposit");
+                    setIsComingSoonOpen(true);
+                }}
+                onSwap={() => {
+                    setComingSoonFeature("Swap");
+                    setIsComingSoonOpen(true);
+                }}
             />
 
             <TokenList tokens={tokens} loading={balanceLoading} />
@@ -72,13 +80,35 @@ export default function WalletPage() {
             />
 
             <SwapModal
-                isOpen={isSwapOpen}
-                onClose={() => setIsSwapOpen(false)}
-                onSuccess={() => {
-                    // Balances auto-refresh via hooks
-                }}
+                isOpen={false} // Disabled for now
+                onClose={() => { }}
+                onSuccess={() => { }}
                 cluster={cluster}
             />
+
+            {/* Coming Soon Popup */}
+            <Dialog
+                isOpen={isComingSoonOpen}
+                onClose={() => setIsComingSoonOpen(false)}
+                title="Coming Soon! 🚀"
+                footer={
+                    <Button variant="primary" onClick={() => setIsComingSoonOpen(false)}>
+                        Got it!
+                    </Button>
+                }
+            >
+                <div className="text-center py-4">
+                    <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Rocket className="w-8 h-8 text-primary-blue" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">
+                        {comingSoonFeature} Feature Under Construction
+                    </h3>
+                    <p className="text-gray-600">
+                        We&apos;re working hard to bring {comingSoonFeature.toLowerCase()} functionality to the StudIQ Campus Store. This feature will be available in the next update!
+                    </p>
+                </div>
+            </Dialog>
         </div>
     );
 }
