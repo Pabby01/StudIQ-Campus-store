@@ -1,12 +1,15 @@
 // Solana configuration
 export const SOLANA_CONFIG = {
     // Network
-    network: process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet",
-    rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com",
+    network: (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet") as "devnet" | "mainnet",
+    rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL!,
 
-    // Merchant wallet (receives platform fees)
-    // TODO: Replace with your actual merchant wallet address
-    merchantWallet: process.env.NEXT_PUBLIC_MERCHANT_WALLET || "8HzTKc1VB4zHL5NopjhFdbsq343ZWDNaAKrvTfLCv7N5",
+    // Merchant & Platform Wallets
+    merchantWallet: process.env.NEXT_PUBLIC_MERCHANT_WALLET!,
+    platformWallet: process.env.NEXT_PUBLIC_PLATFORM_WALLET!,
+
+    // Tokens
+    usdcMint: process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU", // Devnet fallback allowed as it's public knowledge
 
     // Platform fee (in percentage)
     platformFeePercent: 5, // 5% platform fee
@@ -16,7 +19,15 @@ export const SOLANA_CONFIG = {
     maxRetries: 3,
 } as const;
 
-// Validate merchant wallet is set
-if (SOLANA_CONFIG.merchantWallet === "8HzTKc1VB4zHL5NopjhFdbsq343ZWDNaAKrvTfLCv7N5") {
-    console.warn("⚠️ Merchant wallet not configured! Set NEXT_PUBLIC_MERCHANT_WALLET in .env");
+// Validation: Fail fast if critical config is missing
+if (typeof window === 'undefined') { // Only validate strictly on server to prevent build crashes, or check carefully
+    if (!SOLANA_CONFIG.rpcUrl) {
+        console.error("❌ CRITICAL: NEXT_PUBLIC_SOLANA_RPC_URL is missing in .env");
+    }
+    if (!SOLANA_CONFIG.merchantWallet) {
+        console.error("❌ CRITICAL: NEXT_PUBLIC_MERCHANT_WALLET is missing in .env");
+    }
+    if (!SOLANA_CONFIG.platformWallet) {
+        console.warn("⚠️ NEXT_PUBLIC_PLATFORM_WALLET is missing in .env (Swap features may fail)");
+    }
 }

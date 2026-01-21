@@ -5,6 +5,7 @@ import {
     waitForConfirmation,
     getRpc,
 } from "@/lib/solana";
+import { SOLANA_CONFIG } from "@/lib/solana-config";
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 
@@ -40,7 +41,7 @@ export async function executeSwapTransaction(
         cluster,
     } = params;
 
-    const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET!;
+    const platformWallet = SOLANA_CONFIG.platformWallet;
     const platformPrivateKey = process.env.PLATFORM_WALLET_PRIVATE_KEY!;
 
     if (!platformPrivateKey) {
@@ -68,7 +69,7 @@ export async function executeSwapTransaction(
             userAddress,
             platformWallet,
             fromAmount,
-            process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+            SOLANA_CONFIG.usdcMint
         );
     }
 
@@ -103,7 +104,7 @@ export async function executeSwapTransaction(
             platformWallet,
             userAddress,
             netToAmount,
-            process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+            SOLANA_CONFIG.usdcMint
         );
     }
 

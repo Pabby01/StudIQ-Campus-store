@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 import { getSupabaseServerClient } from "@/lib/supabase";
 
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
             .from("products")
             .select("name, price, currency, category, description")
             .order("created_at", { ascending: false })
-            .limit(10);
+            .limit(5);
 
         // Fetch unique categories (simple aggregation if no separate table)
         // If we don't have a categories table, we infer from products
@@ -60,8 +60,8 @@ export async function POST(req: Request) {
 
         let contextString = "\n**Current Store Context:**\n";
         if (products && products.length > 0) {
-            contextString += `Recent Products Available:\n${products.map(p => `- ${p.name} (${p.currency === 'SOL' ? p.price + ' SOL' : '$' + p.price}) in ${p.category}`).join("\n")}\n`;
-            contextString += `\nPopular Categories: ${categories.join(", ")}\n`;
+            contextString += `Recent Products:\n${products.map(p => `- ${p.name} ($${p.price})`).join("\n")}\n`;
+            contextString += `\nCategories: ${categories.join(", ")}\n`;
         } else {
             contextString += "No products listed currently.\n";
         }
@@ -105,10 +105,19 @@ export async function POST(req: Request) {
         const text = response.text();
 
         return NextResponse.json({ reply: text });
-    } catch (error) {
+    } catch (error: any) {
         console.error("AI Chat Error:", error);
+
+        // Handle Rate Limiting (429) gracefully
+        if (error.message?.includes("429") || error.status === 429) {
+            return NextResponse.json(
+                { error: "Whoa, so many questions! 🤯 Studi needs a quick breather. Try again in a minute!" },
+                { status: 429 }
+            );
+        }
+
         return NextResponse.json(
-            { error: "Failed to process your request." },
+            { error: "Studi tripped over a virtual wire! 🔌 Try again later." },
             { status: 500 }
         );
     }

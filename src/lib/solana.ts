@@ -23,8 +23,9 @@ import {
 import { getTransferSolInstruction } from '@solana-program/system';
 import { getTransferInstruction } from '@solana-program/token';
 import { VersionedTransaction } from '@solana/web3.js';
+import { SOLANA_CONFIG } from './solana-config';
 
-const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+const SOLANA_RPC_URL = SOLANA_CONFIG.rpcUrl;
 const SOLANA_WSS_URL = SOLANA_RPC_URL.replace("http", "ws"); // Simple replacement for WSS
 
 // Initialize connection
@@ -35,7 +36,7 @@ export function getClusterUrl(cluster: 'devnet' | 'mainnet') {
     if (cluster === 'mainnet') {
         return process.env.NEXT_PUBLIC_SOLANA_MAINNET_RPC_URL || "https://api.mainnet-beta.solana.com";
     }
-    return process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+    return SOLANA_CONFIG.rpcUrl;
 }
 
 export function getRpc(cluster: 'devnet' | 'mainnet' = 'devnet') {
@@ -107,7 +108,7 @@ export async function createTransferTransaction(
     return versionedTx;
 }
 
-export const USDC_MINT = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // Devnet USDC
+export const USDC_MINT = SOLANA_CONFIG.usdcMint;
 const TOKEN_PROGRAM_ID = address("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const ASSOCIATED_TOKEN_PROGRAM_ID = address("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 
