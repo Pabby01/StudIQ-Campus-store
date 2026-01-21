@@ -86,6 +86,32 @@ export function useCivicWallet() {
         createEmbeddedWallet();
     }, [user, civicLoading, hasWallet, solanaContext, isCreatingWallet, walletCreationInProgress]);
 
+    // Get Civic token if available (usually on userContext or user)
+    const token = (userContext as any).token || (userContext as any).idToken;
+
+    // Automatic session establishment
+    useEffect(() => {
+        if (token && walletAddress && !civicLoading) {
+            const hasSession = typeof document !== 'undefined' && document.cookie.includes('sid=');
+            if (!hasSession) {
+                console.log('[useCivicWallet] 🔐 Establishing server session for:', walletAddress);
+                fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, address: walletAddress }),
+                }).then(res => {
+                    if (res.ok) {
+                        console.log('[useCivicWallet] ✅ Server session established');
+                        // Trigger a small refresh or notify stats components if needed
+                        // Most components will auto-retry or we can just hope for the best on next poll
+                    }
+                }).catch(err => {
+                    console.error('[useCivicWallet] ❌ Session establishment failed:', err);
+                });
+            }
+        }
+    }, [token, walletAddress, civicLoading]);
+
     // Update profile with wallet address when available
     useEffect(() => {
         const isRealWallet = walletAddress && !walletAddress.startsWith('civic_');
@@ -102,6 +128,7 @@ export function useCivicWallet() {
                     email,
                     walletAddress,
                     civicUserId,
+                    token // Include token for verification
                 }),
             }).then(res => {
                 if (res.ok) {
@@ -113,7 +140,7 @@ export function useCivicWallet() {
                 console.error('[useCivicWallet] ❌ Failed to update wallet address:', err);
             });
         }
-    }, [walletAddress, email, civicUserId]);
+    }, [walletAddress, email, civicUserId, token]);
 
     return {
         // User info from Civic

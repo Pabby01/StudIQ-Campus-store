@@ -10,6 +10,10 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
  */
 export async function GET(request: NextRequest) {
     try {
+        const authHeader = request.headers.get("Authorization");
+        if (authHeader !== `Bearer ${process.env.SYNC_API_KEY}`) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
         const { searchParams } = new URL(request.url)
         const walletAddress = searchParams.get('walletAddress')
 
@@ -49,6 +53,10 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
+        const authHeader = request.headers.get("Authorization");
+        if (authHeader !== `Bearer ${process.env.SYNC_API_KEY}`) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
         const body = await request.json()
         const { walletAddress, points, description } = body
 

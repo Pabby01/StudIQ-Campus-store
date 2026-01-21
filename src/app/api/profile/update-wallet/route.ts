@@ -68,6 +68,26 @@ export async function POST(req: Request) {
             return Response.json({ ok: true, profile, message: "Already up to date" });
         }
 
+        // Check if another profile already has this new walletAddress
+        const { data: conflictingProfile } = await supabase
+            .from("profiles")
+            .select("email, address, id")
+            .eq("address", walletAddress)
+            .maybeSingle();
+
+        if (conflictingProfile && conflictingProfile.email && conflictingProfile.email !== email) {
+            return Response.json(
+                { ok: false, error: `This wallet is already linked to another account (${conflictingProfile.email}).` },
+                { status: 409 }
+            );
+        }
+
+        // If the conflicting profile exists but has no email, we can delete it to make way for the update
+        if (conflictingProfile && (!conflictingProfile.email || conflictingProfile.email === email)) {
+            console.log("[update-wallet] Removing empty/matching conflicting profile for address:", walletAddress);
+            await supabase.from("profiles").delete().eq("id", conflictingProfile.id);
+        }
+
         // Step 1: Get existing points for this profile
         const { data: existingPoints } = await supabase
             .from("points_log")

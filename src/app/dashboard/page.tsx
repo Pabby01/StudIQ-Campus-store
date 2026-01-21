@@ -65,24 +65,42 @@ export default function DashboardPage() {
     try {
       // Fetch stats - use identifier (could be wallet address or email:xxx)
       const statsRes = await fetch(`/api/dashboard/stats?address=${encodeURIComponent(identifier)}`);
+
+      if (statsRes.status === 401) {
+        console.warn("Dashboard stats: Unauthorized session. Session may have expired.");
+        // We let the auth logic handle re-establishing session
+        return;
+      }
+
       const statsData = await statsRes.json();
 
       // Fetch analytics
       const analyticsRes = await fetch(`/api/dashboard/analytics?address=${encodeURIComponent(identifier)}&range=30`);
+
+      if (analyticsRes.status === 401) {
+        console.warn("Dashboard analytics: Unauthorized session.");
+        return;
+      }
+
       const analyticsData = await analyticsRes.json();
 
-      setStats(isBuyer ? statsData.buyer : statsData.seller);
-      setAnalytics(isBuyer ? {
-        labels: analyticsData.labels,
-        orders: analyticsData.buyer.orders,
-        revenue: analyticsData.buyer.revenue,
-        points: analyticsData.points
-      } : {
-        labels: analyticsData.labels,
-        orders: analyticsData.seller.orders,
-        revenue: analyticsData.seller.revenue,
-        points: analyticsData.points
-      });
+      if (statsData?.buyer && statsData?.seller) {
+        setStats(isBuyer ? statsData.buyer : statsData.seller);
+      }
+
+      if (analyticsData?.labels && analyticsData?.buyer && analyticsData?.seller) {
+        setAnalytics(isBuyer ? {
+          labels: analyticsData.labels,
+          orders: analyticsData.buyer.orders,
+          revenue: analyticsData.buyer.revenue,
+          points: analyticsData.points || []
+        } : {
+          labels: analyticsData.labels,
+          orders: analyticsData.seller.orders,
+          revenue: analyticsData.seller.revenue,
+          points: analyticsData.points || []
+        });
+      }
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
     } finally {

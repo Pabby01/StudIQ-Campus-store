@@ -27,13 +27,19 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
         // Check if profile exists
         const checkProfile = async () => {
             try {
-                console.log("[OnboardingGuard] Checking profile for:", userEmail);
-                const res = await fetch(`/api/profile/check?email=${encodeURIComponent(userEmail as string)}`);
-                const data = await res.json();
+                const token = (user as any).token || (user as any).idToken;
+                const url = `/api/profile/check?email=${encodeURIComponent(userEmail as string)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+                const res = await fetch(url);
 
+                if (res.status === 401) {
+                    console.warn("[OnboardingGuard] Unauthorized profile check, skipping redirect");
+                    return;
+                }
+
+                const data = await res.json();
                 console.log("[OnboardingGuard] Profile check result:", data);
 
-                if (!data.exists) {
+                if (data.exists === false) {
                     console.log("[OnboardingGuard] New user detected, redirecting to onboarding");
                     router.push("/onboarding");
                 }

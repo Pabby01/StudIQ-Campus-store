@@ -49,7 +49,7 @@ export class BidirectionalSyncClient {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...(this.config.apiKey && { 'X-API-Key': this.config.apiKey })
+                ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
             },
             body: JSON.stringify({ walletAddress })
         })
@@ -90,7 +90,7 @@ export class BidirectionalSyncClient {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...(this.config.apiKey && { 'X-API-Key': this.config.apiKey })
+                ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
             },
             body: JSON.stringify(transaction)
         })
@@ -106,10 +106,10 @@ export class BidirectionalSyncClient {
     private async getPointsFromApp(walletAddress: string, app: 'main' | 'store'): Promise<number> {
         const targetUrl = app === 'main' ? this.config.mainAppUrl : this.config.storeUrl
 
-        const response = await fetch(`${targetUrl}/api/sync/points/${walletAddress}`, {
+        const response = await fetch(`${targetUrl}/api/sync/points?walletAddress=${walletAddress}`, {
             method: 'GET',
             headers: {
-                ...(this.config.apiKey && { 'X-API-Key': this.config.apiKey })
+                ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
             }
         })
 

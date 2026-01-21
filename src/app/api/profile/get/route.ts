@@ -1,10 +1,14 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { getSessionWallet } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const address = url.searchParams.get("address") ?? "";
+  const address = await getSessionWallet(req);
+
+  if (!address) {
+    return Response.json(null, { status: 401 });
+  }
 
   if (!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return Response.json(null);

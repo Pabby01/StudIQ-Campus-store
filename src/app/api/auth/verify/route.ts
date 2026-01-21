@@ -2,110 +2,150 @@ import bs58 from "bs58";
 import nacl from "tweetnacl";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { verifyCivicToken } from "@/lib/civic-verify";
 
 export async function POST(req: Request) {
   try {
-    const { address, nonce, signature } = await req.json();
+    const { address, nonce, signature, token } = await req.json();
 
-    console.log("Auth verify request:", { address, nonce, signatureLength: signature?.length });
+    console.log("Auth verify request:", { address, nonce, signatureLength: signature?.length, hasToken: !!token });
 
-    if (!address || !nonce || !signature) {
-      console.error("Missing fields:", { address: !!address, nonce: !!nonce, signature: !!signature });
-      return Response.json(
-        { ok: false, error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+    let verifiedAddress = address;
 
-    if ((!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error("Supabase not configured");
-      return Response.json(
-        { ok: false, error: "Server configuration error - Supabase not set up" },
-        { status: 500 }
-      );
-    }
-
-    const supabase = getSupabaseServerClient();
-
-    // Verify nonce exists and hasn't expired
-    const { data, error: nonceError } = await supabase
-      .from("wallet_auth_nonce")
-      .select("nonce, expires_at")
-      .eq("address", address)
-      .single();
-
-    if (nonceError) {
-      console.error("Nonce lookup error:", nonceError);
-      return Response.json(
-        { ok: false, error: `Database error: ${nonceError.message}. Make sure to run auth_schema.sql in Supabase!` },
-        { status: 500 }
-      );
-    }
-
-    if (!data || data.nonce !== nonce) {
-      console.error("Nonce mismatch:", { found: !!data, matches: data?.nonce === nonce });
-      return Response.json(
-        { ok: false, error: "Invalid or expired nonce" },
-        { status: 401 }
-      );
-    }
-
-    if (new Date(data.expires_at).getTime() < Date.now()) {
-      console.error("Nonce expired");
-      return Response.json(
-        { ok: false, error: "Nonce expired" },
-        { status: 401 }
-      );
-    }
-
-    // Verify signature - sign the nonce directly
-    try {
-      const messageBytes = new TextEncoder().encode(nonce);
-      const signatureBytes = bs58.decode(signature);
-      const publicKeyBytes = bs58.decode(address);
-
-      console.log("Verifying signature:", {
-        messageLength: messageBytes.length,
-        signatureLength: signatureBytes.length,
-        publicKeyLength: publicKeyBytes.length,
-      });
-
-      const isValid = nacl.sign.detached.verify(
-        messageBytes,
-        signatureBytes,
-        publicKeyBytes
-      );
-
-      if (!isValid) {
-        console.error("Signature verification failed");
+    // Method A: Civic Token Verification
+    if (token) {
+      console.log("Attempting Civic token verification...");
+      const civic = await verifyCivicToken(token);
+      if (!civic.success || !civic.email) {
         return Response.json(
-          { ok: false, error: "Invalid signature - please try connecting again" },
+          { ok: false, error: civic.error || "Invalid Civic token" },
           { status: 401 }
         );
       }
 
-      console.log("Signature verified successfully");
-    } catch (sigError) {
-      console.error("Signature verification error:", sigError);
-      return Response.json(
-        { ok: false, error: `Signature error: ${sigError instanceof Error ? sigError.message : 'Unknown error'}` },
-        { status: 401 }
-      );
+      // If address was provided, use it; otherwise try to find it via email
+      if (address) {
+        verifiedAddress = address;
+      } else {
+        const supabase = getSupabaseServerClient();
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("address")
+          .eq("email", civic.email)
+          .maybeSingle();
+
+        if (!profile) {
+          return Response.json(
+            { ok: false, error: "Profile not found for this email. Please connect wallet first." },
+            { status: 404 }
+          );
+        }
+        verifiedAddress = profile.address;
+      }
+      console.log("Civic token verified for email:", civic.email, "Address:", verifiedAddress);
+    }
+    // Method B: Traditional Signature Verification
+    else {
+      if (!address || !nonce || !signature) {
+        console.error("Missing fields:", { address: !!address, nonce: !!nonce, signature: !!signature });
+        return Response.json(
+          { ok: false, error: "Missing required fields (address, nonce, signature)" },
+          { status: 400 }
+        );
+      }
+
+      if ((!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.error("Supabase not configured");
+        return Response.json(
+          { ok: false, error: "Server configuration error - Supabase not set up" },
+          { status: 500 }
+        );
+      }
+
+      const supabase = getSupabaseServerClient();
+
+      // Verify nonce exists and hasn't expired
+      const { data, error: nonceError } = await supabase
+        .from("wallet_auth_nonce")
+        .select("nonce, expires_at")
+        .eq("address", address)
+        .single();
+
+      if (nonceError) {
+        console.error("Nonce lookup error:", nonceError);
+        return Response.json(
+          { ok: false, error: `Database error: ${nonceError.message}` },
+          { status: 500 }
+        );
+      }
+
+      if (!data || data.nonce !== nonce) {
+        console.error("Nonce mismatch");
+        return Response.json(
+          { ok: false, error: "Invalid or expired nonce" },
+          { status: 401 }
+        );
+      }
+
+      if (new Date(data.expires_at).getTime() < Date.now()) {
+        console.error("Nonce expired");
+        return Response.json(
+          { ok: false, error: "Nonce expired" },
+          { status: 401 }
+        );
+      }
+
+      // Verify signature
+      try {
+        const messageBytes = new TextEncoder().encode(nonce);
+        const signatureBytes = bs58.decode(signature);
+        const publicKeyBytes = bs58.decode(address);
+
+        const isValid = nacl.sign.detached.verify(
+          messageBytes,
+          signatureBytes,
+          publicKeyBytes
+        );
+
+        if (!isValid) {
+          console.error("Signature verification failed");
+          return Response.json(
+            { ok: false, error: "Invalid signature" },
+            { status: 401 }
+          );
+        }
+
+        // Delete used nonce
+        await supabase.from("wallet_auth_nonce").delete().eq("address", address);
+      } catch (sigError) {
+        console.error("Signature verification error:", sigError);
+        return Response.json(
+          { ok: false, error: "Signature verification failed" },
+          { status: 401 }
+        );
+      }
     }
 
+    const supabase = getSupabaseServerClient();
+    const addressToUse = verifiedAddress;
+
     // Create or update profile
+    // We specify onConflict: 'address' to handle the unique constraint properly
     const { error: profileError } = await supabase
       .from("profiles")
-      .upsert({ address })
+      .upsert({
+        address: addressToUse,
+        // If we have a civic email, link it if not already set
+        ...(token && (await verifyCivicToken(token)).email ? { email: (await verifyCivicToken(token)).email } : {})
+      }, { onConflict: 'address' })
       .select();
 
     if (profileError) {
-      console.error("Profile creation error:", profileError);
-      // Continue anyway - profile creation is not critical
+      // If it's just a duplicate key error for email (someone else has this email), legacy login still works
+      if (profileError.code !== '23505') {
+        console.error("Profile creation error:", profileError);
+      }
     }
-
-    // Delete used nonce
-    await supabase.from("wallet_auth_nonce").delete().eq("address", address);
 
     // Create a secure session in the database
     const expiry = new Date();
@@ -114,7 +154,7 @@ export async function POST(req: Request) {
     const { data: session, error: sessionError } = await supabase
       .from("secure_sessions")
       .insert({
-        user_address: address,
+        user_address: addressToUse,
         expires_at: expiry.toISOString()
       })
       .select("id")
@@ -126,7 +166,7 @@ export async function POST(req: Request) {
     }
 
     // Set session cookie with the secure UUID
-    const res = NextResponse.json({ ok: true });
+    const res = NextResponse.json({ ok: true, address: addressToUse });
     res.cookies.set("sid", session.id, {
       path: "/",
       httpOnly: true,
@@ -135,7 +175,7 @@ export async function POST(req: Request) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    console.log("Auth successful for:", address, "Session:", session.id);
+    console.log("Auth successful for:", addressToUse, "Session:", session.id);
     return res;
   } catch (error) {
     console.error("Auth verification error:", error);

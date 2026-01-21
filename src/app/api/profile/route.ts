@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { getSessionWallet } from "@/lib/session";
 
 // GET /api/profile?address=xxx - Get user profile
 // address can be a wallet address or "email:xxx" format
@@ -7,8 +8,23 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const address = url.searchParams.get("address");
 
+    // Security Check
+    const sessionAddress = await getSessionWallet(req);
+    const authHeader = req.headers.get("Authorization");
+    const isApiKeyValid = authHeader === `Bearer ${process.env.SYNC_API_KEY}`;
+
     if (!address) {
         return NextResponse.json({ error: "Address required" }, { status: 400 });
+    }
+
+    // Allow if it's the user's own profile OR if it's an internal API call
+    const isOwnProfile = sessionAddress && (
+        address === sessionAddress ||
+        (address.startsWith("email:") && address.replace("email:", "") === sessionAddress) // This part is tricky if email isn't address
+    );
+
+    if (!isOwnProfile && !isApiKeyValid) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const supabase = getSupabaseServerClient();

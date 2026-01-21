@@ -1,14 +1,12 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
-
-export const dynamic = 'force-dynamic';
+import { getSessionWallet } from "@/lib/session";
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const address = url.searchParams.get("address") ?? "";
+  const address = await getSessionWallet(req);
 
   if (!address) {
-    return NextResponse.json({ error: "Address required" }, { status: 400 });
+    return NextResponse.json({ error: "Unauthorized: Active session required" }, { status: 401 });
   }
 
   const supabase = getSupabaseServerClient();
