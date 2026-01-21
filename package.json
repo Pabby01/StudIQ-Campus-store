@@ -12,6 +12,7 @@
   "dependencies": {
     "@civic/auth": "^0.13.3",
     "@civic/auth-web3": "^0.10.0",
+    "@google/generative-ai": "^0.24.1",
     "@solana/client": "^1.0.0",
     "@solana/kit": "^5.0.0",
     "@solana/react-hooks": "^1.0.1",

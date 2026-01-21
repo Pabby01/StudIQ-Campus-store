@@ -11,6 +11,7 @@ import InstallAppModal from "@/components/InstallAppModal";
 import { OnboardingGuard } from "@/components/OnboardingGuard";
 
 import { ToastProvider } from "@/hooks/useToast";
+import SupportChat from "@/components/SupportChat";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -106,6 +107,7 @@ export default function RootLayout({
               </OnboardingGuard>
               <Footer />
               <MobileNav />
+              <SupportChat />
             </Providers>
           </ToastProvider>
         </ErrorBoundary>

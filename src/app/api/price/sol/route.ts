@@ -53,7 +53,10 @@ export async function GET() {
         return NextResponse.json({ error: "Failed to fetch price from all sources" }, { status: 502 });
 
     } catch (error) {
-        console.error("[PriceProxy] Server error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        console.error("[PriceProxy] Server error details:", error);
+        return NextResponse.json({
+            error: "Internal Server Error",
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 });
     }
 }

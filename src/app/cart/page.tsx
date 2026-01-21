@@ -12,6 +12,8 @@ import { useState, useEffect } from "react";
 
 type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifying" | "success" | "error";
 
+import AuthModal from "@/components/AuthModal";
+
 export default function CartPage() {
   const items = useCart((s) => s.items);
   const total = useCart((s) => s.total());
@@ -21,6 +23,7 @@ export default function CartPage() {
 
   // Use Civic wallet hook for unified access
   const { walletAddress, email, wallet, isAuthenticated, user, signTransaction } = useCivicWallet();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +82,7 @@ export default function CartPage() {
     // Check if user is authenticated
     if (!isAuthenticated) {
       console.log("Checkout blocked: Not authenticated");
-      setError("Please sign in to complete checkout");
+      setShowAuthModal(true);
       return;
     }
 
@@ -608,6 +611,12 @@ export default function CartPage() {
           </div>
         )}
       </div>
+
+      {/* Auth Modal Triggered by Checkout */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
     </div>
   );
 }
