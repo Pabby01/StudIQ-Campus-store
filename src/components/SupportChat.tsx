@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -16,6 +17,12 @@ export default function SupportChat() {
     ]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
+    const [hasUnread, setHasUnread] = useState(false);
+    const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+    const [dragging, setDragging] = useState(false);
+    const [dragMoved, setDragMoved] = useState(false);
+    const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    const containerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // ... scroll effect
@@ -60,18 +67,92 @@ export default function SupportChat() {
         }
     };
 
-    const adminWhatsApp = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "1234567890";
+    const adminWhatsApp = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "2349020250260";
     // Custom message encoded for URL
     const customMessage = encodeURIComponent("Hello Support, I need help with the StudIQ Campus Store app.");
     const whatsappLink = `https://wa.me/${adminWhatsApp}?text=${customMessage}`;
 
+    useEffect(() => {
+        if (!position) {
+            setPosition({
+                x: Math.max(16, window.innerWidth - 380),
+                y: Math.max(16, window.innerHeight - 560),
+            });
+        }
+    }, [position]);
+
+    useEffect(() => {
+        if (isOpen) setHasUnread(false);
+    }, [isOpen]);
+
+    useEffect(() => {
+        const last = messages[messages.length - 1];
+        if (!last || isOpen) return;
+        if (last.role === "assistant") setHasUnread(true);
+    }, [messages, isOpen]);
+
+    useEffect(() => {
+        function handleResize() {
+            if (!position) return;
+            const width = containerRef.current?.offsetWidth ?? 360;
+            const height = containerRef.current?.offsetHeight ?? 540;
+            const maxX = Math.max(16, window.innerWidth - width - 16);
+            const maxY = Math.max(16, window.innerHeight - height - 16);
+            setPosition({
+                x: Math.min(position.x, maxX),
+                y: Math.min(position.y, maxY),
+            });
+        }
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [position]);
+
+    const startDrag = (e: React.PointerEvent) => {
+        if (!containerRef.current || !position) return;
+        setDragging(true);
+        dragOffset.current = {
+            x: e.clientX - position.x,
+            y: e.clientY - position.y,
+        };
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    };
+
+    const onDrag = (e: React.PointerEvent) => {
+        if (!dragging || !position || !containerRef.current) return;
+        const width = containerRef.current.offsetWidth;
+        const height = containerRef.current.offsetHeight;
+        const maxX = Math.max(16, window.innerWidth - width - 16);
+        const maxY = Math.max(16, window.innerHeight - height - 16);
+        const nextX = Math.min(Math.max(16, e.clientX - dragOffset.current.x), maxX);
+        const nextY = Math.min(Math.max(16, e.clientY - dragOffset.current.y), maxY);
+        if (Math.abs(nextX - position.x) > 2 || Math.abs(nextY - position.y) > 2) {
+            setDragMoved(true);
+        }
+        setPosition({ x: nextX, y: nextY });
+    };
+
+    const endDrag = (e: React.PointerEvent) => {
+        setDragging(false);
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+        setTimeout(() => setDragMoved(false), 0);
+    };
+
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none font-sans">
+        <div
+            ref={containerRef}
+            className="fixed z-50 flex flex-col items-end pointer-events-none font-sans"
+            style={position ? { left: position.x, top: position.y } : undefined}
+            onPointerMove={onDrag}
+            onPointerUp={endDrag}
+        >
             {/* Chat Window */}
             {isOpen && (
-                <div className="bg-white rounded-3xl shadow-2xl w-[340px] h-[500px] mb-4 border border-indigo-50 pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
+                <div className="bg-white rounded-3xl shadow-2xl w-[92vw] max-w-[360px] h-[70vh] max-h-[560px] mb-4 border border-indigo-50 pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
                     {/* Header with Gradient */}
-                    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 flex justify-between items-center text-white shadow-md">
+                    <div
+                        className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 flex justify-between items-center text-white shadow-md cursor-move select-none touch-none"
+                        onPointerDown={startDrag}
+                    >
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30">
                                 <GraduationCap className="w-6 h-6 text-white" />
@@ -176,14 +257,20 @@ export default function SupportChat() {
             {/* Trigger Button */}
             {!isOpen && (
                 <button
-                    onClick={() => setIsOpen(true)}
+                    onClick={() => {
+                        if (dragMoved) return;
+                        setIsOpen(true);
+                    }}
                     className="pointer-events-auto bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-4 rounded-full shadow-lg shadow-indigo-500/40 transition-all hover:scale-110 active:scale-95 group relative border-2 border-white/20"
+                    onPointerDown={startDrag}
                 >
                     <div className="relative">
                         <MessageSquare className="w-7 h-7" />
                         <Sparkles className="w-4 h-4 text-yellow-300 absolute -top-2 -right-2 animate-bounce" />
                     </div>
-                    <span className="absolute right-0 top-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white absolute -top-1 -right-1"></span>
+                    {hasUnread && (
+                        <span className="absolute right-0 top-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white absolute -top-1 -right-1"></span>
+                    )}
                 </button>
             )}
         </div>

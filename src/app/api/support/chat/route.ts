@@ -1,11 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { CATEGORIES } from "@/lib/categories";
 
 // Base prompt is static, but dynamic context will be prepended
 const BASE_SYSTEM_PROMPT = `
@@ -34,7 +30,7 @@ export async function POST(req: Request) {
     try {
         const { message, history } = await req.json();
 
-        if (!process.env.GEMINI_API_KEY) {
+        if (!process.env.OPENAI_API_KEY) {
             return NextResponse.json(
                 { error: "Studi is taking a nap (AI Service Unavailable)." },
                 { status: 503 }
@@ -45,18 +41,25 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Say something!" }, { status: 400 });
         }
 
-        // Fetch Dynamic Context (Products & Categories)
-        const supabase = getSupabaseServerClient();
+        let products: Array<{ name: string; price: number; currency: string; category: string; description: string }> = [];
+        let storeCount: number | null = null;
+        let productCount: number | null = null;
+        try {
+            const supabase = getSupabaseServerClient();
+            const { data } = await supabase
+                .from("products")
+                .select("name, price, currency, category, description")
+                .order("created_at", { ascending: false })
+                .limit(5);
+            products = data || [];
+            const storesRes = await supabase.from("stores").select("id", { count: "exact", head: true });
+            storeCount = storesRes.count ?? null;
+            const productsRes = await supabase.from("products").select("id", { count: "exact", head: true });
+            productCount = productsRes.count ?? null;
+        } catch {
+            products = [];
+        }
 
-        // Fetch up to 10 recent products to give the AI some "awareness"
-        const { data: products } = await supabase
-            .from("products")
-            .select("name, price, currency, category, description")
-            .order("created_at", { ascending: false })
-            .limit(5);
-
-        // Fetch unique categories (simple aggregation if no separate table)
-        // If we don't have a categories table, we infer from products
         const categories = Array.from(new Set(products?.map(p => p.category) || []));
 
         let contextString = "\n**Current Store Context:**\n";
@@ -66,8 +69,11 @@ export async function POST(req: Request) {
         } else {
             contextString += "No products listed currently.\n";
         }
+        contextString += `\nCatalog Categories: ${CATEGORIES.join(", ")}\n`;
+        if (storeCount !== null || productCount !== null) {
+            contextString += `\nMarketplace Stats: ${productCount ?? "?"} products, ${storeCount ?? "?"} stores\n`;
+        }
 
-        // Navigation Guide
         contextString += `\n**Navigation Guide:**
 - Home: /
 - Shop/Browse: /search
@@ -75,41 +81,58 @@ export async function POST(req: Request) {
 - Cart: /cart
 - Wallet/Points: /dashboard/wallet
 - Sell an Item: /dashboard/store/products/new
+- Stores: /stores
+- Orders: /dashboard/orders
+- Pricing: /pricing
+`;
+        contextString += `\n**Platform Capabilities:**
+- Create stores, list products, and manage inventory
+- Checkout with SOL/USDC and track orders
+- Earn points and view leaderboard
+- Profile management, reviews, wishlists, and notifications
 `;
 
         const finalSystemPrompt = BASE_SYSTEM_PROMPT + contextString;
 
         const chatHistory = (history || []).map((msg: any) => ({
-            role: msg.role === "user" ? "user" : "model",
-            parts: [{ text: msg.content }],
+            role: msg.role === "user" ? "user" : "assistant",
+            content: msg.content,
         }));
 
-        const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{ text: finalSystemPrompt }]
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Hey there! I'm Studi. Ready to help you ace your campus shopping! 🎓✨" }]
-                },
-                ...chatHistory
-            ],
-            generationConfig: {
-                maxOutputTokens: 500,
+        const modelName = process.env.OPENAI_MODEL || "gpt-4o-mini";
+        const openAiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
             },
+            body: JSON.stringify({
+                model: modelName,
+                messages: [
+                    { role: "system", content: finalSystemPrompt },
+                    { role: "assistant", content: "Hey there! I'm Studi. Ready to help you ace your campus shopping! 🎓✨" },
+                    ...chatHistory,
+                    { role: "user", content: message },
+                ],
+                max_tokens: 500,
+            }),
         });
 
-        const result = await chat.sendMessage(message);
-        const response = result.response;
-        const text = response.text();
+        if (!openAiRes.ok) {
+            const errorBody = await openAiRes.text();
+            return NextResponse.json(
+                { error: "Studi tripped over a virtual wire! 🔌 Try again later.", details: errorBody },
+                { status: 502 }
+            );
+        }
+
+        const data = await openAiRes.json();
+        const text = data?.choices?.[0]?.message?.content ?? "";
 
         return NextResponse.json({ reply: text });
     } catch (error: any) {
         console.error("AI Chat Error:", error);
 
-        // Handle Rate Limiting (429) gracefully
         if (error.message?.includes("429") || error.status === 429) {
             return NextResponse.json(
                 { error: "Whoa, so many questions! 🤯 Studi needs a quick breather. Try again in a minute!" },
