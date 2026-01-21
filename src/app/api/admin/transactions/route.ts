@@ -1,15 +1,17 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getSessionWallet } from "@/lib/session";
 
 export async function GET(req: Request) {
     try {
+        const address = await getSessionWallet(req);
+
+        // Verify admin access via session
+        await requireAdmin(address);
+
         const { searchParams } = new URL(req.url);
-        const adminAddress = searchParams.get("admin");
         const range = parseInt(searchParams.get("range") || "30");
         const limit = parseInt(searchParams.get("limit") || "100");
-
-        // Verify admin access
-        await requireAdmin(adminAddress);
 
         const supabase = getSupabaseServerClient();
 

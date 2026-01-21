@@ -1,9 +1,15 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { getSessionWallet } from "@/lib/session";
 
 export async function POST(req: Request) {
     try {
-        const { items, reservedBy } = await req.json();
+        const address = await getSessionWallet(req);
+        if (!address) {
+            return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { items } = await req.json();
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return Response.json(
@@ -12,12 +18,7 @@ export async function POST(req: Request) {
             );
         }
 
-        if (!reservedBy) {
-            return Response.json(
-                { ok: false, error: "reservedBy is required" },
-                { status: 400 }
-            );
-        }
+        const reservedBy = address;
 
         const supabase = getSupabaseServerClient();
         const reservations: { productId: string; reservationId: string }[] = [];

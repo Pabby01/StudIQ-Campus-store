@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { POINTS } from "@/lib/constants";
+import { getSessionWallet } from "@/lib/session";
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -24,10 +25,15 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-    const body = await req.json();
-    const { productId, address, rating, content } = body;
+    const address = await getSessionWallet(req);
+    if (!address) {
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!productId || !address || !rating) {
+    const body = await req.json();
+    const { productId, rating, content } = body;
+
+    if (!productId || !rating) {
         return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -49,11 +55,15 @@ export async function POST(req: Request) {
         return Response.json({ error: error.message }, { status: 500 });
     }
 
-    // Award 10 points to reviewer
+    // Award bonus points to reviewer
     try {
-        await fetch(`${req.headers.get("origin")}/api/points/award`, {
+        const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        await fetch(`${origin}/api/points/award`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${process.env.SYNC_API_KEY}`
+            },
             body: JSON.stringify({
                 address,
                 points: POINTS.REVIEW,
@@ -81,7 +91,7 @@ export async function POST(req: Request) {
                 .eq("id", productId);
         }
 
-        // If 5-star review, award seller 25 points
+        // If 5-star review, award seller bonus points
         if (rating === 5) {
             const { data: product } = await supabase
                 .from("products")
@@ -93,9 +103,12 @@ export async function POST(req: Request) {
                 // @ts-ignore
                 const ownerAddress = product.stores?.owner_address;
                 if (ownerAddress) {
-                    await fetch(`${req.headers.get("origin")}/api/points/award`, {
+                    await fetch(`${origin}/api/points/award`, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${process.env.SYNC_API_KEY}`
+                        },
                         body: JSON.stringify({
                             address: ownerAddress,
                             points: POINTS.REVIEW_5_STAR,

@@ -1,13 +1,18 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { checkoutCreateSchema } from "@/lib/validators";
 import { triggerNotification } from "@/lib/notifications";
+import { getSessionWallet } from "@/lib/session";
 
 export async function POST(req: Request) {
   try {
     console.log("[Checkout Create] Starting checkout process");
-    const body = await req.json();
-    console.log("[Checkout Create] Request body:", JSON.stringify(body, null, 2));
 
+    const sessionAddress = await getSessionWallet(req);
+    if (!sessionAddress) {
+      return Response.json({ ok: false, error: "Unauthorized: Active wallet session required" }, { status: 401 });
+    }
+
+    const body = await req.json();
     const parsed = checkoutCreateSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -17,6 +22,9 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // Override buyer with verified session address
+    const buyerAddress = sessionAddress;
 
     console.log("[Checkout Create] Validation passed, parsed data:", parsed.data);
 
@@ -33,7 +41,7 @@ export async function POST(req: Request) {
     const { data: buyerProfile } = await supabase
       .from("profiles")
       .select("address")
-      .eq("address", parsed.data.buyer)
+      .eq("address", buyerAddress)
       .maybeSingle();
 
     if (!buyerProfile) {
@@ -42,7 +50,7 @@ export async function POST(req: Request) {
       const { error: profileError } = await supabase
         .from("profiles")
         .insert({
-          address: parsed.data.buyer,
+          address: buyerAddress,
           name: parsed.data.deliveryDetails?.name || "User",
           email: parsed.data.buyerEmail || null,
           school: null,
@@ -119,7 +127,7 @@ export async function POST(req: Request) {
           {
             p_product_id: item.productId,
             p_quantity: item.qty,
-            p_reserved_by: parsed.data.buyer,
+            p_reserved_by: buyerAddress,
             p_minutes: 10,
           }
         );
@@ -197,7 +205,7 @@ export async function POST(req: Request) {
     const { data: newOrder, error: orderError } = await supabase // Renamed 'order' to 'newOrder'
       .from("orders")
       .insert({
-        buyer_address: parsed.data.buyer, // Kept as parsed.data.buyer, assuming buyerAddress was a typo in instruction
+        buyer_address: buyerAddress,
         store_id: storeId,
         amount: amount, // Use totalAmount
         fee_percent: feePercent,
@@ -209,11 +217,6 @@ export async function POST(req: Request) {
         delivery_info: parsed.data.deliveryDetails, // Kept existing field
         payment_method: parsed.data.paymentMethod, // Kept existing field
         buyer_email: parsed.data.buyerEmail, // Kept existing field
-        // The instruction's insert object was significantly different and seemed to remove existing fields.
-        // I've integrated the new fields/values while preserving existing ones where appropriate,
-        // and used the existing `parsed.data` fields.
-        // Specifically, `items` was not added to the order table as it's handled by `order_items`.
-        // `delivery_details` and `payment_method` were already present as `delivery_info` and `payment_method`.
       })
       .select("id") // Select only id, as before
       .single();
@@ -337,9 +340,9 @@ export async function POST(req: Request) {
     // Step 9: Create In-App Notifications (New)
     try {
       // 1. Notify Buyer
-      if (parsed.data.buyer) {
+      if (buyerAddress) {
         await triggerNotification({
-          user_id: parsed.data.buyer,
+          user_id: buyerAddress,
           title: 'Order Placed! 🛍️',
           message: `Your order #${newOrder.id.slice(0, 8)} has been placed successfully.`,
           type: 'success',

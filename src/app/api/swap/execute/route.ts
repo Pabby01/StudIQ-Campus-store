@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getSessionWallet } from "@/lib/session";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -9,9 +10,16 @@ const MIN_SWAP_USD = 1;
 
 export async function POST(req: Request) {
     try {
+        const address = await getSessionWallet(req);
+        if (!address) {
+            return NextResponse.json(
+                { error: "Unauthorized: Active wallet session required" },
+                { status: 401 }
+            );
+        }
+
         const body = await req.json();
         const {
-            walletAddress,
             fromToken,
             toToken,
             amount,
@@ -19,6 +27,8 @@ export async function POST(req: Request) {
             userSignature,
             platformSignature,
         } = body;
+
+        const walletAddress = address;
 
         if (!walletAddress || !fromToken || !toToken || !amount) {
             return NextResponse.json(

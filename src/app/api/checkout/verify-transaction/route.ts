@@ -89,18 +89,15 @@ export async function POST(req: Request) {
             }
         }
 
-        // Verify transaction (buyer sends TO platform wallet)
-        // We need a wider tolerance for USD conversion due to price flux/timing
-        // verifyTransaction uses 1% default. We might need to override it or accept it.
-        // Let's modify verifyTransaction or handle it here?
-        // verifyTransaction logic in src/lib/solana.ts converts expectedAmount to Lamports and checks 1%.
-        // 1% might be tight if price changed between cart load and verification.
-        // But for now let's try it.
+        // Use tighter tolerance for native SOL (0.1%) and slightly more for USD conversions (2%)
+        const tolerance = order.currency === "SOL" ? 0.001 : 0.02;
+
         const verification = await verifyTransaction(
             txSignature,
             order.buyer_address,                   // FROM buyer
             platformWallet,                         // TO platform wallet
-            expectedSolAmount
+            expectedSolAmount,
+            tolerance
         );
 
         if (!verification.valid) {

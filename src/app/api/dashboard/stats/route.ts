@@ -1,39 +1,12 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
-import { getWalletAddress } from "@/lib/addressResolver";
+import { getSessionWallet } from "@/lib/session";
 
 export async function GET(req: Request) {
-    const url = new URL(req.url);
-    const addressParam = url.searchParams.get("address");
-
-    if (!addressParam) {
-        return NextResponse.json({ error: "Address required" }, { status: 400 });
-    }
-
-    // Resolve email:xxx format to wallet address
-    const address = await getWalletAddress(addressParam);
+    const address = await getSessionWallet(req);
 
     if (!address) {
-        // Return empty stats for users without profiles yet
-        return NextResponse.json({
-            buyer: {
-                totalOrders: 0,
-                revenue: 0,
-                currency: "SOL",
-                growth: 0,
-                points: 0,
-                recentActivity: []
-            },
-            seller: {
-                totalOrders: 0,
-                revenue: 0,
-                currency: "SOL",
-                growth: 0,
-                points: 0,
-                recentActivity: []
-            },
-            hasStore: false
-        });
+        return NextResponse.json({ error: "Session required" }, { status: 401 });
     }
 
     const supabase = getSupabaseServerClient();

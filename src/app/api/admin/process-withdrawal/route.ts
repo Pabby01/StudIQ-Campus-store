@@ -1,13 +1,16 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getSessionWallet } from "@/lib/session";
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { admin, withdrawalId, action, transactionSignature, notes } = body;
+        const address = await getSessionWallet(req);
 
-        // Verify admin access
-        await requireAdmin(admin);
+        // Verify admin access via session
+        await requireAdmin(address);
+
+        const body = await req.json();
+        const { withdrawalId, action, transactionSignature, notes } = body;
 
         if (!withdrawalId || !action) {
             return Response.json(

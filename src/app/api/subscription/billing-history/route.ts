@@ -1,13 +1,13 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { getSessionWallet } from "@/lib/session";
 
-// GET /api/subscription/billing-history?address=xxx
+// GET /api/subscription/billing-history - Get billing history
 export async function GET(req: Request) {
-    const url = new URL(req.url);
-    const address = url.searchParams.get("address");
+    const address = await getSessionWallet(req);
 
     if (!address) {
-        return NextResponse.json({ error: "Address required" }, { status: 400 });
+        return NextResponse.json({ error: "Session required" }, { status: 401 });
     }
 
     const supabase = getSupabaseServerClient();

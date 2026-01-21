@@ -2,18 +2,16 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { createStoreSchema } from "@/lib/validators";
 import { encodeGeohash } from "@/lib/geohash";
 import { canCreateStore } from "@/lib/storeLimit";
+import { getSessionWallet } from "@/lib/session";
 
 export async function POST(req: Request) {
-  const body = await req.json();
-
-  // Get address from request body
-  const address = body.address;
-  if (!address) {
-    return Response.json(
-      { ok: false, error: "Wallet address required" },
-      { status: 401 }
-    );
+  const sessionAddress = await getSessionWallet(req);
+  if (!sessionAddress) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
+
+  const body = await req.json();
+  const address = sessionAddress;
 
   // Check store creation limit
   const limitCheck = await canCreateStore(address);
@@ -93,11 +91,15 @@ export async function POST(req: Request) {
     );
   }
 
-  // Award 100 points for store creation
+  // Award bonus points for store creation
   try {
-    await fetch(`${req.headers.get("origin")}/api/points/award`, {
+    const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    await fetch(`${origin}/api/points/award`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.SYNC_API_KEY}`
+      },
       body: JSON.stringify({
         address,
         points: 50, // Bonus for starting a store

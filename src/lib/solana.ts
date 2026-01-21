@@ -194,7 +194,8 @@ export async function verifyTransaction(
     signature: string,
     expectedFrom: string,
     expectedTo: string,
-    expectedAmount: number
+    expectedAmount: number,
+    tolerancePercent: number = 0.01 // Default to 1% tolerance
 ): Promise<{
     valid: boolean;
     error?: string;
@@ -216,7 +217,6 @@ export async function verifyTransaction(
         }
 
         // Verify sender and recipient
-        // @ts-ignore
         const accountKeys = transaction.transaction.message.accountKeys;
         const fromAccount = accountKeys[0];
         const toAccount = accountKeys[1];
@@ -245,8 +245,8 @@ export async function verifyTransaction(
         const transferredLamports = Number(preBal) - Number(postBal) - Number(fee);
         const expectedLamports = Math.floor(expectedAmount * 1_000_000_000);
 
-        // Allow 5% tolerance
-        const tolerance = expectedLamports * 0.05;
+        // Allow configurable tolerance
+        const tolerance = expectedLamports * tolerancePercent;
         if (Math.abs(transferredLamports - expectedLamports) > tolerance) {
             return {
                 valid: false,

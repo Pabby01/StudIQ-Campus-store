@@ -1,35 +1,18 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { getSessionWallet } from "@/lib/session";
 
-// Helper to get user address from email if needed
-async function resolveAddress(supabase: any, addressOrEmail: string): Promise<string | null> {
-    if (addressOrEmail.startsWith("email:")) {
-        const email = addressOrEmail.replace("email:", "");
-        const { data: profile } = await supabase
-            .from("profiles")
-            .select("address")
-            .eq("email", email)
-            .maybeSingle();
-        return profile?.address || null;
-    }
-    return addressOrEmail;
-}
-
-// GET /api/subscription/status?address=xxx - Get user's subscription status
-// address can be a wallet address or "email:xxx" format
+// GET /api/subscription/status - Get user's subscription status
 export async function GET(req: Request) {
-    const url = new URL(req.url);
-    const addressParam = url.searchParams.get("address");
+    const address = await getSessionWallet(req);
 
-    if (!addressParam) {
-        return NextResponse.json({ error: "Address required" }, { status: 400 });
+    if (!address) {
+        return NextResponse.json({ error: "Session required" }, { status: 401 });
     }
 
     const supabase = getSupabaseServerClient();
 
     try {
-        // Resolve email to address if needed
-        const address = await resolveAddress(supabase, addressParam);
 
         if (!address) {
             // No profile found, return free plan

@@ -1,11 +1,17 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { updateProfileSchema } from "@/lib/validators";
 import { POINTS } from "@/lib/constants";
+import { getSessionWallet } from "@/lib/session";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     console.log("[Profile Update] Received:", body);
+
+    const sessionAddress = await getSessionWallet(req);
+    if (!sessionAddress) {
+      return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
 
     const parsed = updateProfileSchema.safeParse(body);
 
@@ -15,6 +21,11 @@ export async function POST(req: Request) {
         { ok: false, error: "Invalid input" },
         { status: 400 }
       );
+    }
+
+    // Verify session matches the address in the request
+    if (sessionAddress !== parsed.data.address) {
+      return Response.json({ ok: false, error: "Forbidden: You can only update your own profile" }, { status: 403 });
     }
 
     const supabase = getSupabaseServerClient();

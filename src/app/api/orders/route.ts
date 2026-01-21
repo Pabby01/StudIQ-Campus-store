@@ -1,15 +1,16 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { APIError, handleAPIError } from "@/lib/errors";
+import { getSessionWallet } from "@/lib/session";
 
 export async function GET(req: Request) {
     try {
-        const url = new URL(req.url);
-        const address = url.searchParams.get("address");
+        const address = await getSessionWallet(req);
 
         if (!address) {
-            throw new APIError(401, "UNAUTHORIZED", "Wallet address required");
+            throw new APIError(401, "UNAUTHORIZED", "Valid session required to view orders");
         }
 
+        const url = new URL(req.url);
         const status = url.searchParams.get("status") || "";
         const limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 100);
         const offset = parseInt(url.searchParams.get("offset") || "0");

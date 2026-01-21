@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { getSessionWallet } from "@/lib/session";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,10 +18,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const address = await getSessionWallet(req);
+  if (!address) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   const supabase = getSupabaseServerClient();
-  // TODO: Verify ownership using session/auth
-  // For now, assuming RLS policies handle ownership checks or simple deletion
+
+  // Verify ownership via store
+  const { data: product } = await supabase
+    .from("products")
+    .select("store_id, stores(owner_address)")
+    .eq("id", id)
+    .single();
+
+  if (!product) {
+    return Response.json({ error: "Product not found" }, { status: 404 });
+  }
+
+  // @ts-ignore
+  if (product.stores?.owner_address !== address) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { error } = await supabase
     .from("products")
@@ -35,11 +55,31 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const address = await getSessionWallet(req);
+  if (!address) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   const body = await req.json();
   const supabase = getSupabaseServerClient();
 
-  // Basic update logic
+  // Verify ownership via store
+  const { data: product } = await supabase
+    .from("products")
+    .select("store_id, stores(owner_address)")
+    .eq("id", id)
+    .single();
+
+  if (!product) {
+    return Response.json({ error: "Product not found" }, { status: 404 });
+  }
+
+  // @ts-ignore
+  if (product.stores?.owner_address !== address) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { error } = await supabase
     .from("products")
     .update(body)

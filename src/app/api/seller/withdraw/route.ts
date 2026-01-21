@@ -1,17 +1,20 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { sendWithdrawalAdminNotification, sendWithdrawalConfirmation } from "@/lib/email";
+import { getSessionWallet } from "@/lib/session";
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { address, amount, currency = "SOL" } = body;
-
-        if (!address) {
+        const sessionAddress = await getSessionWallet(req);
+        if (!sessionAddress) {
             return Response.json(
-                { ok: false, error: "Wallet address required" },
+                { ok: false, error: "Unauthorized: Active wallet session required" },
                 { status: 401 }
             );
         }
+
+        const body = await req.json();
+        const { amount, currency = "SOL" } = body;
+        const address = sessionAddress;
 
         if (!amount || amount <= 0) {
             return Response.json(

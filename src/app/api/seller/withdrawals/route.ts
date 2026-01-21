@@ -1,13 +1,13 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { getSessionWallet } from "@/lib/session";
 
 export async function GET(req: Request) {
     try {
-        const { searchParams } = new URL(req.url);
-        const address = searchParams.get("address");
+        const address = await getSessionWallet(req);
 
         if (!address) {
             return Response.json(
-                { ok: false, error: "Wallet address required" },
+                { ok: false, error: "Unauthorized: Active wallet session required" },
                 { status: 401 }
             );
         }

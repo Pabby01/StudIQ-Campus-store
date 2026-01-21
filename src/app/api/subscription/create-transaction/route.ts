@@ -2,12 +2,22 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { PLATFORM_WALLET, convertUSDtoSOL, SUBSCRIPTION_PLANS, type PlanName, type BillingCycle } from "@/lib/pricing";
+import { getSessionWallet } from "@/lib/session";
 
 // POST /api/subscription/create-transaction - Create payment transaction
 export async function POST(req: Request) {
     try {
+        const address = await getSessionWallet(req);
+        if (!address) {
+            return NextResponse.json(
+                { error: "Unauthorized: Active wallet session required" },
+                { status: 401 }
+            );
+        }
+
         const body = await req.json();
-        const { plan, cycle, userAddress } = body;
+        const { plan, cycle } = body;
+        const userAddress = address;
 
         if (!userAddress || !plan || !cycle) {
             return NextResponse.json(

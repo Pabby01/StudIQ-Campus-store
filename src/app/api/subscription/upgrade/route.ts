@@ -1,11 +1,21 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { getSessionWallet } from "@/lib/session";
 
 // POST /api/subscription/upgrade - Upgrade user's subscription
 export async function POST(req: Request) {
     try {
+        const address = await getSessionWallet(req);
+        if (!address) {
+            return NextResponse.json(
+                { error: "Unauthorized: Active wallet session required" },
+                { status: 401 }
+            );
+        }
+
         const body = await req.json();
-        const { userAddress, planId, txSignature, paymentMethod } = body;
+        const { planId, txSignature, paymentMethod } = body;
+        const userAddress = address;
 
         if (!userAddress || !planId || !txSignature) {
             return NextResponse.json(

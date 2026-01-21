@@ -1,14 +1,22 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 import { verifyProductOwnership } from "@/lib/ownership";
+import { getSessionWallet } from "@/lib/session";
 
 // PUT /api/products/update - Update product details
 export async function PUT(req: Request) {
     try {
+        const address = await getSessionWallet(req);
+        if (!address) {
+            return NextResponse.json(
+                { error: "Unauthorized: Active wallet session required" },
+                { status: 401 }
+            );
+        }
+
         const body = await req.json();
         const {
             productId,
-            userAddress,
             name,
             description,
             price,
@@ -18,10 +26,11 @@ export async function PUT(req: Request) {
             inventory,
             original_price
         } = body;
+        const userAddress = address;
 
         if (!productId || !userAddress) {
             return NextResponse.json(
-                { error: "Product ID and user address required" },
+                { error: "Product ID required" },
                 { status: 400 }
             );
         }

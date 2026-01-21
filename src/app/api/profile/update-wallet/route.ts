@@ -1,10 +1,13 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { getSessionWallet } from "@/lib/session";
+import { verifyCivicToken } from "@/lib/civic-verify";
 
 export async function POST(req: Request) {
     try {
-        const { email, walletAddress, civicUserId } = await req.json();
+        const body = await req.json();
+        const { email, walletAddress, civicUserId, token } = body;
 
-        console.log("[update-wallet] Received:", { email, walletAddress, civicUserId });
+        console.log("[update-wallet] Received:", { email, walletAddress, civicUserId, hasToken: !!token });
 
         if (!email || !walletAddress) {
             return Response.json(
@@ -14,6 +17,24 @@ export async function POST(req: Request) {
         }
 
         const supabase = getSupabaseServerClient();
+
+        // SECURITY CHECK: Verify identity
+        // Method A: User has an active session for this profile
+        const sessionAddress = await getSessionWallet(req);
+
+        // Method B: User provided a Civic token that matches the email
+        let isCivicVerified = false;
+        if (token) {
+            const civic = await verifyCivicToken(token);
+            if (civic.success && civic.email === email) {
+                isCivicVerified = true;
+            }
+        }
+
+        if (!sessionAddress && !isCivicVerified) {
+            console.error("[update-wallet] Unauthorized attempt for email:", email);
+            return Response.json({ ok: false, error: "Unauthorized: Invalid session or token" }, { status: 401 });
+        }
 
         // First, find the profile by email
         const { data: profile, error: findError } = await supabase

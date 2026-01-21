@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { getSessionWallet } from "@/lib/session";
 
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -18,8 +19,28 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const address = await getSessionWallet(req);
+  if (!address) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const params = await props.params;
   const supabase = getSupabaseServerClient();
+
+  // Verify ownership
+  const { data: store } = await supabase
+    .from("stores")
+    .select("owner_address")
+    .eq("id", params.id)
+    .single();
+
+  if (!store) {
+    return Response.json({ error: "Store not found" }, { status: 404 });
+  }
+
+  if (store.owner_address !== address) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { error } = await supabase
     .from("stores")
@@ -34,9 +55,29 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
 }
 
 export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const address = await getSessionWallet(req);
+  if (!address) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const params = await props.params;
   const body = await req.json();
   const supabase = getSupabaseServerClient();
+
+  // Verify ownership
+  const { data: store } = await supabase
+    .from("stores")
+    .select("owner_address")
+    .eq("id", params.id)
+    .single();
+
+  if (!store) {
+    return Response.json({ error: "Store not found" }, { status: 404 });
+  }
+
+  if (store.owner_address !== address) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { error } = await supabase
     .from("stores")

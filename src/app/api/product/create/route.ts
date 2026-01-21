@@ -1,17 +1,16 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { createProductSchema } from "@/lib/validators";
 import { POINTS } from "@/lib/constants";
+import { getSessionWallet } from "@/lib/session";
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const address = body.address;
-
-  if (!address) {
-    return Response.json(
-      { ok: false, error: "Wallet address required" },
-      { status: 401 }
-    );
+  const sessionAddress = await getSessionWallet(req);
+  if (!sessionAddress) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
+
+  const body = await req.json();
+  const address = sessionAddress; // Use address from session
 
   const parsed = createProductSchema.safeParse(body);
   if (!parsed.success) {
@@ -23,6 +22,21 @@ export async function POST(req: Request) {
   }
 
   const supabase = getSupabaseServerClient();
+
+  // Verify ownership: Does this wallet own this store?
+  const { data: store, error: storeError } = await supabase
+    .from("stores")
+    .select("owner_address")
+    .eq("id", parsed.data.storeId)
+    .single();
+
+  if (storeError || !store) {
+    return Response.json({ ok: false, error: "Store not found" }, { status: 404 });
+  }
+
+  if (store.owner_address !== sessionAddress) {
+    return Response.json({ ok: false, error: "Forbidden: You do not own this store" }, { status: 403 });
+  }
 
   const { data, error } = await supabase.from("products").insert({
     store_id: parsed.data.storeId,
@@ -48,9 +62,13 @@ export async function POST(req: Request) {
 
   // Award 5 points for every product listing
   try {
+    const syncKey = process.env.SYNC_API_KEY;
     await fetch(`${req.headers.get("origin")}/api/points/award`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${syncKey}`
+      },
       body: JSON.stringify({
         address,
         points: POINTS.PRODUCT_LISTED,

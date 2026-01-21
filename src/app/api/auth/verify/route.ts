@@ -107,9 +107,27 @@ export async function POST(req: Request) {
     // Delete used nonce
     await supabase.from("wallet_auth_nonce").delete().eq("address", address);
 
-    // Set session cookie
+    // Create a secure session in the database
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 7); // 7 days
+
+    const { data: session, error: sessionError } = await supabase
+      .from("secure_sessions")
+      .insert({
+        user_address: address,
+        expires_at: expiry.toISOString()
+      })
+      .select("id")
+      .single();
+
+    if (sessionError || !session) {
+      console.error("Failed to create secure session:", sessionError);
+      return Response.json({ ok: false, error: "Authentication failed - session creation error" }, { status: 500 });
+    }
+
+    // Set session cookie with the secure UUID
     const res = NextResponse.json({ ok: true });
-    res.cookies.set("sid", address, {
+    res.cookies.set("sid", session.id, {
       path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -117,7 +135,7 @@ export async function POST(req: Request) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    console.log("Auth successful for:", address);
+    console.log("Auth successful for:", address, "Session:", session.id);
     return res;
   } catch (error) {
     console.error("Auth verification error:", error);

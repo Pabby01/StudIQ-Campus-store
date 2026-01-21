@@ -1,15 +1,20 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { getSessionWallet } from "@/lib/session";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  console.log("Fetching order:", id);
+  const address = await getSessionWallet(req);
+  if (!address) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
+  const { id } = await params;
   const supabase = getSupabaseServerClient();
 
   const { data: order, error } = await supabase
     .from("orders")
     .select(`
       *,
+      stores(owner_address),
       order_items(
         product_id,
         price,
@@ -20,14 +25,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     .eq("id", id)
     .single();
 
-  if (error) {
-    console.error("Order fetch error:", error);
-    return Response.json({ error: "Order not found", details: error }, { status: 404 });
+  if (error || !order) {
+    return Response.json({ error: "Order not found" }, { status: 404 });
   }
 
-  if (!order) {
-    console.error("Order not found in database:", id);
-    return Response.json({ error: "Order not found" }, { status: 404 });
+  // Verify ownership: Buyer or Seller
+  // @ts-ignore
+  const isSeller = order.stores?.owner_address === address;
+  const isBuyer = order.buyer_address === address;
+
+  if (!isBuyer && !isSeller) {
+    return Response.json({ error: "Forbidden: You do not have access to this order" }, { status: 403 });
   }
 
   // Transform order_items to match expected format (items with id field)
@@ -42,7 +50,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   };
 
   delete transformedOrder.order_items; // Remove original field
+  delete transformedOrder.stores; // Remove seller info from response if not needed, or keep for buyer
 
-  console.log("Order found:", transformedOrder.id);
   return Response.json({ order: transformedOrder });
 }

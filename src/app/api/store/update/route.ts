@@ -1,17 +1,16 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { updateStoreSchema } from "@/lib/validators";
 import { encodeGeohash } from "@/lib/geohash";
+import { getSessionWallet } from "@/lib/session";
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const address = body.address;
-
-  if (!address) {
-    return Response.json(
-      { ok: false, error: "Wallet address required" },
-      { status: 401 }
-    );
+  const sessionAddress = await getSessionWallet(req);
+  if (!sessionAddress) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
+
+  const body = await req.json();
+  const address = sessionAddress;
 
   const parsed = updateStoreSchema.safeParse(body);
   if (!parsed.success) {

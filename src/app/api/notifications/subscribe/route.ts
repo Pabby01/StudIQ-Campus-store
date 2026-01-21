@@ -1,9 +1,16 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { getSessionWallet } from "@/lib/session";
 
 export async function POST(req: Request) {
     try {
-        const { subscription, userAddress } = await req.json();
+        const address = await getSessionWallet(req);
+        if (!address) {
+            return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { subscription } = await req.json();
         const { endpoint, keys } = subscription;
+        const userAddress = address;
 
         if (!userAddress || !endpoint || !keys) {
             return Response.json({ ok: false, error: 'Missing required fields' }, { status: 400 });

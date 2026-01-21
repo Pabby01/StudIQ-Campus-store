@@ -1,13 +1,13 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { getSessionWallet } from "@/lib/session";
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
-    const url = new URL(req.url);
-    const address = url.searchParams.get("address");
+    const address = await getSessionWallet(req);
 
     if (!address) {
-        return Response.json({ error: "Address required" }, { status: 400 });
+        return Response.json({ error: "Session required" }, { status: 401 });
     }
 
     const supabase = getSupabaseServerClient();
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     const productIds = wishlist.map(w => w.product_id);
     const { data: products } = await supabase
         .from("products")
-        .select("id, name, price, image_url, rating, category, store_id, stores(name)") // stores join usually safe, or split if paranoid
+        .select("id, name, price, image_url, rating, category, store_id, stores(name)")
         .in("id", productIds);
 
     // 3. Merge
@@ -54,11 +54,17 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { address, productId } = body;
+        const sessionAddress = await getSessionWallet(req);
+        if (!sessionAddress) {
+            return Response.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-        if (!address || !productId) {
-            return Response.json({ error: "Missing address or productId" }, { status: 400 });
+        const body = await req.json();
+        const { productId } = body;
+        const address = sessionAddress;
+
+        if (!productId) {
+            return Response.json({ error: "Missing productId" }, { status: 400 });
         }
 
         const supabase = getSupabaseServerClient();
@@ -76,9 +82,13 @@ export async function POST(req: Request) {
 
         // Award 2 points for wishlist addition
         try {
-            await fetch(`${req.headers.get("origin")}/api/points/award`, {
+            const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL;
+            await fetch(`${origin}/api/points/award`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${process.env.SYNC_API_KEY}`
+                },
                 body: JSON.stringify({
                     address,
                     points: 2,
@@ -97,12 +107,16 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+    const address = await getSessionWallet(req);
+    if (!address) {
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const url = new URL(req.url);
-    const address = url.searchParams.get("address");
     const productId = url.searchParams.get("productId");
 
-    if (!address || !productId) {
-        return Response.json({ error: "Missing parameters" }, { status: 400 });
+    if (!productId) {
+        return Response.json({ error: "Missing productId" }, { status: 400 });
     }
 
     const supabase = getSupabaseServerClient();

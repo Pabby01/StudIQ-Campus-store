@@ -2,6 +2,13 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { awardPointsSchema } from "@/lib/validators";
 
 export async function POST(req: Request) {
+  // Verify internal API key
+  const authHeader = req.headers.get("Authorization");
+  const syncKey = process.env.SYNC_API_KEY;
+  if (authHeader !== `Bearer ${syncKey}`) {
+    return Response.json({ ok: false, error: "Unauthorized: Invalid API Key" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const parsed = awardPointsSchema.safeParse(body);

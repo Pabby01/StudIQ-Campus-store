@@ -8,12 +8,21 @@ import {
 } from "@/lib/solana";
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
+import { getSessionWallet } from "@/lib/session";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function POST(req: Request) {
     try {
+        const address = await getSessionWallet(req);
+        if (!address) {
+            return NextResponse.json(
+                { error: "Unauthorized: Active wallet session required" },
+                { status: 401 }
+            );
+        }
+
         const body = await req.json();
         const { swapId, userSignedTx } = body;
 
@@ -35,6 +44,14 @@ export async function POST(req: Request) {
 
         if (swapError || !swap) {
             return NextResponse.json({ error: "Swap not found" }, { status: 404 });
+        }
+
+        // Verify ownership
+        if (swap.user_address !== address) {
+            return NextResponse.json(
+                { error: "Forbidden: You do not own this swap transaction" },
+                { status: 403 }
+            );
         }
 
         if (swap.status !== "pending") {
