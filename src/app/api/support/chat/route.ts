@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
 
 import { getSupabaseServerClient } from "@/lib/supabase";
 
@@ -26,7 +26,7 @@ Your goal is to help students buy, sell, and navigate the platform with a fun, s
 
 **Escalation:**
 If you can't solve it, say: "Oh no! 🙈 I might need a human for this one. Reach out to our team on WhatsApp:"
-Link: https://wa.me/${process.env.ADMIN_WHATSAPP || "1234567890"}
+Link: https://wa.me/${process.env.ADMIN_WHATSAPP || "+2349020250260"}
 `;
 
 export async function POST(req: Request) {

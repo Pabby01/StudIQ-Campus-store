@@ -152,19 +152,19 @@ export default function SupportChat() {
                     {/* Input Area */}
                     <div className="p-3 bg-white border-t border-slate-100">
                         <div className="relative shadow-sm rounded-xl">
-                            <input
-                                type="text"
+                            <textarea
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Ask Studi anything..."
-                                className="w-full pr-12 pl-4 py-3 bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 rounded-xl text-sm outline-none transition-all placeholder:text-slate-400 text-slate-700 font-medium"
+                                className="w-full pr-12 pl-4 py-3 bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 rounded-xl text-sm outline-none transition-all placeholder:text-slate-400 text-slate-700 font-medium resize-none min-h-[46px] max-h-32"
+                                rows={1}
                                 disabled={isTyping}
                             />
                             <button
                                 onClick={handleSendMessage}
                                 disabled={!input.trim() || isTyping}
-                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 disabled:bg-slate-300 transition-all shadow-sm active:scale-95"
+                                className="absolute right-1.5 bottom-1.5 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 disabled:bg-slate-300 transition-all shadow-sm active:scale-95"
                             >
                                 <Send className="w-4 h-4" />
                             </button>
