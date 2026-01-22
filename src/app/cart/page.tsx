@@ -31,6 +31,7 @@ export default function CartPage() {
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
   const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup">("shipping");
   const [paymentMethod, setPaymentMethod] = useState<"solana" | "pod">("solana");
@@ -78,6 +79,8 @@ export default function CartPage() {
   );
 
   async function checkout() {
+    setFieldErrors({});
+
     // Determine final payment method: if pickup, force POD/POP logic
     const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
     console.log("Starting checkout process...", { finalPaymentMethod, deliveryMethod, isAuthenticated });
@@ -96,15 +99,28 @@ export default function CartPage() {
       return;
     }
 
-    if (!deliveryDetails.name.trim() || !deliveryDetails.email.trim()) {
-      setError("Please enter recipient name and email");
-      return;
+    const newFieldErrors: { [key: string]: string } = {};
+    if (!deliveryDetails.email.trim()) {
+      newFieldErrors.email = "Email is required";
     }
-    if (
-      deliveryMethod === "shipping" &&
-      (!deliveryDetails.address.trim() || !deliveryDetails.city.trim() || !deliveryDetails.zip.trim())
-    ) {
-      setError("Please fill in all shipping details");
+    if (!deliveryDetails.name.trim()) {
+      newFieldErrors.name = "Recipient name is required";
+    }
+    if (deliveryMethod === "shipping") {
+      if (!deliveryDetails.address.trim()) {
+        newFieldErrors.address = "Street address is required";
+      }
+      if (!deliveryDetails.city.trim()) {
+        newFieldErrors.city = "City is required";
+      }
+      if (!deliveryDetails.zip.trim()) {
+        newFieldErrors.zip = "Zip code is required";
+      }
+    }
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
+      setError("Please fix the highlighted fields");
       return;
     }
 
@@ -394,10 +410,9 @@ export default function CartPage() {
                 ))}
               </div>
 
-              {/* Delivery Options */}
               <Card className="p-6">
                 <h3 className="text-lg font-semibold text-black mb-4">Delivery Method</h3>
-                <div className="flex gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
                   <button
                     onClick={() => setDeliveryMethod("shipping")}
                     className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${deliveryMethod === "shipping"
@@ -424,7 +439,7 @@ export default function CartPage() {
                 {deliveryMethod === "shipping" && items.every(i => i.isPodEnabled) && (
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-black mb-3">Payment Method</h3>
-                    <div className="flex gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
                       <button
                         onClick={() => setPaymentMethod("solana")}
                         className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === "solana"
@@ -450,7 +465,7 @@ export default function CartPage() {
                 {paymentMethod === "solana" && deliveryMethod === "shipping" && (
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pay With</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button
                         onClick={() => setPaymentCurrency("SOL")}
                         className={`flex items-center justify-between p-3 rounded-lg border transition-all ${paymentCurrency === "SOL"
@@ -503,12 +518,14 @@ export default function CartPage() {
                     type="email"
                     value={deliveryDetails.email}
                     onChange={(e) => setDeliveryDetails({ ...deliveryDetails, email: e.target.value })}
+                    error={fieldErrors.email}
                   />
                   <Input
                     label="Recipient Name"
                     placeholder="Full Name"
                     value={deliveryDetails.name}
                     onChange={(e) => setDeliveryDetails({ ...deliveryDetails, name: e.target.value })}
+                    error={fieldErrors.name}
                   />
                   {deliveryMethod === "shipping" && (
                     <>
@@ -517,19 +534,22 @@ export default function CartPage() {
                         placeholder="123 Campus Dr"
                         value={deliveryDetails.address}
                         onChange={(e) => setDeliveryDetails({ ...deliveryDetails, address: e.target.value })}
+                        error={fieldErrors.address}
                       />
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Input
                           label="City"
                           placeholder="San Francisco"
                           value={deliveryDetails.city}
                           onChange={(e) => setDeliveryDetails({ ...deliveryDetails, city: e.target.value })}
+                          error={fieldErrors.city}
                         />
                         <Input
                           label="Zip Code"
                           placeholder="94105"
                           value={deliveryDetails.zip}
                           onChange={(e) => setDeliveryDetails({ ...deliveryDetails, zip: e.target.value })}
+                          error={fieldErrors.zip}
                         />
                       </div>
                     </>

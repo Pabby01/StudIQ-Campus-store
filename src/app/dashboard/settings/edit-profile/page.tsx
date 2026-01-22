@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
+import { updateProfileSchema } from "@/lib/validators";
 
 export default function EditProfilePage() {
     const router = useRouter();
@@ -23,6 +24,7 @@ export default function EditProfilePage() {
         level: "",
         phone: "",
     });
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     const address = walletAddress;
 
@@ -67,9 +69,29 @@ export default function EditProfilePage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrors({});
 
         if (!address) {
             toast.error("Error", "Please sign in first");
+            return;
+        }
+
+        const result = updateProfileSchema.safeParse({
+            address,
+            ...formData,
+        });
+
+        if (!result.success) {
+            const fieldErrors = result.error.flatten().fieldErrors as Record<string, string[]>;
+            const formatted: { [key: string]: string } = {};
+            for (const key in fieldErrors) {
+                const messages = fieldErrors[key];
+                if (messages && messages.length > 0) {
+                    formatted[key] = messages[0];
+                }
+            }
+            setErrors(formatted);
+            toast.error("Invalid profile information", "Please fix the highlighted fields");
             return;
         }
 
@@ -122,8 +144,7 @@ export default function EditProfilePage() {
     return (
         <div className="min-h-screen bg-soft-gray-bg px-4 py-6 md:p-8">
             <div className="max-w-2xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                     <Button
                         variant="outline"
                         onClick={() => router.push("/dashboard/settings")}
@@ -147,6 +168,7 @@ export default function EditProfilePage() {
                             value={formData.name}
                             onChange={handleChange}
                             required
+                            error={errors.name}
                         />
 
                         <Input
@@ -157,6 +179,7 @@ export default function EditProfilePage() {
                             value={formData.email}
                             onChange={handleChange}
                             required
+                            error={errors.email}
                         />
 
                         <Input
@@ -166,6 +189,7 @@ export default function EditProfilePage() {
                             value={formData.school}
                             onChange={handleChange}
                             required
+                            error={errors.school}
                         />
 
                         <Input
@@ -175,6 +199,7 @@ export default function EditProfilePage() {
                             value={formData.campus}
                             onChange={handleChange}
                             required
+                            error={errors.campus}
                         />
 
                         <div>
@@ -196,6 +221,9 @@ export default function EditProfilePage() {
                                 <option value="Graduate">Graduate</option>
                                 <option value="Other">Other</option>
                             </select>
+                            {errors.level && (
+                                <p className="mt-1 text-sm text-red-600">{errors.level}</p>
+                            )}
                         </div>
 
                         <Input
@@ -205,6 +233,7 @@ export default function EditProfilePage() {
                             placeholder="+1 (555) 123-4567"
                             value={formData.phone}
                             onChange={handleChange}
+                            error={errors.phone}
                         />
 
                         <div className="flex gap-3 pt-4">

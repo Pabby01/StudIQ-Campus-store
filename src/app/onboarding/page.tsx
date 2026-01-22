@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,6 +9,7 @@ import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import { useToast } from "@/hooks/useToast";
 import { Loader2, CheckCircle, User } from "lucide-react";
+import { updateProfileSchema } from "@/lib/validators";
 
 // Type guard to check if user has a Solana wallet
 function hasWallet(user: any): user is { solana: { address: string; wallet: any } } {
@@ -21,6 +23,7 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   // Avoid hydration issues
   useEffect(() => {
@@ -45,29 +48,43 @@ export default function OnboardingPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
+    setErrors({});
 
     const formData = new FormData(e.currentTarget);
 
-    // Get email from Civic user object
-    const userEmail = user && 'email' in user ? (user.email as string) : formData.get("email") as string;
-    const civicUserId = user && 'sub' in user ? (user.sub as string) : null;
-
-    // Use wallet address if available, otherwise generate a placeholder
+    const userEmail = user && "email" in user ? (user.email as string) : (formData.get("email") as string);
+    const civicUserId = user && "sub" in user ? (user.sub as string) : null;
     const address = walletAddress || `civic_${civicUserId || Date.now()}`;
 
     const profileData = {
       address,
       email: userEmail,
       civic_user_id: civicUserId,
-      name: formData.get("name") as string,
-      school: formData.get("school") as string,
-      campus: formData.get("campus") as string,
-      level: formData.get("level") as string,
-      phone: formData.get("phone") as string,
+      name: (formData.get("name") as string) || "",
+      school: (formData.get("school") as string) || "",
+      campus: (formData.get("campus") as string) || "",
+      level: (formData.get("level") as string) || "",
+      phone: (formData.get("phone") as string) || "",
       verified_email: true,
     };
 
+    const result = updateProfileSchema.safeParse(profileData);
+
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors as Record<string, string[]>;
+      const formatted: { [key: string]: string } = {};
+      for (const key in fieldErrors) {
+        const messages = fieldErrors[key];
+        if (messages && messages.length > 0) {
+          formatted[key] = messages[0];
+        }
+      }
+      setErrors(formatted);
+      toast.error("Invalid profile information", "Please fix the highlighted fields");
+      return;
+    }
+
+    setLoading(true);
     console.log("[Onboarding] Submitting profile:", profileData);
 
     try {
@@ -146,6 +163,7 @@ export default function OnboardingPage() {
             name="name"
             placeholder="Your full name"
             required
+            error={errors.name}
           />
 
           <Input
@@ -157,6 +175,7 @@ export default function OnboardingPage() {
             readOnly={!!userEmail}
             className={userEmail ? "bg-gray-50" : ""}
             required={!userEmail}
+            error={errors.email}
           />
 
           <Input
@@ -164,6 +183,7 @@ export default function OnboardingPage() {
             name="school"
             placeholder="Your school name"
             required
+            error={errors.school}
           />
 
           <Input
@@ -171,6 +191,7 @@ export default function OnboardingPage() {
             name="campus"
             placeholder="Campus location"
             required
+            error={errors.campus}
           />
 
           <Input
@@ -178,6 +199,7 @@ export default function OnboardingPage() {
             name="level"
             placeholder="e.g. 200 Level, Graduate"
             required
+            error={errors.level}
           />
 
           <Input
@@ -186,6 +208,7 @@ export default function OnboardingPage() {
             type="tel"
             placeholder="Your phone number"
             required
+            error={errors.phone}
           />
 
           <Button

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState } from "react";
@@ -24,6 +25,7 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
   const [images, setImages] = useState<string[]>(initial?.images || (initial?.imageUrl ? [initial.imageUrl] : []));
   const [category, setCategory] = useState(initial?.category || "");
   const [currency, setCurrency] = useState(initial?.currency || "SOL");
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const router = useRouter();
   const toast = useToast();
   const { walletAddress, isAuthenticated } = useCivicWallet();
@@ -31,29 +33,45 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
-
     if (!walletAddress) {
       toast.error("Error", "Please wait for your wallet to be ready");
       return;
     }
 
-    setLoading(true);
     const formData = new FormData(form);
+    const newErrors: { [key: string]: string } = {};
 
-    // Validate images
-    if (images.length === 0) {
-      toast.error("Error", "At least one image is required");
-      setLoading(false);
+    const name = String(formData.get("name") || "").trim();
+    const description = String(formData.get("description") || "").trim();
+    const categoryValue = String(formData.get("category") || "").trim();
+    const priceValue = String(formData.get("price") || "").trim();
+    const currencyValue = String(formData.get("currency") || "").trim();
+    const inventoryValue = String(formData.get("inventory") || "").trim();
+
+    if (!name) newErrors.name = "Product name is required";
+    if (!description) newErrors.description = "Description is required";
+    if (!categoryValue) newErrors.category = "Category is required";
+    if (!priceValue || Number(priceValue) <= 0) newErrors.price = "Enter a valid price";
+    if (!currencyValue) newErrors.currency = "Currency is required";
+    if (!inventoryValue || Number(inventoryValue) <= 0) newErrors.inventory = "Enter available quantity";
+    if (images.length === 0) newErrors.images = "At least one image is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error("Missing information", "Please fix the highlighted fields");
       return;
     }
 
+    setErrors({});
+    setLoading(true);
+
     const basePayload = {
-      name: formData.get("name"),
-      description: String(formData.get("description")) || undefined,
-      category: formData.get("category"),
-      price: Number(formData.get("price")),
-      currency: formData.get("currency"),
-      inventory: Number(formData.get("inventory")),
+      name,
+      description,
+      category: categoryValue,
+      price: Number(priceValue),
+      currency: currencyValue,
+      inventory: Number(inventoryValue),
       imageUrl: images[0], // Main image
       images: images,      // All images
       isPodEnabled: formData.get("isPodEnabled") === "true",
@@ -120,7 +138,6 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
     <Card>
       <h3 className="text-lg font-semibold text-black mb-6">{productId ? "Edit Product" : "Add New Product"}</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Product Image */}
         <div>
           <label className="block text-sm font-medium text-black mb-2">
             Product Images (Max 10)
@@ -135,14 +152,17 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
           <p className="text-xs text-muted-text mt-2">
             Add at least one image. The first image will be the main product photo.
           </p>
+          {errors.images && (
+            <p className="mt-1 text-sm text-red-600">{errors.images}</p>
+          )}
         </div>
 
-        {/* Product Name */}
         <Input
           name="name"
           label="Product Name"
           placeholder="Enter product name"
           defaultValue={initial?.name}
+          error={errors.name}
           required
         />
 
@@ -160,7 +180,6 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
           </label>
         </div>
 
-        {/* Category Dropdown */}
         <div>
           <label className="block text-sm font-medium text-black mb-2">
             Category <span className="text-red-600">*</span>
@@ -170,7 +189,10 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             required
-            className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            className={`w-full px-4 py-2 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 ${errors.category
+              ? "border-red-500 focus:ring-red-500"
+              : "border-border-gray focus:ring-primary-blue"
+            }`}
           >
             <option value="">Select a category</option>
             {CATEGORIES.map((cat) => (
@@ -179,6 +201,9 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
               </option>
             ))}
           </select>
+          {errors.category && (
+            <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+          )}
         </div>
 
         <div>
@@ -190,14 +215,19 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
             placeholder="Describe your product..."
             defaultValue={initial?.description}
             rows={4}
-            className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue resize-none overflow-y-auto max-h-32"
+            className={`w-full px-4 py-2 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 resize-none overflow-y-auto max-h-32 ${errors.description
+              ? "border-red-500 focus:ring-red-500"
+              : "border-border-gray focus:ring-primary-blue"
+            }`}
             required
           />
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+          )}
         </div>
 
-        {/* Price & Currency */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-2">
             <Input
               name="price"
               label="Price"
@@ -205,6 +235,7 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
               step="0.01"
               placeholder="0.00"
               defaultValue={initial?.price}
+              error={errors.price}
               required
             />
           </div>
@@ -217,7 +248,10 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
               required
-              className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              className={`w-full px-4 py-2 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 ${errors.currency
+                ? "border-red-500 focus:ring-red-500"
+                : "border-border-gray focus:ring-primary-blue"
+              }`}
             >
               {CURRENCIES.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -227,6 +261,10 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
             </select>
           </div>
         </div>
+
+        {errors.currency && (
+          <p className="mt-1 text-sm text-red-600">{errors.currency}</p>
+        )}
 
         {/* Original Price (Optional) */}
         <div>
@@ -241,13 +279,13 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
           <p className="text-xs text-muted-text mt-1">If set higher than price, a discount badge will be shown</p>
         </div>
 
-        {/* Inventory */}
         <Input
           name="inventory"
           label="Inventory"
           type="number"
           placeholder="Available quantity"
           defaultValue={initial?.inventory}
+          error={errors.inventory}
           required
         />
 
