@@ -12,6 +12,7 @@ import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
+import { checkoutCreateSchema } from "@/lib/validators";
 
 type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifying" | "success" | "error";
 
@@ -85,40 +86,60 @@ export default function CartPage() {
     const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
     console.log("Starting checkout process...", { finalPaymentMethod, deliveryMethod, isAuthenticated });
 
-    // Check if user is authenticated
+    if (items.length === 0) {
+      setError("Your cart is empty");
+      return;
+    }
+
     if (!isAuthenticated) {
       console.log("Checkout blocked: Not authenticated");
       setShowAuthModal(true);
       return;
     }
 
-    // For crypto payment, wallet must be ready (Only if final method is solana)
     if (finalPaymentMethod === "solana" && !walletAddress) {
       console.log("Checkout blocked: Wallet not ready for crypto");
       setError("Wallet not ready for crypto payment. Please wait or use Pay on Delivery.");
       return;
     }
 
-    const newFieldErrors: { [key: string]: string } = {};
-    if (!deliveryDetails.email.trim()) {
-      newFieldErrors.email = "Email is required";
-    }
-    if (!deliveryDetails.name.trim()) {
-      newFieldErrors.name = "Recipient name is required";
-    }
-    if (deliveryMethod === "shipping") {
-      if (!deliveryDetails.address.trim()) {
-        newFieldErrors.address = "Street address is required";
-      }
-      if (!deliveryDetails.city.trim()) {
-        newFieldErrors.city = "City is required";
-      }
-      if (!deliveryDetails.zip.trim()) {
-        newFieldErrors.zip = "Zip code is required";
-      }
-    }
+    const payload = {
+      buyer: walletAddress || "",
+      storeId: items[0]?.storeId || "",
+      items: items.map((i) => ({ productId: i.id, qty: i.qty })),
+      currency: (items[0]?.currency || "SOL") as "SOL" | "USDC",
+      deliveryMethod,
+      deliveryDetails: {
+        ...deliveryDetails,
+        address: deliveryMethod === "pickup" ? "pickup" : deliveryDetails.address,
+        city: deliveryMethod === "pickup" ? "pickup" : deliveryDetails.city,
+        zip: deliveryMethod === "pickup" ? "00000" : deliveryDetails.zip,
+      },
+      paymentMethod: finalPaymentMethod,
+      buyerEmail: deliveryDetails.email,
+    };
 
-    if (Object.keys(newFieldErrors).length > 0) {
+    const validation = checkoutCreateSchema.safeParse(payload);
+
+    if (!validation.success) {
+      const flattened = validation.error.flatten();
+      const newFieldErrors: { [key: string]: string } = {};
+
+      if (flattened.fieldErrors.buyerEmail?.[0]) {
+        newFieldErrors.email = flattened.fieldErrors.buyerEmail[0];
+      }
+
+      const detailsErrors = flattened.fieldErrors.deliveryDetails;
+      if (detailsErrors && detailsErrors[0]) {
+        if (!deliveryDetails.address.trim()) newFieldErrors.address = "Street address is required";
+        if (!deliveryDetails.city.trim()) newFieldErrors.city = "City is required";
+        if (!deliveryDetails.zip.trim()) newFieldErrors.zip = "Zip code is required";
+      }
+
+      if (!deliveryDetails.name.trim()) {
+        newFieldErrors.name = "Recipient name is required";
+      }
+
       setFieldErrors(newFieldErrors);
       setError("Please fix the highlighted fields");
       return;
@@ -128,19 +149,7 @@ export default function CartPage() {
     setError(null);
 
     try {
-      // Step 1: Create order
       console.log("Creating order with payment method:", finalPaymentMethod);
-
-      const payload = {
-        buyer: walletAddress,
-        storeId: items[0]?.storeId || "",
-        items: items.map((i) => ({ productId: i.id, qty: i.qty })),
-        currency: (items[0]?.currency || "SOL") as "SOL" | "USDC",
-        deliveryMethod,
-        deliveryDetails,
-        paymentMethod: finalPaymentMethod,
-        buyerEmail: deliveryDetails.email,
-      };
 
       const createRes = await fetch("/api/checkout/create", {
         method: "POST",
