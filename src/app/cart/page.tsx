@@ -96,12 +96,14 @@ export default function CartPage() {
       return;
     }
 
-    // Validate Delivery Info
-    if (!deliveryDetails.name || !deliveryDetails.email) {
+    if (!deliveryDetails.name.trim() || !deliveryDetails.email.trim()) {
       setError("Please enter recipient name and email");
       return;
     }
-    if (deliveryMethod === "shipping" && (!deliveryDetails.address || !deliveryDetails.city || !deliveryDetails.zip)) {
+    if (
+      deliveryMethod === "shipping" &&
+      (!deliveryDetails.address.trim() || !deliveryDetails.city.trim() || !deliveryDetails.zip.trim())
+    ) {
       setError("Please fill in all shipping details");
       return;
     }

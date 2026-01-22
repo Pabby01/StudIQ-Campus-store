@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-// ... imports
 import { MessageSquare, X, Send, User, Sparkles, Loader2, GraduationCap } from "lucide-react";
 
 interface Message {
@@ -18,21 +17,15 @@ export default function SupportChat() {
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const [hasUnread, setHasUnread] = useState(false);
-    const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
-    const [dragging, setDragging] = useState(false);
-    const [dragMoved, setDragMoved] = useState(false);
-    const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-    const containerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // ... scroll effect
 
-    const handleSendMessage = async () => {
-        if (!input.trim() || isTyping) return;
-
-        const userMsg = input.trim();
-        setInput("");
-        setMessages(prev => [...prev, { role: "user", content: userMsg }]);
+    const sendMessage = async (userMsg: string) => {
+        if (!userMsg.trim() || isTyping) return;
+        const text = userMsg.trim();
+        setInput(prev => (prev === text ? "" : prev));
+        setMessages(prev => [...prev, { role: "user", content: text }]);
         setIsTyping(true);
 
         try {
@@ -40,7 +33,7 @@ export default function SupportChat() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    message: userMsg,
+                    message: text,
                     history: messages.map(m => ({ role: m.role, content: m.content }))
                 })
             });
@@ -60,6 +53,13 @@ export default function SupportChat() {
         }
     };
 
+    const handleSendMessage = async () => {
+        if (!input.trim()) return;
+        const userMsg = input.trim();
+        setInput("");
+        await sendMessage(userMsg);
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -73,15 +73,6 @@ export default function SupportChat() {
     const whatsappLink = `https://wa.me/${adminWhatsApp}?text=${customMessage}`;
 
     useEffect(() => {
-        if (!position) {
-            setPosition({
-                x: Math.max(16, window.innerWidth - 380),
-                y: Math.max(16, window.innerHeight - 560),
-            });
-        }
-    }, [position]);
-
-    useEffect(() => {
         if (isOpen) setHasUnread(false);
     }, [isOpen]);
 
@@ -91,68 +82,19 @@ export default function SupportChat() {
         if (last.role === "assistant") setHasUnread(true);
     }, [messages, isOpen]);
 
-    useEffect(() => {
-        function handleResize() {
-            if (!position) return;
-            const width = containerRef.current?.offsetWidth ?? 360;
-            const height = containerRef.current?.offsetHeight ?? 540;
-            const maxX = Math.max(16, window.innerWidth - width - 16);
-            const maxY = Math.max(16, window.innerHeight - height - 16);
-            setPosition({
-                x: Math.min(position.x, maxX),
-                y: Math.min(position.y, maxY),
-            });
-        }
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, [position]);
-
-    const startDrag = (e: React.PointerEvent) => {
-        if (!containerRef.current || !position) return;
-        setDragging(true);
-        dragOffset.current = {
-            x: e.clientX - position.x,
-            y: e.clientY - position.y,
-        };
-        (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    };
-
-    const onDrag = (e: React.PointerEvent) => {
-        if (!dragging || !position || !containerRef.current) return;
-        const width = containerRef.current.offsetWidth;
-        const height = containerRef.current.offsetHeight;
-        const maxX = Math.max(16, window.innerWidth - width - 16);
-        const maxY = Math.max(16, window.innerHeight - height - 16);
-        const nextX = Math.min(Math.max(16, e.clientX - dragOffset.current.x), maxX);
-        const nextY = Math.min(Math.max(16, e.clientY - dragOffset.current.y), maxY);
-        if (Math.abs(nextX - position.x) > 2 || Math.abs(nextY - position.y) > 2) {
-            setDragMoved(true);
-        }
-        setPosition({ x: nextX, y: nextY });
-    };
-
-    const endDrag = (e: React.PointerEvent) => {
-        setDragging(false);
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-        setTimeout(() => setDragMoved(false), 0);
-    };
+    const quickPrompts: string[] = [
+        "How do I sell an item on StudIQ Campus Store?",
+        "How does delivery and returns work on StudIQ?",
+        "How can I earn and use points and subscriptions?"
+    ];
 
     return (
-        <div
-            ref={containerRef}
-            className="fixed z-50 flex flex-col items-end pointer-events-none font-sans"
-            style={position ? { left: position.x, top: position.y } : undefined}
-            onPointerMove={onDrag}
-            onPointerUp={endDrag}
-        >
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none font-sans">
             {/* Chat Window */}
             {isOpen && (
-                <div className="bg-white rounded-3xl shadow-2xl w-[92vw] max-w-[360px] h-[70vh] max-h-[560px] mb-4 border border-indigo-50 pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
+                <div className="bg-white rounded-3xl shadow-2xl w-[340px] max-w-[92vw] h-[500px] max-h-[70vh] mb-4 border border-indigo-50 pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
                     {/* Header with Gradient */}
-                    <div
-                        className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 flex justify-between items-center text-white shadow-md cursor-move select-none touch-none"
-                        onPointerDown={startDrag}
-                    >
+                    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 flex justify-between items-center text-white shadow-md">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30">
                                 <GraduationCap className="w-6 h-6 text-white" />
@@ -176,7 +118,6 @@ export default function SupportChat() {
                         </button>
                     </div>
 
-                    {/* Messages Area */}
                     <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-4 min-h-0">
                         {messages.map((msg, idx) => (
                             <div
@@ -215,6 +156,19 @@ export default function SupportChat() {
                                 </div>
                             </div>
                         )}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {quickPrompts.map((q) => (
+                                <button
+                                    key={q}
+                                    type="button"
+                                    onClick={() => void sendMessage(q)}
+                                    className="px-3 py-1 text-xs rounded-full border border-indigo-100 bg-white text-indigo-700 hover:bg-indigo-50 font-medium transition-colors"
+                                    disabled={isTyping}
+                                >
+                                    {q}
+                                </button>
+                            ))}
+                        </div>
                         <div ref={messagesEndRef} />
                     </div>
 
@@ -238,7 +192,7 @@ export default function SupportChat() {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Ask Studi anything..."
-                                className="w-full pr-12 pl-4 py-3 bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 rounded-xl text-sm outline-none transition-all placeholder:text-slate-400 text-slate-700 font-medium resize-none min-h-[46px] max-h-32"
+                                className="w-full pr-12 pl-4 py-3 bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 rounded-xl text-sm outline-none transition-all placeholder:text-slate-400 text-slate-700 font-medium resize-none min-h-[46px] max-h-32 overflow-y-auto"
                                 rows={1}
                                 disabled={isTyping}
                             />
@@ -257,12 +211,8 @@ export default function SupportChat() {
             {/* Trigger Button */}
             {!isOpen && (
                 <button
-                    onClick={() => {
-                        if (dragMoved) return;
-                        setIsOpen(true);
-                    }}
+                    onClick={() => setIsOpen(true)}
                     className="pointer-events-auto bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-4 rounded-full shadow-lg shadow-indigo-500/40 transition-all hover:scale-110 active:scale-95 group relative border-2 border-white/20"
-                    onPointerDown={startDrag}
                 >
                     <div className="relative">
                         <MessageSquare className="w-7 h-7" />

@@ -181,7 +181,6 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
           </select>
         </div>
 
-        {/* Description */}
         <div>
           <label className="block text-sm font-medium text-black mb-2">
             Description
@@ -191,7 +190,8 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
             placeholder="Describe your product..."
             defaultValue={initial?.description}
             rows={4}
-            className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue resize-none"
+            className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue resize-none overflow-y-auto max-h-32"
+            required
           />
         </div>
 
@@ -216,6 +216,7 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
               name="currency"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
+              required
               className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
             >
               {CURRENCIES.map((c) => (

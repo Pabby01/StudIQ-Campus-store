@@ -23,11 +23,11 @@ export default function AuthPage() {
     <div className="mx-auto max-w-md space-y-6 p-6">
       <h1 className="text-2xl font-semibold">{mode === "signin" ? "Sign In" : "Sign Up"}</h1>
       <form action={handleSubmit} className="space-y-3">
-        <input name="email" type="email" placeholder="University email" className="w-full rounded-md border p-2" />
+        <input name="email" type="email" placeholder="University email" className="w-full rounded-md border p-2" required />
         {mode === "signup" && (
-          <input name="university" type="text" placeholder="University" className="w-full rounded-md border p-2" />
+          <input name="university" type="text" placeholder="University" className="w-full rounded-md border p-2" required />
         )}
-        <input name="password" type="password" placeholder="Password" className="w-full rounded-md border p-2" />
+        <input name="password" type="password" placeholder="Password" className="w-full rounded-md border p-2" required />
         {error && <div className="text-sm text-red-600">{error}</div>}
         <button className="w-full rounded-md bg-black p-2 text-white" type="submit">
           {mode === "signin" ? "Sign In" : "Create Account"}
@@ -37,4 +37,3 @@ export default function AuthPage() {
     </div>
   );
 }
-

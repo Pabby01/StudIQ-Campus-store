@@ -156,6 +156,7 @@ export default function OnboardingPage() {
             defaultValue={userEmail}
             readOnly={!!userEmail}
             className={userEmail ? "bg-gray-50" : ""}
+            required={!userEmail}
           />
 
           <Input
@@ -176,6 +177,7 @@ export default function OnboardingPage() {
             label="Level"
             name="level"
             placeholder="e.g. 200 Level, Graduate"
+            required
           />
 
           <Input
@@ -183,6 +185,7 @@ export default function OnboardingPage() {
             name="phone"
             type="tel"
             placeholder="Your phone number"
+            required
           />
 
           <Button

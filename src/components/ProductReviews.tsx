@@ -109,7 +109,7 @@ export default function ProductReviews({ productId, onReviewAdded }: { productId
                         <textarea
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
-                            className="w-full p-3 border border-border-gray rounded-lg focus:ring-2 focus:ring-primary-blue outline-none"
+                            className="w-full p-3 border border-border-gray rounded-lg focus:ring-2 focus:ring-primary-blue outline-none resize-none overflow-y-auto max-h-32"
                             rows={3}
                             placeholder="Share your thoughts..."
                             required

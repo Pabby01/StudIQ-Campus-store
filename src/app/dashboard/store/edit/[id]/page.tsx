@@ -200,7 +200,7 @@ export default function EditStorePage() {
                                 onChange={handleChange}
                                 required
                                 rows={4}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent resize-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent resize-none overflow-y-auto max-h-40"
                                 placeholder="Describe your store and what you sell..."
                             />
                         </div>

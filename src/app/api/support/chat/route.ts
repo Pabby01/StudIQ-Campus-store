@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { CATEGORIES } from "@/lib/categories";
 
-// Base prompt is static, but dynamic context will be prepended
 const BASE_SYSTEM_PROMPT = `
 You are **Studi** (short for StudIQ), the friendly and knowledgeable AI assistant for the **StudIQ Campus Store**.
 Your goal is to help students buy, sell, and navigate the platform with a fun, supportive, and "student-inclined" vibe.
@@ -19,6 +18,8 @@ Your goal is to help students buy, sell, and navigate the platform with a fun, s
 - **Payments:** Secure Solana payments or "Pay on Delivery".
 - **Delivery:** Shipping or Pickup.
 - **Rewards:** Earn points for every trade!
+  Examples: +150 for completing profile, +100 for first purchase, +5 per product listed,
+  +10 per completed order or review, milestone bonuses for 10/50/100 sales.
 - **Support:** For disputes/technical issues, escalate to Admin.
 
 **Escalation:**
@@ -84,6 +85,8 @@ export async function POST(req: Request) {
 - Stores: /stores
 - Orders: /dashboard/orders
 - Pricing: /pricing
+- FAQ: /faq
+- Track Order: /track
 `;
         contextString += `\n**Platform Capabilities:**
 - Create stores, list products, and manage inventory
@@ -91,6 +94,18 @@ export async function POST(req: Request) {
 - Earn points and view leaderboard
 - Profile management, reviews, wishlists, and notifications
 `;
+
+        contextString += `\n**Pricing Plans Overview (from /pricing):**
+- Free: 5% fee, 1 store, unlimited products, basic analytics, email support, marketplace access.
+- Premium: 2% fee, up to 5 stores, everything in Free, premium badge, priority search, 2x points, advanced analytics, priority support.
+- Enterprise: 0% fee, up to 20 stores, everything in Premium, dedicated account manager, API access, custom branding, advanced fraud protection.
+`;
+
+        contextString += `\n**How to Help Users:**
+- Explain how to buy, sell, track orders, and earn points.
+- Point them to the right page using the URLs above.
+- Keep answers consistent with FAQ (/faq) and pricing (/pricing) content.
+- Be concise, clear, and student-friendly.`;
 
         const finalSystemPrompt = BASE_SYSTEM_PROMPT + contextString;
 

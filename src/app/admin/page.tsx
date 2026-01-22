@@ -814,7 +814,7 @@ export default function AdminPage() {
                                     <textarea
                                         value={rejectReason}
                                         onChange={(e) => setRejectReason(e.target.value)}
-                                        className="w-full px-4 py-2 border border-border-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                                        className="w-full px-4 py-2 border border-border-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue resize-none overflow-y-auto max-h-32"
                                         placeholder="Reason for rejection..."
                                         rows={3}
                                     />

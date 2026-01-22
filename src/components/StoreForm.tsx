@@ -129,7 +129,6 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
           </select>
         </div>
 
-        {/* Description */}
         <div>
           <label className="block text-sm font-medium text-black mb-2">
             Description
@@ -138,7 +137,8 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
             name="description"
             placeholder="Tell customers about your store..."
             rows={4}
-            className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue resize-none"
+            className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue resize-none overflow-y-auto max-h-32"
+            required
           />
         </div>
 
