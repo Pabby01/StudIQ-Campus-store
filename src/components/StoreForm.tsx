@@ -21,6 +21,7 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
   const [loading, setLoading] = useState(false);
   const [bannerUrl, setBannerUrl] = useState("");
   const [category, setCategory] = useState("");
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const toast = useToast();
 
   // Use Civic wallet hook for unified auth
@@ -28,20 +29,37 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setErrors({});
 
     if (!walletAddress) {
       toast.error("Wallet not ready", "Please wait for your wallet to be created");
       return;
     }
 
+    const formData = new FormData(e.currentTarget);
+    const newErrors: { [key: string]: string } = {};
+
+    const name = String(formData.get("name") || "").trim();
+    const description = String(formData.get("description") || "").trim();
+    const categoryValue = category.trim();
+
+    if (!name) newErrors.name = "Store name is required";
+    if (!description) newErrors.description = "Description is required";
+    if (!categoryValue) newErrors.category = "Category is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error("Missing information", "Please fix the highlighted fields");
+      return;
+    }
+
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
     const payload = {
       address: walletAddress,
-      name: String(formData.get("name")),
-      description: String(formData.get("description")) || undefined,
-      category: category || "Other",
+      name,
+      description: description || undefined,
+      category: categoryValue || "Other",
       bannerUrl: bannerUrl || undefined,
       lat: 0, // Default coordinates - you can add geolocation later
       lon: 0,
@@ -108,6 +126,7 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
           label="Store Name"
           placeholder="Enter your store name"
           required
+          error={errors.name}
         />
 
         {/* Category Dropdown */}
@@ -119,7 +138,10 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             required
-            className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            className={`w-full px-4 py-2 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 ${errors.category
+              ? "border-red-500 focus:ring-red-500"
+              : "border-border-gray focus:ring-primary-blue"
+            }`}
           >
             <option value="">Select a category</option>
             {CATEGORIES.map((cat) => (
@@ -128,6 +150,9 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
               </option>
             ))}
           </select>
+          {errors.category && (
+            <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+          )}
         </div>
 
         <div>
@@ -138,9 +163,15 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
             name="description"
             placeholder="Tell customers about your store..."
             rows={4}
-            className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue resize-none overflow-y-auto max-h-32"
+            className={`w-full px-4 py-2 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 resize-none overflow-y-auto max-h-32 ${errors.description
+              ? "border-red-500 focus:ring-red-500"
+              : "border-border-gray focus:ring-primary-blue"
+            }`}
             required
           />
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+          )}
         </div>
 
         {/* Location */}
@@ -148,6 +179,7 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
           name="location"
           label="Location (optional)"
           placeholder="e.g., Building A, Room 101"
+          error={errors.location}
         />
 
         {/* Submit Button */}

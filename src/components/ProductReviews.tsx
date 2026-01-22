@@ -21,6 +21,7 @@ export default function ProductReviews({ productId, onReviewAdded }: { productId
     const [rating, setRating] = useState(5);
     const [content, setContent] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     const { walletAddress, isAuthenticated } = useCivicWallet();
     const { success, error } = useToast();
@@ -43,8 +44,21 @@ export default function ProductReviews({ productId, onReviewAdded }: { productId
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrors({});
+
         if (!walletAddress) {
             error("Error", "Please sign in to leave a review");
+            return;
+        }
+
+        const newErrors: { [key: string]: string } = {};
+
+        if (!content.trim()) newErrors.content = "Review cannot be empty";
+        if (rating < 1 || rating > 5) newErrors.rating = "Please select a rating";
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            error("Invalid review", "Please fix the highlighted fields");
             return;
         }
 
@@ -103,17 +117,26 @@ export default function ProductReviews({ productId, onReviewAdded }: { productId
                                 </button>
                             ))}
                         </div>
+                        {errors.rating && (
+                            <p className="mt-1 text-sm text-red-600">{errors.rating}</p>
+                        )}
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-2">Review</label>
                         <textarea
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
-                            className="w-full p-3 border border-border-gray rounded-lg focus:ring-2 focus:ring-primary-blue outline-none resize-none overflow-y-auto max-h-32"
+                            className={`w-full p-3 border rounded-lg focus:ring-2 outline-none resize-none overflow-y-auto max-h-32 ${errors.content
+                                ? "border-red-500 focus:ring-red-500"
+                                : "border-border-gray focus:ring-primary-blue"
+                            }`}
                             rows={3}
                             placeholder="Share your thoughts..."
                             required
                         />
+                        {errors.content && (
+                            <p className="mt-1 text-sm text-red-600">{errors.content}</p>
+                        )}
                     </div>
                     <Button type="submit" disabled={submitting}>
                         {submitting ? "Submitting..." : "Post Review"}
