@@ -9,6 +9,11 @@ interface Message {
     content: string;
 }
 
+const cleanAssistantText = (text: string) => {
+    if (!text) return "";
+    return text.replace(/[*`]+/g, "");
+};
+
 export default function SupportChat() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
@@ -43,7 +48,9 @@ export default function SupportChat() {
             if (data.error) {
                 setMessages(prev => [...prev, { role: "assistant", content: "Oof, my brain froze! 🥶 Please try again in a sec." }]);
             } else {
-                setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+                const replyText = typeof data.reply === "string" ? data.reply : "";
+                const cleanedReply = cleanAssistantText(replyText);
+                setMessages(prev => [...prev, { role: "assistant", content: cleanedReply }]);
             }
         } catch (error) {
             console.error("Chat error:", error);
@@ -139,7 +146,7 @@ export default function SupportChat() {
                                         }`}
                                 >
                                     <div className="whitespace-pre-wrap font-medium">
-                                        {msg.content}
+                                        {msg.role === "assistant" ? cleanAssistantText(msg.content) : msg.content}
                                     </div>
                                 </div>
                             </div>
