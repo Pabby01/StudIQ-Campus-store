@@ -23,6 +23,7 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
     const [amount, setAmount] = useState("");
     const [status, setStatus] = useState<"idle" | "creating" | "signing" | "sending" | "success" | "error">("idle");
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
     const solToken = tokens.find(t => t.symbol === "SOL");
     const solBalance = solToken?.balance || 0;
@@ -30,7 +31,34 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!walletAddress || !signTransaction) return;
+        setFieldErrors({});
+
+        if (!walletAddress || !signTransaction) {
+            setError("Wallet not ready. Please connect your wallet and try again.");
+            setStatus("error");
+            return;
+        }
+
+        const newErrors: { [key: string]: string } = {};
+        const trimmedRecipient = recipient.trim();
+        const amountValue = Number(amount);
+
+        if (!trimmedRecipient) {
+            newErrors.recipient = "Recipient address is required";
+        }
+
+        if (!amount || Number.isNaN(amountValue) || amountValue <= 0) {
+            newErrors.amount = "Enter a valid amount greater than zero";
+        } else if (amountValue > solBalance) {
+            newErrors.amount = "Amount exceeds available balance";
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setFieldErrors(newErrors);
+            setError("Please fix the highlighted fields");
+            setStatus("error");
+            return;
+        }
 
         setStatus("creating");
         setError(null);
@@ -138,6 +166,7 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
                                         value={recipient}
                                         onChange={(e) => setRecipient(e.target.value)}
                                         disabled={status !== "idle" && status !== "error"}
+                                        error={fieldErrors.recipient}
                                     />
                                 </div>
                             </div>
@@ -164,6 +193,7 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
                                         disabled={status !== "idle" && status !== "error"}
+                                        error={fieldErrors.amount}
                                     />
                                 </div>
                                 <div className="flex justify-between items-center px-1">

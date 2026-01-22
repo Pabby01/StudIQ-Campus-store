@@ -25,6 +25,7 @@ export default function EditStorePage() {
         category: "",
         banner_url: ""
     });
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     const address = walletAddress;
 
@@ -76,9 +77,22 @@ export default function EditStorePage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrors({});
 
         if (!address) {
             toast.error("Please sign in first");
+            return;
+        }
+
+        const newErrors: { [key: string]: string } = {};
+
+        if (!formData.name.trim()) newErrors.name = "Store name is required";
+        if (!formData.description.trim()) newErrors.description = "Description is required";
+        if (!formData.category.trim()) newErrors.category = "Category is required";
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            toast.error("Missing information", "Please fix the highlighted fields");
             return;
         }
 
@@ -167,9 +181,15 @@ export default function EditStorePage() {
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${errors.name
+                                    ? "border-red-500 focus:ring-red-500"
+                                    : "border-gray-300 focus:ring-primary-blue"
+                                }`}
                                 placeholder="My Awesome Store"
                             />
+                            {errors.name && (
+                                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                            )}
                         </div>
 
                         <div>
@@ -181,13 +201,19 @@ export default function EditStorePage() {
                                 value={formData.category}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${errors.category
+                                    ? "border-red-500 focus:ring-red-500"
+                                    : "border-gray-300 focus:ring-primary-blue"
+                                }`}
                             >
                                 <option value="">Select a category</option>
                                 {CATEGORIES.map((cat) => (
                                     <option key={cat} value={cat}>{cat}</option>
                                 ))}
                             </select>
+                            {errors.category && (
+                                <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+                            )}
                         </div>
 
                         <div>
@@ -200,9 +226,15 @@ export default function EditStorePage() {
                                 onChange={handleChange}
                                 required
                                 rows={4}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent resize-none overflow-y-auto max-h-40"
+                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent resize-none overflow-y-auto max-h-40 ${errors.description
+                                    ? "border-red-500 focus:ring-red-500"
+                                    : "border-gray-300 focus:ring-primary-blue"
+                                }`}
                                 placeholder="Describe your store and what you sell..."
                             />
+                            {errors.description && (
+                                <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                            )}
                         </div>
 
                         <div>
