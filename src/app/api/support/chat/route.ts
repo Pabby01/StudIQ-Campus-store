@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { CATEGORIES } from "@/lib/categories";
+import { getSessionWallet } from "@/lib/session";
+import { getBalance } from "@/lib/solana";
 
 const BASE_SYSTEM_PROMPT = `
 You are **Studi** (short for StudIQ), the friendly and knowledgeable AI assistant for the **StudIQ Campus Store**.
@@ -30,6 +32,7 @@ Link: https://wa.me/${process.env.ADMIN_WHATSAPP || "+2349020250260"}
 export async function POST(req: Request) {
     try {
         const { message, history } = await req.json();
+        const sessionAddress = await getSessionWallet(req);
 
         if (!process.env.OPENAI_API_KEY) {
             return NextResponse.json(
@@ -45,6 +48,7 @@ export async function POST(req: Request) {
         let products: Array<{ name: string; price: number; currency: string; category: string; description: string }> = [];
         let storeCount: number | null = null;
         let productCount: number | null = null;
+        let userContext = "";
         try {
             const supabase = getSupabaseServerClient();
             const { data } = await supabase
@@ -57,6 +61,68 @@ export async function POST(req: Request) {
             storeCount = storesRes.count ?? null;
             const productsRes = await supabase.from("products").select("id", { count: "exact", head: true });
             productCount = productsRes.count ?? null;
+
+            if (sessionAddress) {
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("name, school, campus")
+                    .eq("address", sessionAddress)
+                    .maybeSingle();
+
+                const { data: pointsData } = await supabase
+                    .from("points_log")
+                    .select("points")
+                    .eq("address", sessionAddress);
+
+                const totalPoints = pointsData?.reduce((sum, log) => sum + (log.points || 0), 0) || 0;
+
+                const { data: buyerOrders } = await supabase
+                    .from("orders")
+                    .select("id, amount, currency, status, created_at")
+                    .eq("buyer_address", sessionAddress)
+                    .order("created_at", { ascending: false })
+                    .limit(5);
+
+                let walletBalanceSol: number | null = null;
+                try {
+                    walletBalanceSol = await getBalance(sessionAddress);
+                } catch {
+                    walletBalanceSol = null;
+                }
+
+                const totalSpent = (buyerOrders || []).reduce((sum, o) => {
+                    const amt = o.amount || 0;
+                    return sum + Number(amt);
+                }, 0);
+
+                const shortAddress = sessionAddress.length > 12
+                    ? `${sessionAddress.slice(0, 4)}...${sessionAddress.slice(-4)}`
+                    : sessionAddress;
+
+                userContext += `\n**User Session Snapshot:**\n`;
+                userContext += `Wallet Address: ${shortAddress}\n`;
+                if (walletBalanceSol !== null) {
+                    userContext += `Approx Wallet Balance: ${walletBalanceSol.toFixed(4)} SOL\n`;
+                }
+                if (profile) {
+                    userContext += `Profile: ${profile.name || "Unknown"} at ${profile.school || "Unknown school"} ${profile.campus ? `(${profile.campus})` : ""}\n`;
+                }
+                userContext += `Reward Points (store only): ${totalPoints}\n`;
+                userContext += `Recent Purchases (latest ${buyerOrders?.length || 0}):\n`;
+
+                if (buyerOrders && buyerOrders.length > 0) {
+                    buyerOrders.forEach((order) => {
+                        const idShort = order.id ? String(order.id).slice(0, 8).toUpperCase() : "UNKNOWN";
+                        const amount = Number(order.amount || 0).toFixed(2);
+                        userContext += `- Order ${idShort}: ${amount} ${order.currency || "USD"} (${order.status})\n`;
+                    });
+                } else {
+                    userContext += `- No completed purchases yet.\n`;
+                }
+
+                userContext += `Total Spent As Buyer (all time, raw sum): ${totalSpent.toFixed(2)} (mixed currencies)\n`;
+                userContext += `When asked about "my wallet", "my balance", "my orders", or "my spending", use this snapshot.\n`;
+            }
         } catch {
             products = [];
         }
@@ -105,9 +171,11 @@ export async function POST(req: Request) {
 - Explain how to buy, sell, track orders, and earn points.
 - Point them to the right page using the URLs above.
 - Keep answers consistent with FAQ (/faq) and pricing (/pricing) content.
-- Be concise, clear, and student-friendly.`;
+- Be concise, clear, and student-friendly.
+- If a User Session Snapshot is available, use it to answer questions about their wallet, points, spending, and recent orders.
+- When giving financial suggestions, be conservative, encourage budgeting, and avoid pushing users to overspend.`;
 
-        const finalSystemPrompt = BASE_SYSTEM_PROMPT + contextString;
+        const finalSystemPrompt = BASE_SYSTEM_PROMPT + contextString + userContext;
 
         const chatHistory = (history || []).map((msg: any) => ({
             role: msg.role === "user" ? "user" : "assistant",
