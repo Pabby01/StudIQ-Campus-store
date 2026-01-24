@@ -43,8 +43,15 @@ export async function verifyProductOwnership(
             return false;
         }
 
-        const store = product.stores as any;
-        return store.owner_address === userAddress;
+        const storesValue = product.stores as unknown;
+
+        if (Array.isArray(storesValue)) {
+            const firstStore = storesValue[0] as { owner_address?: string } | undefined;
+            return !!firstStore && firstStore.owner_address === userAddress;
+        }
+
+        const store = storesValue as { owner_address?: string } | null;
+        return !!store && store.owner_address === userAddress;
     } catch (error) {
         console.error("Error verifying product ownership:", error);
         return false;
