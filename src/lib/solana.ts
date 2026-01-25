@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import {
     address,
@@ -6,15 +7,10 @@ import {
     createSolanaRpc,
     createSolanaRpcSubscriptions,
     createTransactionMessage,
-    devnet,
-    getSignatureFromTransaction,
     lamports,
-    mainnet,
     pipe,
     setTransactionMessageFeePayer,
     setTransactionMessageLifetimeUsingBlockhash,
-    Transaction,
-    UnixTimestamp,
     Signature,
     getProgramDerivedAddress,
     getBase64EncodedWireTransaction,
@@ -81,19 +77,15 @@ export async function createTransferTransaction(
         createTransactionMessage({ version: 0 }),
         (m) => setTransactionMessageFeePayer(fromAddress, m),
         (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
-        (m) => appendTransactionMessageInstruction(
-            getTransferSolInstruction({
-                source: fromAddress as any, // TransactionSigner is required here, cast to any to allow Address 
-                // The wallet adapter handles signing. We just need to construct the message.
-                // In Framework Kit, for instruction creation, mostly Address is fine if not checking constraints rigidly
-                // or we might need to cast or use a signer placeholder if strict typing demands it.
-                // However, 'getTransferSolInstruction' source is constrained to TransactionSigner. 
-                // We can treat it as such for *construction* purposes since we know it will sign.
-                destination: toAddress,
-                amount: amountLamports,
-            }) as any, // Cast as any because we don't have the signer object yet, just address
-            m
-        )
+        (m) =>
+            appendTransactionMessageInstruction(
+                getTransferSolInstruction({
+                    source: fromAddress as unknown as Parameters<typeof getTransferSolInstruction>[0]["source"],
+                    destination: toAddress,
+                    amount: amountLamports,
+                }) as ReturnType<typeof getTransferSolInstruction>,
+                m
+            )
     );
 
     // Compile the transaction
@@ -162,19 +154,16 @@ export async function createSplTransferTransaction(
         createTransactionMessage({ version: 0 }),
         (m) => setTransactionMessageFeePayer(fromAddress, m),
         (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
-        (m) => appendTransactionMessageInstruction(
-            getTransferInstruction({
-                source: fromAta,
-                destination: toAta,
-                amount: amountBigInt,
-                // authority: fromAddress, // Implicitly handled by wallet signing?
-                // The wallet is the signer for the 'authority' of the source ATA.
-                // In @solana-program/token, we might need to specify authority.
-                // Let's check signatures if it fails, but usually source authority is required string/signer.
-                authority: fromAddress as any,
-            }) as any,
-            m
-        )
+        (m) =>
+            appendTransactionMessageInstruction(
+                getTransferInstruction({
+                    source: fromAta,
+                    destination: toAta,
+                    amount: amountBigInt,
+                    authority: fromAddress as Parameters<typeof getTransferInstruction>[0]["authority"],
+                }) as ReturnType<typeof getTransferInstruction>,
+                m
+            )
     );
 
     // Compile the transaction
@@ -191,23 +180,42 @@ export async function createSplTransferTransaction(
 /**
  * Verify a transaction on the Solana network
  */
+export interface VerifiedTransactionInfo {
+    valid: boolean;
+    error?: string;
+    // Shape from @solana/kit rpc getTransaction jsonParsed
+    transaction?: {
+        transaction: {
+            message: {
+                accountKeys: Array<{
+                    pubkey?: string;
+                    [key: string]: unknown;
+                }>;
+            };
+        };
+        meta?: {
+            err?: unknown;
+            preBalances?: Array<number | bigint>;
+            postBalances?: Array<number | bigint>;
+            fee?: number | bigint;
+        };
+        [key: string]: unknown;
+    };
+}
+
 export async function verifyTransaction(
     signature: string,
     expectedFrom: string,
     expectedTo: string,
     expectedAmount: number,
     tolerancePercent: number = 0.01 // Default to 1% tolerance
-): Promise<{
-    valid: boolean;
-    error?: string;
-    transaction?: any;
-}> {
+): Promise<VerifiedTransactionInfo> {
     try {
         // Fetch transaction
         const transaction = await rpc.getTransaction(
             signature as Signature, // Cast string to Signature nominal type
             { maxSupportedTransactionVersion: 0, commitment: 'confirmed', encoding: 'jsonParsed' }
-        ).send();
+        ).send() as unknown as VerifiedTransactionInfo["transaction"];
 
         if (!transaction) {
             return { valid: false, error: "Transaction not found" };
@@ -269,7 +277,28 @@ export async function verifyTransaction(
 /**
  * Broadcast a signed transaction to the network
  */
-export async function broadcastTransaction(signedTransaction: any) {
+export type BroadcastableTransaction =
+    | string
+    | Buffer
+    | Uint8Array
+    | number[]
+    | {
+        serialize: () => Uint8Array;
+        [key: string]: unknown;
+    };
+
+type SerializableTransaction = { serialize: () => Uint8Array };
+
+function hasSerialize(tx: BroadcastableTransaction): tx is SerializableTransaction {
+    return (
+        typeof tx === "object" &&
+        tx !== null &&
+        "serialize" in tx &&
+        typeof (tx as { serialize?: () => Uint8Array }).serialize === "function"
+    );
+}
+
+export async function broadcastTransaction(signedTransaction: BroadcastableTransaction) {
     try {
         console.log("[Broadcast] Input type:", typeof signedTransaction);
         console.log("[Broadcast] Is array:", Array.isArray(signedTransaction));
@@ -297,7 +326,7 @@ export async function broadcastTransaction(signedTransaction: any) {
             // Already base64
             console.log("[Broadcast] Already base64 string");
             base64Tx = signedTransaction;
-        } else if ('serialize' in signedTransaction && typeof signedTransaction.serialize === 'function') {
+        } else if (hasSerialize(signedTransaction)) {
             // Legacy Transaction or VersionedTransaction from old wallet adapters
             console.log("[Broadcast] Serializing transaction object");
             const serialized = signedTransaction.serialize();
@@ -306,14 +335,16 @@ export async function broadcastTransaction(signedTransaction: any) {
             // Framework Kit Transaction (compiled transaction object)
             // Use the helper to serialize it properly
             console.log("[Broadcast] Using getBase64EncodedWireTransaction");
-            base64Tx = getBase64EncodedWireTransaction(signedTransaction) as string;
+            base64Tx = getBase64EncodedWireTransaction(
+                signedTransaction as unknown as Parameters<typeof getBase64EncodedWireTransaction>[0]
+            ) as string;
         }
 
         console.log("[Broadcast] Broadcasting transaction...");
         console.log("[Broadcast] Base64 length:", base64Tx.length);
 
-        // Send (cast to any to bypass Base64EncodedWireTransaction branded type)
-        const signature = await rpc.sendTransaction(base64Tx as any, {
+        // Send (cast via unknown to bypass Base64EncodedWireTransaction branded type)
+        const signature = await rpc.sendTransaction(base64Tx as unknown as Parameters<(typeof rpc)["sendTransaction"]>[0], {
             encoding: 'base64',
             preflightCommitment: 'confirmed'
         }).send();

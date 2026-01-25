@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useUser } from "@civic/auth-web3/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useRef, useState } from "react";
@@ -18,6 +20,7 @@ export function useCivicWallet() {
     const hasTriedWalletCreation = useRef(false);
     const hasUpdatedProfile = useRef(false);
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
+    const hasEstablishedSession = useRef(false);
 
     // Get the Solana context from userContext
     const solanaContext = (userContext as any).solana;
@@ -91,9 +94,10 @@ export function useCivicWallet() {
 
     // Automatic session establishment
     useEffect(() => {
-        if (token && walletAddress && !civicLoading) {
+        if (token && walletAddress && !civicLoading && !hasEstablishedSession.current) {
             const hasSession = typeof document !== 'undefined' && document.cookie.includes('sid=');
             if (!hasSession) {
+                hasEstablishedSession.current = true;
                 console.log('[useCivicWallet] 🔐 Establishing server session for:', walletAddress);
                 fetch('/api/auth/verify', {
                     method: 'POST',

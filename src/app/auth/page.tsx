@@ -1,76 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { signupSchema, signinSchema } from "@/lib/validators";
+import CivicAuthButton from "@/components/CivicAuthButton";
 
 export default function AuthPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
-
-  async function handleSubmit(form: FormData) {
-    setError(null);
-    setFieldErrors({});
-    const payload = Object.fromEntries(form.entries());
-    const result = (mode === "signin" ? signinSchema : signupSchema).safeParse(payload);
-    if (!result.success) {
-      const flattened = result.error.flatten();
-      setFieldErrors(flattened.fieldErrors as { [key: string]: string[] });
-      setError("Invalid form input");
-      return;
-    }
-    // TODO: wire to NextAuth or custom API
-    alert(`${mode} submitted`);
-  }
-
   return (
-    <div className="mx-auto max-w-md space-y-6 p-6">
-      <h1 className="text-2xl font-semibold">{mode === "signin" ? "Sign In" : "Sign Up"}</h1>
-      <form action={handleSubmit} className="space-y-3">
+    <div className="min-h-screen flex items-center justify-center bg-soft-gray-bg px-4">
+      <div className="max-w-md w-full bg-white rounded-2xl border border-border-gray p-8 space-y-6 text-center">
         <div>
-          <input
-            name="email"
-            type="email"
-            placeholder="University email"
-            className="w-full rounded-md border p-2"
-            required
-          />
-          {fieldErrors.email?.[0] && (
-            <div className="mt-1 text-xs text-red-600">{fieldErrors.email[0]}</div>
-          )}
+          <h1 className="text-3xl font-bold text-black mb-2">
+            Sign in to StudIQ Campus Store
+          </h1>
+          <p className="text-sm text-muted-text">
+            Use your Civic account and wallet to access your dashboard, wallet, and stores.
+          </p>
         </div>
-        {mode === "signup" && (
-          <div>
-            <input
-              name="university"
-              type="text"
-              placeholder="University"
-              className="w-full rounded-md border p-2"
-              required
-            />
-            {fieldErrors.university?.[0] && (
-              <div className="mt-1 text-xs text-red-600">{fieldErrors.university[0]}</div>
-            )}
-          </div>
-        )}
-        <div>
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            className="w-full rounded-md border p-2"
-            required
-          />
-          {fieldErrors.password?.[0] && (
-            <div className="mt-1 text-xs text-red-600">{fieldErrors.password[0]}</div>
-          )}
+        <div className="flex justify-center">
+          <CivicAuthButton />
         </div>
-        {error && <div className="text-sm text-red-600">{error}</div>}
-        <button className="w-full rounded-md bg-black p-2 text-white" type="submit">
-          {mode === "signin" ? "Sign In" : "Create Account"}
-        </button>
-      </form>
-      <button className="text-sm text-zinc-600" onClick={() => setMode(mode === "signin" ? "signup" : "signin")}>Switch to {mode === "signin" ? "Sign Up" : "Sign In"}</button>
+      </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -47,13 +48,33 @@ export default function Home() {
             async (pos) => {
               const gh = encodeGeohash(pos.coords.latitude, pos.coords.longitude, 6);
               const storesRes = await fetch(`/api/store/nearby?geoprefix=${gh.substring(0, 5)}`);
-              const storesData = await storesRes.json();
-              setNearbyStores(storesData);
+              if (storesRes.ok) {
+                const storesData = await storesRes.json();
+                if (Array.isArray(storesData)) {
+                  setNearbyStores(storesData);
+                } else {
+                  console.error("Unexpected nearby stores response (not an array):", storesData);
+                  setNearbyStores([]);
+                }
+              } else {
+                console.error("Failed to fetch nearby stores:", storesRes.status);
+                setNearbyStores([]);
+              }
             },
             async () => {
               const storesRes = await fetch(`/api/store/nearby?geoprefix=`);
-              const storesData = await storesRes.json();
-              setNearbyStores(storesData);
+              if (storesRes.ok) {
+                const storesData = await storesRes.json();
+                if (Array.isArray(storesData)) {
+                  setNearbyStores(storesData);
+                } else {
+                  console.error("Unexpected nearby stores response (not an array):", storesData);
+                  setNearbyStores([]);
+                }
+              } else {
+                console.error("Failed to fetch fallback nearby stores:", storesRes.status);
+                setNearbyStores([]);
+              }
             }
           );
         }

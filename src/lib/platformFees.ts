@@ -18,7 +18,19 @@ export async function getPlatformFee(sellerAddress: string): Promise<number> {
             .maybeSingle();
 
         if (subscription && subscription.subscription_plans) {
-            return (subscription.subscription_plans as any).platform_fee_percentage;
+            const plansValue = subscription.subscription_plans as unknown;
+
+            if (Array.isArray(plansValue)) {
+                const firstPlan = plansValue[0] as { platform_fee_percentage?: number } | undefined;
+                if (firstPlan && typeof firstPlan.platform_fee_percentage === "number") {
+                    return firstPlan.platform_fee_percentage;
+                }
+            } else {
+                const plan = plansValue as { platform_fee_percentage?: number } | null;
+                if (plan && typeof plan.platform_fee_percentage === "number") {
+                    return plan.platform_fee_percentage;
+                }
+            }
         }
 
         // Default to free tier (5%)
