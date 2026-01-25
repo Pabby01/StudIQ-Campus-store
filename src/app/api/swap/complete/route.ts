@@ -122,7 +122,7 @@ export async function POST(req: Request) {
 
         // Broadcast platform transaction
         console.log("[Swap Complete] Broadcasting platform transaction...");
-        const platformSignature = await broadcastTransaction(platformToUserTx);
+        const platformSignature = await broadcastTransaction(platformToUserTx as any);
 
         // Wait for confirmation
         console.log(

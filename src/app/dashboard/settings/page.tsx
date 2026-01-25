@@ -477,7 +477,7 @@ function SettingsContent() {
                       </td>
                       <td className="p-3">
                         <a
-                          href={`https://explorer.solana.com/tx/${transaction.txSignature}?cluster=devnet`}
+                          href={`https://explorer.solana.com/tx/${transaction.txSignature}${process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet' ? '' : '?cluster=devnet'}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-primary-blue hover:underline text-sm"

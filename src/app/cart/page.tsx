@@ -207,7 +207,7 @@ export default function CartPage() {
       let mint: string | undefined = undefined;
 
       if (finalCurrency === "USDC") {
-        mint = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // Devnet USDC
+        mint = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // Fallback to devnet
       } else {
         mint = undefined; // SOL
       }
