@@ -407,7 +407,7 @@ export default function EarningsPage() {
                                             <td className="p-3">
                                                 {w.transactionSignature ? (
                                                     <a
-                                                        href={`https://explorer.solana.com/tx/${w.transactionSignature}?cluster=devnet`}
+                                                        href={`https://explorer.solana.com/tx/${w.transactionSignature}${process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet' ? '' : '?cluster=devnet'}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="text-primary-blue hover:underline text-sm"
