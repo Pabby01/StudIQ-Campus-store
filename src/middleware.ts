@@ -46,7 +46,7 @@ setInterval(() => {
     }
 }, RATE_LIMIT_WINDOW);
 
-export function proxy(request: NextRequest) {
+export default function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Handle CORS for API sync routes
@@ -158,7 +158,7 @@ export function proxy(request: NextRequest) {
         "font-src 'self' https://fonts.gstatic.com; " +
         "media-src 'self' data: blob:; " +
         "frame-src 'self' https://connect.solflare.com https://phantom.app https://*.civic.com https://auth.metakeep.xyz https://*.metakeep.xyz; " +
-        "connect-src 'self' https://studiq.fun https://www.studiq.fun https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com https://*.civic.com https://*.metakeep.xyz https://sepolia-preconf.base.org https://mainnet.base.org;"
+        "connect-src 'self' https://studiq.fun https://www.studiq.fun https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com https://*.civic.com https://*.metakeep.xyz https://sepolia-preconf.base.org https://mainnet.base.org https://price.jup.ag https://*.paj.cash;"
     );
 
     return response;
