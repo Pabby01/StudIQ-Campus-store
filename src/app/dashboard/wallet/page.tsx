@@ -9,10 +9,11 @@ import ReceiveModal from "@/components/wallet/ReceiveModal";
 import SwapModal from "@/components/wallet/SwapModal";
 import TransactionHistory from "@/components/wallet/TransactionHistory";
 import { Loader2, Rocket } from "lucide-react";
-import TokenList from "@/components/wallet/TokenList";
 import { Cluster } from "@/hooks/useSolanaBalance";
 import Dialog from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
+import TokenList from "@/components/wallet/TokenList";
+import RampModal from "@/components/ramp/RampModal";
 
 export default function WalletPage() {
     const { walletAddress, isAuthenticated } = useCivicWallet();
@@ -23,6 +24,7 @@ export default function WalletPage() {
 
     const [isSendOpen, setIsSendOpen] = useState(false);
     const [isReceiveOpen, setIsReceiveOpen] = useState(false);
+    const [isRampOpen, setIsRampOpen] = useState(false);
     const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
     const [comingSoonFeature, setComingSoonFeature] = useState("");
 
@@ -51,10 +53,7 @@ export default function WalletPage() {
                 onClusterChange={setCluster}
                 onSend={() => setIsSendOpen(true)}
                 onReceive={() => setIsReceiveOpen(true)}
-                onDeposit={() => {
-                    setComingSoonFeature("Deposit");
-                    setIsComingSoonOpen(true);
-                }}
+                onDeposit={() => setIsRampOpen(true)}
                 onSwap={() => {
                     setComingSoonFeature("Swap");
                     setIsComingSoonOpen(true);
@@ -79,11 +78,9 @@ export default function WalletPage() {
                 onClose={() => setIsReceiveOpen(false)}
             />
 
-            <SwapModal
-                isOpen={false} // Disabled for now
-                onClose={() => { }}
-                onSuccess={() => { }}
-                cluster={cluster}
+            <RampModal
+                isOpen={isRampOpen}
+                onClose={() => setIsRampOpen(false)}
             />
 
             {/* Coming Soon Popup */}
