@@ -40,16 +40,6 @@ export function useCivicWallet() {
     const email = userAny?.email || null;
     const civicUserId = userAny?.id || userAny?.sub || null;
 
-    // Debug logging
-    useEffect(() => {
-        if (user && !civicLoading) {
-            console.log('[useCivicWallet] User exists, hasWallet:', hasWallet);
-            console.log('[useCivicWallet] solanaContext:', solanaContext);
-            console.log('[useCivicWallet] solanaContext keys:', solanaContext ? Object.keys(solanaContext) : 'null');
-            console.log('[useCivicWallet] walletCreationInProgress:', walletCreationInProgress);
-            console.log('[useCivicWallet] createWallet on solana:', typeof solanaContext?.createWallet === 'function');
-        }
-    }, [user, civicLoading, hasWallet, solanaContext, walletCreationInProgress]);
 
     // Try to create embedded wallet if user exists but no wallet
     useEffect(() => {
@@ -64,24 +54,12 @@ export function useCivicWallet() {
                 hasTriedWalletCreation.current = true;
                 setIsCreatingWallet(true);
 
-                console.log('[useCivicWallet] 🚀 Creating embedded wallet via solanaContext...');
-
                 try {
                     await solanaContext.createWallet();
-                    console.log('[useCivicWallet] ✅ Embedded wallet created!');
                 } catch (error) {
                     console.error('[useCivicWallet] ❌ Wallet creation failed:', error);
                 } finally {
                     setIsCreatingWallet(false);
-                }
-            } else {
-                console.log('[useCivicWallet] ⚠️ createWallet not available on solanaContext');
-                if (solanaContext) {
-                    console.log('[useCivicWallet] solanaContext methods:',
-                        Object.entries(solanaContext)
-                            .filter(([_, v]) => typeof v === 'function')
-                            .map(([k]) => k)
-                    );
                 }
             }
         }
@@ -98,14 +76,12 @@ export function useCivicWallet() {
             const hasSession = typeof document !== 'undefined' && document.cookie.includes('sid=');
             if (!hasSession) {
                 hasEstablishedSession.current = true;
-                console.log('[useCivicWallet] 🔐 Establishing server session for:', walletAddress);
                 fetch('/api/auth/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token, address: walletAddress }),
                 }).then(res => {
                     if (res.ok) {
-                        console.log('[useCivicWallet] ✅ Server session established');
                         // Trigger a small refresh or notify stats components if needed
                         // Most components will auto-retry or we can just hope for the best on next poll
                     }
@@ -123,8 +99,6 @@ export function useCivicWallet() {
         if (isRealWallet && email && !hasUpdatedProfile.current) {
             hasUpdatedProfile.current = true;
 
-            console.log('[useCivicWallet] Updating profile with wallet:', walletAddress);
-
             fetch('/api/profile/update-wallet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -135,9 +109,7 @@ export function useCivicWallet() {
                     token // Include token for verification
                 }),
             }).then(res => {
-                if (res.ok) {
-                    console.log('[useCivicWallet] ✅ Profile wallet address updated');
-                } else {
+                if (!res.ok) {
                     console.error('[useCivicWallet] ❌ Failed to update wallet, status:', res.status);
                 }
             }).catch(err => {

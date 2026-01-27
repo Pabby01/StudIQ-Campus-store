@@ -35,7 +35,6 @@ export default function Providers({ children }: { children: ReactNode }) {
     if (!civicClientId) {
       console.error("[CIVIC] Client ID not configured! Add NEXT_PUBLIC_CIVIC_CLIENT_ID to .env");
     }
-    console.log("[PROVIDER] Initialized with Civic Auth Web3");
   }, [civicClientId]);
 
   // Avoid hydration issues by rendering a placeholder during SSR
@@ -47,11 +46,9 @@ export default function Providers({ children }: { children: ReactNode }) {
     <CivicAuthProvider
       clientId={civicClientId!}
       onSignIn={async (user) => {
-        const userEmail = user && 'email' in user ? user.email : null;
-        console.log("[CIVIC] User signed in:", userEmail);
+        // Sign in handled
       }}
       onSignOut={() => {
-        console.log("[CIVIC] User signed out");
         if (typeof window !== 'undefined') {
           window.location.href = "/";
         }

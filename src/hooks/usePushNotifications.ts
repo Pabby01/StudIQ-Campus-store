@@ -30,7 +30,6 @@ export function usePushNotifications() {
             // Register SW
             navigator.serviceWorker.register('/sw.js')
                 .then(registration => {
-                    console.log('SW registered', registration);
                     return registration.pushManager.getSubscription();
                 })
                 .then(sub => {

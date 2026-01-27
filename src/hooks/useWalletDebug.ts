@@ -23,7 +23,6 @@ export function useWalletDebug() {
             details,
         };
 
-        console.log(`[WALLET DEBUG] ${status.toUpperCase()}: ${step}`, details || "");
         setLogs((prev) => [...prev, log]);
     }, []);
 

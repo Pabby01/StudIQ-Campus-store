@@ -5,12 +5,7 @@ const isProduction = process.env.PAJ_ENVIRONMENT === 'production';
 
 // Initialize SDK once
 if (typeof window === 'undefined') {
-    if (!pajApiKey) {
-        console.warn("⚠️ PAJ_BUSINESS_API_KEY is missing in .env");
-    }
-
     initializeSDK(isProduction ? Environment.Production : Environment.Staging);
-    console.log(`[PAJ SDK] Initialized in ${isProduction ? 'Production' : 'Staging'} mode`);
 }
 
 export const PAJ_CONFIG = {

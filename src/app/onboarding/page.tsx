@@ -35,7 +35,6 @@ export default function OnboardingPage() {
     if (user && !isLoading) {
       if (hasWallet(user)) {
         setWalletAddress(user.solana.address);
-        console.log("[Onboarding] User has wallet:", user.solana.address);
       } else {
         // Try to get wallet address from user context
         const userAny = user as any;
@@ -85,7 +84,6 @@ export default function OnboardingPage() {
     }
 
     setLoading(true);
-    console.log("[Onboarding] Submitting profile:", profileData);
 
     try {
       const res = await fetch("/api/profile/update", {
@@ -95,16 +93,13 @@ export default function OnboardingPage() {
       });
 
       if (res.ok) {
-        console.log("[Onboarding] Profile created successfully");
         toast.success("Welcome to StudIQ!", "Your profile has been created");
         router.push("/");
       } else {
         const error = await res.json();
-        console.error("[Onboarding] Profile creation failed:", error);
         toast.error("Failed to save profile", error.error || "Please try again");
       }
     } catch (error) {
-      console.error("[Onboarding] Profile creation error:", error);
       toast.error("Error", "Failed to save profile");
     } finally {
       setLoading(false);

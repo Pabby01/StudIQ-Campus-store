@@ -82,7 +82,6 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                     ? (process.env.NEXT_PUBLIC_MAINNET_RPC_URL || clusterApiUrl('mainnet-beta'))
                     : (process.env.NEXT_PUBLIC_DEVNET_RPC_URL || clusterApiUrl('devnet'));
 
-                console.log(`[Wallet] Fetching balances for ${address} on ${cluster} via ${rpcUrl}`);
 
                 const connection = new Connection(rpcUrl, 'confirmed');
                 const pubKey = new PublicKey(address);
@@ -90,7 +89,6 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                 // 1. Fetch SOL Balance
                 const solBalanceLamports = await connection.getBalance(pubKey);
                 const solBalance = solBalanceLamports / 1e9;
-                console.log(`[Wallet] SOL Balance: ${solBalance}`);
 
                 // 2. Fetch Token Accounts (Standard + Token 2022)
                 const [standardAccounts, token2022Accounts] = await Promise.all([
@@ -109,7 +107,6 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                     };
                 }).filter(t => t.balance > 0);
 
-                console.log(`[Wallet] Found ${rawTokens.length} tokens`);
 
                 // 3. Fetch Prices
                 // Use Mainnet SOL Mint for price reference even on Devnet

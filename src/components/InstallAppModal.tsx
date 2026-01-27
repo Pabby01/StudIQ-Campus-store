@@ -72,7 +72,7 @@ export default function InstallAppModal() {
         const choiceResult = await deferredPrompt.userChoice;
 
         if (choiceResult.outcome === 'accepted') {
-            console.log('User accepted the install prompt');
+            // User accepted
         }
 
         // Clear the deferred prompt

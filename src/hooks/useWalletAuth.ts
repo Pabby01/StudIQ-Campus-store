@@ -28,10 +28,8 @@ export function useWalletAuth() {
       // Sync data with main app
       const syncClient = getSyncClient();
       syncClient.syncOnConnect(address).catch(err => {
-        console.error('Sync error on connect:', err);
+        // Silently handle sync errors in production or log to a service
       });
-
-      console.log('✅ Wallet connected on store, session created, sync initiated:', address);
     }
   }, [wallet.connected, civic.user, address]);
 
@@ -39,7 +37,6 @@ export function useWalletAuth() {
   useEffect(() => {
     if (!wallet.connected && !civic.user) {
       CrossAppSessionManager.clearSession();
-      console.log('✅ Session cleared on disconnect');
     }
   }, [wallet.connected, civic.user]);
 
@@ -47,7 +44,6 @@ export function useWalletAuth() {
   useEffect(() => {
     const existingSession = CrossAppSessionManager.getCurrentSession();
     if (existingSession && !wallet.connected) {
-      console.log('📱 Found existing session from main app, attempting auto-connect...');
       // Auto-connect will be handled by WalletProvider if wallet is available
     }
   }, []);

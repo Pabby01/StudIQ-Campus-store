@@ -25,7 +25,6 @@ export default function ConnectPage() {
     const address = wallet.publicKey.toString();
 
     try {
-      console.log("Checking profile for address:", address);
       const profileRes = await fetch(`/api/profile/get?address=${address}`, {
         cache: "no-store",
         headers: { "Cache-Control": "no-cache" }
@@ -33,7 +32,6 @@ export default function ConnectPage() {
 
       if (profileRes.ok) {
         const profile = await profileRes.json();
-        console.log("Profile check result:", profile ? "Found" : "Not Found", profile);
 
         if (profile && profile.name && profile.school && profile.campus) {
           // Existing user - go to home
@@ -43,8 +41,6 @@ export default function ConnectPage() {
           router.push("/onboarding");
         }
       } else {
-        // Profile doesn't exist (404) or other error - redirect to onboarding
-        console.log("Profile not found or error, redirecting to onboarding");
         router.push("/onboarding");
       }
     } catch (error) {
