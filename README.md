@@ -23,6 +23,24 @@ A decentralized campus marketplace built on Solana and Next.js, bridging the gap
 - **Pay on Delivery (POD)**: Option for cash payments on delivery for verified campus locations.
 - **Optimized Performance**: Instant price fetching via global state caching for a lightning-fast checkout experience.
 
+### 💳 Web3 Wallet Dashboard
+- **Smart Portfolio**: Multi-token support (SOL, USDC) with real-time USD valuation.
+- **Real-time Pricing**: Integrated with **Jupiter Price API** for accurate, instant token valuations.
+- **Privacy First**: Optional balance visibility toggle and secure address copying.
+- **Seamless Transfers**: One-click Send and Receive functionality with QR support.
+- **Multi-Network**: Easy switching between Solana **Mainnet** and **Devnet**.
+
+### 🇳🇬 Paj Cash (Naira On/Off Ramp)
+- **Naira to USDC (Onramp)**: Buy crypto directly with local bank transfers.
+- **USDC to Naira (Offramp)**: Sell crypto and withdraw funds directly to 20+ supported Nigerian banks.
+- **Automated Verification**: Real-time bank account resolution and secure OTP verification.
+- **Premium UX**: Mobile-responsive flow with automated order tracking.
+
+### 🤖 AI Campus Assistant (Studi)
+- **Intelligent Support**: AI-powered shopping buddy (Gemini Flash) to help with product info and FAQs.
+- **Context-Aware**: Understands campus delivery routes, reward systems, and seller guidelines.
+- **Hybrid Support**: Integrated WhatsApp escalation for direct human assistance.
+
 ### 🏪 For Sellers
 - **Store Dashboard**: Comprehensive view of sales, orders, and products.
 - **Shareable Stores**: Custom storefront links to share directly with customers.
@@ -31,18 +49,22 @@ A decentralized campus marketplace built on Solana and Next.js, bridging the gap
 
 ### 👤 Identity & Security
 - **Civic Auth Integration**: Secure login using Email or Wallet, verified on-chain.
-- **Admin Security**: Server-side authentication verifying admin credentials against the database.
+- **Student Onboarding**: Streamlined profile setup for school, campus, and level tracking.
 - **Verified Profiles**: Student identity verification for trust and safety.
+
+### 🔮 Prediction Markets (Coming Soon)
+- **Campus Predictions**: Trade on future campus events and outcomes using SOL/USDC.
 
 ## 🛠 Tech Stack
 - **Framework**: Next.js 15 (App Router)
 - **Database**: Supabase (PostgreSQL)
 - **Blockchain**: Solana (Web3.js + Jupiter API)
-- **Styling**: TailwindCSS
+- **Payments/Ramp**: Paj Cash SDK
+- **AI**: Google Gemini API
+- **Styling**: Vanilla CSS + TailwindCSS
 - **State Management**: Zustand
 - **Auth**: Civic Auth + Supabase
 - **Email**: Resend
-- **Rate Limiting**: Upstash Redis (optional)
 
 ---
 
@@ -88,13 +110,23 @@ Create a `.env` file with the following variables:
 | `NEXT_PUBLIC_SOLANA_NETWORK` | `devnet` or `mainnet` |
 | `NEXT_PUBLIC_CIVIC_CLIENT_ID` | Civic Auth client ID |
 
-### Blockchain (Wallets & Tokens)
+### Paj Cash (Ramp) & Payments
 
 | Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_PLATFORM_WALLET` | Platform wallet receiving payments |
-| `PLATFORM_WALLET_PRIVATE_KEY` | Private key for swap operations (server-only) |
+| `PAJ_BUSINESS_API_KEY` | Your Paj Cash business API key |
+| `PAJ_ENVIRONMENT` | `production` or `staging` |
+| `PAJ_WEBHOOK_URL` | URL for payment notifications |
+| `NEXT_PUBLIC_PLATFORM_WALLET` | Platform wallet receiving fees |
+| `NEXT_PUBLIC_MERCHANT_WALLET` | Primary merchant payout wallet |
 | `NEXT_PUBLIC_USDC_MINT` | USDC token mint address |
+
+### AI & Support
+
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_GEMINI_API_KEY` | API key for Studi AI assistant |
+| `NEXT_PUBLIC_ADMIN_WHATSAPP` | Support phone number (e.g. 234...) |
 
 ### Email & Notifications
 
@@ -105,15 +137,6 @@ Create a `.env` file with the following variables:
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Push notification public key |
 | `VAPID_PRIVATE_KEY` | Push notification private key |
 
-### Admin & Security
-
-| Variable | Description |
-|----------|-------------|
-| `ADMIN_ADDRESSES` | Comma-separated admin wallet addresses |
-| `ADMIN_EMAIL` | Admin email for authentication |
-| `ADMIN_ACCESS_CODE` | Admin panel access code |
-| `SESSION_TOKEN_SECRET` | JWT secret for sessions |
-
 ---
 
 ## 🌐 Switching to Mainnet
@@ -122,52 +145,17 @@ To deploy to mainnet, update your `.env`:
 
 ```env
 NEXT_PUBLIC_SOLANA_NETWORK=mainnet
-NEXT_PUBLIC_SOLANA_RPC_URL=https://your-mainnet-rpc.com  # Use Helius, QuickNode, etc.
+NEXT_PUBLIC_SOLANA_RPC_URL=https://your-mainnet-rpc.com  # Helius, QuickNode, etc.
 NEXT_PUBLIC_USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v  # Mainnet USDC
+PAJ_ENVIRONMENT=production
 ```
 
 **Important Mainnet Checklist:**
-- [ ] Get a production RPC from Helius, QuickNode, or Triton
+- [ ] Get a production RPC from Helius or QuickNode
 - [ ] Update USDC mint to mainnet address
-- [ ] Set `NEXT_PUBLIC_SOLANA_NETWORK=mainnet`
+- [ ] Set `PAJ_ENVIRONMENT=production`
+- [ ] Verify `NEXT_PUBLIC_MERCHANT_WALLET` is correct
 - [ ] Test with small transactions first
-- [ ] Rotate all API keys and secrets
-- [ ] Enable 2FA on all wallets
-
----
-
-## 🔒 Security Best Practices
-
-### Protecting Your Environment Variables
-
-1. **Never commit `.env` files** - Already in `.gitignore`
-2. **Use Vercel Environment Variables** for production:
-   - Go to Project Settings → Environment Variables
-   - Add all secrets there (they're encrypted)
-3. **Rotate keys regularly** - Especially after team changes
-4. **Use different keys per environment** - Dev, staging, production
-
-### For Production Deployment
-
-1. **Vercel (Recommended)**:
-   ```bash
-   vercel env add SUPABASE_SERVICE_ROLE_KEY production
-   ```
-
-2. **Self-hosted**: Use a secrets manager (AWS Secrets Manager, HashiCorp Vault)
-
-3. **Never expose server-side keys** with `NEXT_PUBLIC_` prefix
-
-### What's Safe vs What's Secret
-
-| ✅ Safe (NEXT_PUBLIC_) | 🔒 Secret (Server only) |
-|------------------------|-------------------------|
-| Supabase URL | Service Role Key |
-| Supabase Anon Key | Platform Wallet Private Key |
-| RPC URL | Admin Access Code |
-| USDC Mint | Session Token Secret |
-| Platform Wallet (public) | VAPID Private Key |
-| Civic Client ID | API Keys (OpenAI, Resend) |
 
 ---
 
@@ -186,10 +174,11 @@ Current test coverage:
 
 ## 📝 Recent Updates
 
-- **v1.3 - Security**: Removed test endpoints, improved mainnet configuration
-- **v1.2 - Optimization**: Added global price caching to speed up checkout flow significantly
-- **v1.1 - Admin Security**: Enhanced admin route protection with email-based verification
-- **v1.0 - Hybrid Payments**: Launched support for USDC and SOL dynamic payments
+- **v1.4 - Wallet & Ramp UI**: Complete overhaul of the Wallet dashboard and Paj Cash integration with direct Withdraw/Deposit flows.
+- **v1.3 - Security**: Removed test endpoints, improved mainnet configuration.
+- **v1.2 - Optimization**: Added global price caching to speed up checkout flow significantly.
+- **v1.1 - Admin Security**: Enhanced admin route protection with email-based verification.
+- **v1.0 - Hybrid Payments**: Launched support for USDC and SOL dynamic payments.
 
 ---
 
