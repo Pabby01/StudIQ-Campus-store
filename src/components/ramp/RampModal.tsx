@@ -21,16 +21,17 @@ import { SOLANA_CONFIG } from "@/lib/solana-config";
 interface RampModalProps {
     isOpen: boolean;
     onClose: () => void;
+    initialType?: RampType;
 }
 
 type Step = "type" | "verify" | "otp" | "form" | "confirm" | "success";
 type RampType = "onramp" | "offramp";
 
-export default function RampModal({ isOpen, onClose }: RampModalProps) {
+export default function RampModal({ isOpen, onClose, initialType }: RampModalProps) {
     const { walletAddress, email } = useCivicWallet();
 
-    const [step, setStep] = useState<Step>("type");
-    const [type, setType] = useState<RampType>("onramp");
+    const [step, setStep] = useState<Step>(initialType ? "verify" : "type");
+    const [type, setType] = useState<RampType>(initialType || "onramp");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -53,8 +54,14 @@ export default function RampModal({ isOpen, onClose }: RampModalProps) {
     useEffect(() => {
         if (isOpen) {
             fetchRates();
+            if (initialType) {
+                setType(initialType);
+                setStep("verify");
+            } else {
+                setStep("type");
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, initialType]);
 
     const fetchRates = async () => {
         try {
@@ -180,25 +187,27 @@ export default function RampModal({ isOpen, onClose }: RampModalProps) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <Card className="w-full max-w-lg relative overflow-hidden bg-white border-0 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
+            <Card className="w-full h-full sm:h-auto sm:max-w-lg relative overflow-hidden bg-white border-0 shadow-2xl sm:rounded-3xl flex flex-col">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+                    className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-full transition-colors z-20"
                 >
                     <X className="w-5 h-5 text-gray-500" />
                 </button>
 
-                <div className="p-8">
+                <div className="flex-1 overflow-y-auto p-6 sm:p-8">
                     {/* Header */}
-                    <div className="mb-8">
+                    <div className="mb-8 p-6 -mx-8 -mt-8 bg-gradient-to-r from-primary-blue/5 to-primary-blue/10 border-b border-primary-blue/10">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-primary-blue/10 rounded-lg">
-                                <ArrowRightLeft className="w-6 h-6 text-primary-blue" />
+                            <div className="p-2.5 bg-primary-blue text-white rounded-xl shadow-lg shadow-primary-blue/20">
+                                <ArrowRightLeft className="w-6 h-6" />
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-900">Naira On/Off Ramp</h2>
+                            <div>
+                                <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">Paj Cash</h2>
+                                <p className="text-xs font-bold text-primary-blue uppercase tracking-widest">Naira On/Off Ramp</p>
+                            </div>
                         </div>
-                        <p className="text-gray-500">Securely buy and sell SOL/USDC using Naira</p>
                     </div>
 
                     {error && (
@@ -213,30 +222,32 @@ export default function RampModal({ isOpen, onClose }: RampModalProps) {
                         <div className="grid grid-cols-1 gap-4">
                             <button
                                 onClick={() => { setType("onramp"); setStep("verify"); }}
-                                className="group p-6 border-2 border-gray-100 hover:border-primary-blue hover:bg-primary-blue/[0.02] rounded-2xl transition-all text-left"
+                                className="group p-6 border-2 border-gray-100 hover:border-green-500/50 hover:bg-green-50/50 rounded-2xl transition-all text-left relative overflow-hidden"
                             >
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors">
-                                        <ArrowDownCircle className="w-6 h-6 text-green-700" />
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-green-500/10 transition-colors"></div>
+                                <div className="flex items-start justify-between mb-4 relative z-10">
+                                    <div className="p-3 bg-green-100/50 rounded-xl group-hover:bg-green-500 group-hover:text-white transition-all duration-300">
+                                        <ArrowDownCircle className="w-6 h-6" />
                                     </div>
-                                    <div className="text-xs font-bold text-green-700 uppercase tracking-wider">Buy Crypto</div>
+                                    <div className="text-[10px] font-black text-green-700 uppercase tracking-widest bg-green-100 px-2 py-1 rounded-md">Buy Crypto</div>
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-1">Onramp (Naira ➔ USDC)</h3>
-                                <p className="text-sm text-gray-500">Deposit Naira from your bank account to receive USDC in your wallet.</p>
+                                <h3 className="text-lg font-black text-gray-900 mb-1 relative z-10">Onramp (Naira ➔ USDC)</h3>
+                                <p className="text-sm text-gray-500 leading-relaxed relative z-10">Deposit Naira from your bank account to receive USDC in your wallet.</p>
                             </button>
 
                             <button
                                 onClick={() => { setType("offramp"); setStep("verify"); }}
-                                className="group p-6 border-2 border-gray-100 hover:border-primary-blue hover:bg-primary-blue/[0.02] rounded-2xl transition-all text-left"
+                                className="group p-6 border-2 border-gray-100 hover:border-primary-blue/50 hover:bg-primary-blue/5 rounded-2xl transition-all text-left relative overflow-hidden"
                             >
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-blue-100 rounded-xl group-hover:bg-blue-200 transition-colors">
-                                        <ArrowUpCircle className="w-6 h-6 text-primary-blue" />
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary-blue/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary-blue/10 transition-colors"></div>
+                                <div className="flex items-start justify-between mb-4 relative z-10">
+                                    <div className="p-3 bg-primary-blue/10 rounded-xl group-hover:bg-primary-blue group-hover:text-white transition-all duration-300">
+                                        <ArrowUpCircle className="w-6 h-6" />
                                     </div>
-                                    <div className="text-xs font-bold text-primary-blue uppercase tracking-wider">Sell Crypto</div>
+                                    <div className="text-[10px] font-black text-primary-blue uppercase tracking-widest bg-primary-blue/10 px-2 py-1 rounded-md">Sell Crypto</div>
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-1">Offramp (USDC ➔ Naira)</h3>
-                                <p className="text-sm text-gray-500">Sell your USDC and receive Naira directly in your local bank account.</p>
+                                <h3 className="text-lg font-black text-gray-900 mb-1 relative z-10">Offramp (USDC ➔ Naira)</h3>
+                                <p className="text-sm text-gray-500 leading-relaxed relative z-10">Sell your USDC and receive Naira directly in your local bank account.</p>
                             </button>
                         </div>
                     )}
@@ -439,18 +450,30 @@ export default function RampModal({ isOpen, onClose }: RampModalProps) {
                     {/* Step: Success */}
                     {step === "success" && (
                         <div className="text-center py-8">
-                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <CheckCircle2 className="w-12 h-12 text-green-600" />
+                            <div className="relative inline-block mb-8">
+                                <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full animate-pulse"></div>
+                                <div className="relative w-24 h-24 bg-green-100 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-xl border-4 border-white">
+                                    <CheckCircle2 className="w-12 h-12 text-green-600" />
+                                </div>
                             </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">Order Initiated!</h3>
-                            <p className="text-gray-500 mb-8 max-w-[280px] mx-auto">
-                                Your {type === 'onramp' ? 'purchase' : 'withdrawal'} is being processed. You'll receive a notification once confirmed.
+                            <h3 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Success! 🚀</h3>
+                            <p className="text-gray-500 mb-8 max-w-[280px] mx-auto font-medium leading-relaxed">
+                                Your {type === 'onramp' ? 'purchase' : 'withdrawal'} has been initiated and is being processed.
                             </p>
-                            <Button variant="primary" fullWidth onClick={onClose}>
-                                Close Window
+                            <Button variant="primary" fullWidth onClick={onClose} className="h-14 rounded-2xl font-bold text-lg shadow-lg shadow-primary-blue/20">
+                                Awesome, Thanks!
                             </Button>
                         </div>
                     )}
+                </div>
+
+                {/* Powered by Paj Cash branding */}
+                <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-center gap-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Powered by</span>
+                    <div className="flex items-center gap-1">
+                        <span className="text-sm font-black text-primary-blue tracking-tighter">PAJ</span>
+                        <span className="text-sm font-black text-gray-900 tracking-tighter">CASH</span>
+                    </div>
                 </div>
             </Card>
         </div>

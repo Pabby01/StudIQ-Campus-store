@@ -25,6 +25,7 @@ export default function WalletPage() {
     const [isSendOpen, setIsSendOpen] = useState(false);
     const [isReceiveOpen, setIsReceiveOpen] = useState(false);
     const [isRampOpen, setIsRampOpen] = useState(false);
+    const [rampType, setRampType] = useState<"onramp" | "offramp">("onramp");
     const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
     const [comingSoonFeature, setComingSoonFeature] = useState("");
 
@@ -53,7 +54,14 @@ export default function WalletPage() {
                 onClusterChange={setCluster}
                 onSend={() => setIsSendOpen(true)}
                 onReceive={() => setIsReceiveOpen(true)}
-                onDeposit={() => setIsRampOpen(true)}
+                onOnramp={() => {
+                    setRampType("onramp");
+                    setIsRampOpen(true);
+                }}
+                onOfframp={() => {
+                    setRampType("offramp");
+                    setIsRampOpen(true);
+                }}
                 onSwap={() => {
                     setComingSoonFeature("Swap");
                     setIsComingSoonOpen(true);
@@ -80,6 +88,7 @@ export default function WalletPage() {
 
             <RampModal
                 isOpen={isRampOpen}
+                initialType={rampType}
                 onClose={() => setIsRampOpen(false)}
             />
 
