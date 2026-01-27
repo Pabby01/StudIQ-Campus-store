@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Send, ArrowDown, Wallet, Eye, EyeOff, ChevronDown, Coins, ArrowLeftRight } from "lucide-react";
+import { Copy, Send, ArrowDown, Wallet, Eye, EyeOff, ChevronDown, Coins, ArrowLeftRight, ArrowUpCircle } from "lucide-react";
 import Card from "@/components/ui/Card";
 import { Cluster } from "@/hooks/useSolanaBalance";
 import { TokenBalance } from "@/hooks/useTokenBalances";
@@ -13,7 +13,8 @@ interface WalletCardProps {
     onClusterChange: (c: Cluster) => void;
     onSend: () => void;
     onReceive: () => void;
-    onDeposit: () => void;
+    onOnramp: () => void;
+    onOfframp: () => void;
     onSwap: () => void;
 }
 
@@ -26,7 +27,8 @@ export default function WalletCard({
     onClusterChange,
     onSend,
     onReceive,
-    onDeposit,
+    onOnramp,
+    onOfframp,
     onSwap
 }: WalletCardProps) {
     const [showBalance, setShowBalance] = useState(true);
@@ -126,27 +128,21 @@ export default function WalletCard({
                         <span className="font-semibold text-white text-xs sm:text-sm">Swap</span>
                     </button>
                     <button
-                        onClick={onDeposit}
-                        className="group relative flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-green-500/20"
+                        onClick={onOfframp}
+                        className="group relative flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-orange-500/20"
                     >
-                        <div className="absolute -top-1 -right-1 bg-yellow-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-20">
-                            SOON
-                        </div>
                         <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
-                            <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                            <ArrowUpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </div>
-                        <span className="font-semibold text-white text-xs sm:text-sm">Deposit</span>
+                        <span className="font-semibold text-white text-xs sm:text-sm">Withdraw</span>
                     </button>
                 </div>
 
                 <div className="max-w-sm mx-auto mb-8">
                     <button
-                        onClick={onDeposit}
+                        onClick={onOnramp}
                         className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95 relative overflow-hidden group"
                     >
-                        <div className="absolute top-0 right-0 bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-bl-lg shadow-sm z-20">
-                            SOON
-                        </div>
                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                         <Wallet className="w-5 h-5" />
                         <span>Deposit w/ Naira (Paj Cash)</span>

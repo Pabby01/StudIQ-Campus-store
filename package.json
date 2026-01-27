@@ -36,6 +36,7 @@
     "lucide-react": "^0.555.0",
     "next": "16.0.10",
     "next-auth": "^4.24.13",
+    "paj_ramp": "^1.5.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-hook-form": "^7.67.0",
