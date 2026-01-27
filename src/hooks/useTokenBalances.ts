@@ -125,7 +125,7 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                 let priceData: any = {};
 
                 try {
-                    const priceRes = await fetch(`https://price.jup.ag/v4/price?ids=${priceIds}`);
+                    const priceRes = await fetch(`https://api.jup.ag/price/v2/full?ids=${priceIds}`);
                     const json = await priceRes.json();
                     priceData = json.data;
                 } catch (e) {
@@ -136,7 +136,7 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
 
 
                 // Add SOL
-                let solPrice = priceData?.[SOL_MINT]?.price || 0;
+                let solPrice = parseFloat(priceData?.[SOL_MINT]?.price || "0");
 
                 // Fallback for Devnet/Testnet if mainnet price fetch blocked or empty
                 if (solPrice === 0) {
@@ -164,7 +164,7 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                     // If Devnet and it's a known "USDC-Dev" mint, use USDC price? (Implementing simplified logic)
                     // For now, Devnet tokens get 0 price unless it's SOL
 
-                    const price = priceData?.[t.mint]?.price || 0;
+                    const price = parseFloat(priceData?.[t.mint]?.price || "0");
 
                     finalTokens.push({
                         mint: t.mint,

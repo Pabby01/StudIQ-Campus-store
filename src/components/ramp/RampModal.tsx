@@ -152,6 +152,7 @@ export default function RampModal({ isOpen, onClose }: RampModalProps) {
                 orderData.amount = parseFloat(amount);
                 orderData.bankId = selectedBank;
                 orderData.accountNumber = accountNumber;
+                orderData.recipient = walletAddress;
             }
 
             const res = await fetch("/api/ramp/orders", {
@@ -271,17 +272,17 @@ export default function RampModal({ isOpen, onClose }: RampModalProps) {
                         <div className="space-y-6">
                             <Input
                                 label="Verification Code"
-                                placeholder="Enter 6-digit OTP"
+                                placeholder="Enter 4-digit OTP"
                                 value={otp}
                                 onChange={(e) => setOtp(e.target.value)}
-                                maxLength={6}
+                                maxLength={4}
                             />
                             <div className="flex flex-col gap-3">
                                 <Button
                                     variant="primary"
                                     fullWidth
                                     onClick={handleVerify}
-                                    disabled={loading || otp.length < 6}
+                                    disabled={loading || otp.length < 4}
                                 >
                                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify & Continue"}
                                 </Button>

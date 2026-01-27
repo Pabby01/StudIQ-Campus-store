@@ -47,10 +47,11 @@ export async function GET(req: Request) {
         // Fetch SOL Price for currency conversion
         let solPrice = 0;
         try {
-            // Use Jupiter v4 API for consistency with wallet
-            const priceRes = await fetch("https://price.jup.ag/v4/price?ids=So11111111111111111111111111111111111111112");
+            // Use Jupiter v2 API
+            const priceRes = await fetch("https://api.jup.ag/price/v2/full?ids=So11111111111111111111111111111111111111112");
             const priceData = await priceRes.json();
-            solPrice = priceData?.data?.["So11111111111111111111111111111111111111112"]?.price || 0;
+            const rawPrice = priceData?.data?.["So11111111111111111111111111111111111111112"]?.price;
+            solPrice = parseFloat(rawPrice || "0");
         } catch (e) {
             console.error("Failed to fetch SOL price", e);
         }

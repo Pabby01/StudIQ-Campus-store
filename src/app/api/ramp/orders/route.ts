@@ -1,14 +1,28 @@
 import { createOnrampOrder, createOfframpOrder, Currency } from 'paj_ramp';
+import { PAJ_CONFIG } from '@/lib/paj';
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase';
+
+const DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+const MAINNET_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+
+const mapMintForPaj = (mint: string) => {
+    if (mint === DEVNET_USDC_MINT) return MAINNET_USDC_MINT;
+    return mint;
+};
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { type, token, data } = body;
+        let { type, token, data } = body;
 
         if (!token) {
             return NextResponse.json({ error: "Session token is required" }, { status: 401 });
+        }
+
+        // Map devnet mint to mainnet for Paj pricing/order creation
+        if (data && data.mint) {
+            data.mint = mapMintForPaj(data.mint);
         }
 
         const supabase = getSupabaseServerClient();
@@ -22,7 +36,7 @@ export async function POST(req: Request) {
                     recipient: data.recipient,
                     mint: data.mint,
                     chain: data.chain || 'SOLANA',
-                    webhookURL: data.webhookURL,
+                    webhookURL: data.webhookURL || PAJ_CONFIG.webhookUrl,
                 },
                 token
             );
@@ -48,7 +62,7 @@ export async function POST(req: Request) {
                     currency: (data.currency || 'NGN') as Currency,
                     amount: data.amount,
                     mint: data.mint,
-                    webhookURL: data.webhookURL,
+                    webhookURL: data.webhookURL || PAJ_CONFIG.webhookUrl,
                 },
                 token
             );
@@ -56,7 +70,7 @@ export async function POST(req: Request) {
             // Log transaction to database
             await supabase.from('ramp_transactions').insert({
                 paj_id: order.id,
-                user_address: order.address, // Correct field for user wallet in offramp
+                user_address: data.recipient || order.address, // Use recipient from data if provided
                 type: 'offramp',
                 fiat_amount: order.fiatAmount,
                 currency: order.currency || 'NGN',

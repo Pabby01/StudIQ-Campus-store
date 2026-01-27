@@ -1,4 +1,5 @@
 import { getBanks, resolveBankAccount } from 'paj_ramp';
+import { PAJ_CONFIG } from '@/lib/paj';
 import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
