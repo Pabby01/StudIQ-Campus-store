@@ -14,9 +14,13 @@ export async function GET(req: Request) {
         }
 
         if (bankId && accountNumber) {
-            console.log(`[PAJ Ramp] Resolving bank account: ${accountNumber} in ${bankId}`);
-            const account = await resolveBankAccount(token, bankId, accountNumber);
-            return NextResponse.json({ success: true, account });
+            if (bankId && accountNumber) {
+                console.log(`[PAJ Ramp] Resolving: Acct=${accountNumber}, Bank=${bankId}, Token=${token?.substring(0, 10)}...`);
+                // Attempt resolution
+                const account = await resolveBankAccount(token, bankId, accountNumber);
+                console.log(`[PAJ Ramp] Resolution success:`, account);
+                return NextResponse.json({ success: true, account });
+            }
         }
 
         console.log("[PAJ Ramp] Fetching banks");

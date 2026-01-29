@@ -50,13 +50,17 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
 
     // Order State
     const [order, setOrder] = useState<any>(null);
+    const [lastResolvedParams, setLastResolvedParams] = useState<string>("");
 
     useEffect(() => {
         if (isOpen) {
             fetchRates();
+            setError(null);
+            setLastResolvedParams(""); // Reset on open
             if (initialType) {
                 setType(initialType);
                 setStep("verify");
+                setPajToken(null); // Ensure clean slate
             } else {
                 setStep("type");
             }
@@ -104,6 +108,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             });
             const data = await res.json();
             if (data.success) {
+                console.log("[Ramp] Verify Success. Response:", data.response);
                 setPajToken(data.response.token);
                 if (type === "offramp") {
                     fetchBanks(data.response.token);
@@ -123,23 +128,75 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
         try {
             const res = await fetch(`/api/ramp/banks?token=${encodeURIComponent(token)}`);
             const data = await res.json();
-            if (data.success) setBanks(data.banks);
+            if (data.success) {
+                const sortedBanks = data.banks.sort((a: any, b: any) =>
+                    a.name.localeCompare(b.name)
+                );
+                setBanks(sortedBanks);
+            }
         } catch (err) {
             console.error("Failed to fetch banks", err);
         }
     };
 
+    // Debounce state for account resolution
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            console.log("[Ramp] Checking auto-resolve:", { len: accountNumber.length, bank: selectedBank, hasToken: !!pajToken });
+            if (accountNumber.length >= 10 && selectedBank && pajToken) {
+                console.log("[Ramp] Triggering resolution...");
+                handleResolveAccount();
+            }
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [accountNumber, selectedBank, pajToken]);
+
     const handleResolveAccount = async () => {
-        if (!pajToken || !selectedBank || accountNumber.length < 10) return;
+        const currentParams = `${selectedBank}-${accountNumber}`;
+
+        console.log("[Ramp] Handle Resolve called", {
+            selectedBank,
+            accountNumber,
+            hasToken: !!pajToken,
+            loading,
+            isDuplicate: lastResolvedParams === currentParams
+        });
+
+        if (!pajToken || !selectedBank || accountNumber.length < 10) {
+            console.warn("[Ramp] Missing requirements for resolution");
+            return;
+        }
+
+        // BLOCKER: If we already resolved this exact combo, DO NOT call again.
+        if (lastResolvedParams === currentParams) {
+            console.log("[Ramp] Skipping duplicate resolution call");
+            return;
+        }
+
+        if (loading) {
+            console.log("[Ramp] Skipping resolve: Already loading");
+            return;
+        }
+
         setLoading(true);
         setResolvedAccount(null);
+        // Note: We don't clear error here immediately to avoid flickering if it's a re-try
+
         try {
+            console.log("[Ramp] Fetching resolution from API...");
             const res = await fetch(`/api/ramp/banks?token=${encodeURIComponent(pajToken)}&bankId=${selectedBank}&accountNumber=${accountNumber}`);
             const data = await res.json();
+            console.log("[Ramp] Resolution Result:", data);
+
             if (data.success) {
                 setResolvedAccount(data.account);
+                setLastResolvedParams(currentParams); // Mark as resolved
             } else {
                 console.warn("[Ramp] Rate/Account resolve failed:", data.error);
+                // Only show error if it's a real failure
+                setResolvedAccount(null);
+                setError(typeof data.error === 'string' ? data.error : "Failed to resolve account");
             }
         } catch (err) {
             console.error("Failed to resolve account", err);
@@ -192,8 +249,14 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-            <Card className="w-full h-full sm:h-auto sm:max-w-lg relative overflow-hidden bg-white border-0 shadow-2xl sm:rounded-3xl flex flex-col">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <Card
+                className="w-full max-w-lg max-h-[90vh] flex flex-col relative overflow-hidden bg-white border-0 shadow-2xl rounded-3xl"
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-full transition-colors z-20"
@@ -203,7 +266,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
 
                 <div className="flex-1 overflow-y-auto p-6 sm:p-8">
                     {/* Header */}
-                    <div className="mb-8 p-6 -mx-8 -mt-8 bg-gradient-to-r from-primary-blue/5 to-primary-blue/10 border-b border-primary-blue/10">
+                    <div className="mb-8 p-6 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 bg-gradient-to-r from-primary-blue/5 to-primary-blue/10 border-b border-primary-blue/10">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2.5 bg-primary-blue text-white rounded-xl shadow-lg shadow-primary-blue/20">
                                 <ArrowRightLeft className="w-6 h-6" />
@@ -352,7 +415,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                                                 placeholder="Account Number"
                                                 value={accountNumber}
                                                 onChange={(e) => setAccountNumber(e.target.value)}
-                                                onBlur={handleResolveAccount}
+                                                // onBlur removed in favor of auto-debounce
                                                 maxLength={10}
                                             />
                                             {resolvedAccount && (
