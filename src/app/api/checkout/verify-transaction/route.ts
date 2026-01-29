@@ -46,17 +46,17 @@ export async function POST(req: Request) {
             let solPrice = null;
 
             try {
-                // Primary: Jupiter Price API V2
-                const jupiterRes = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112", {
+                // Primary: CoinGecko (Simple Price)
+                const cgRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", {
                     headers: { 'Accept': 'application/json', 'User-Agent': 'CampusStore/1.0' }
                 });
 
-                if (jupiterRes.ok) {
-                    const priceData = await jupiterRes.json();
-                    solPrice = Number(priceData.data["So11111111111111111111111111111111111111112"]?.price);
+                if (cgRes.ok) {
+                    const data = await cgRes.json();
+                    solPrice = Number(data.solana?.usd);
                 }
             } catch (e) {
-                console.warn("[Verify] Jupiter fetch failed:", e);
+                console.warn("[Verify] CoinGecko fetch failed:", e);
             }
 
             if (!solPrice || isNaN(solPrice)) {

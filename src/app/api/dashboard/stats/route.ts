@@ -45,13 +45,13 @@ export async function GET(req: Request) {
         const totalPoints = pointsData?.reduce((sum, log) => sum + log.points, 0) || 0;
 
         // Fetch SOL Price for currency conversion
+        // Fetch SOL Price for currency conversion
         let solPrice = 0;
         try {
-            // Use Jupiter v2 API
-            const priceRes = await fetch("https://api.jup.ag/price/v2/full?ids=So11111111111111111111111111111111111111112");
+            // Use CoinGecko fallback
+            const priceRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
             const priceData = await priceRes.json();
-            const rawPrice = priceData?.data?.["So11111111111111111111111111111111111111112"]?.price;
-            solPrice = parseFloat(rawPrice || "0");
+            solPrice = parseFloat(priceData?.solana?.usd || "0");
         } catch (e) {
             console.error("Failed to fetch SOL price", e);
         }

@@ -121,7 +121,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
 
     const fetchBanks = async (token: string) => {
         try {
-            const res = await fetch(`/api/ramp/banks?token=${token}`);
+            const res = await fetch(`/api/ramp/banks?token=${encodeURIComponent(token)}`);
             const data = await res.json();
             if (data.success) setBanks(data.banks);
         } catch (err) {
@@ -132,10 +132,15 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
     const handleResolveAccount = async () => {
         if (!pajToken || !selectedBank || accountNumber.length < 10) return;
         setLoading(true);
+        setResolvedAccount(null);
         try {
-            const res = await fetch(`/api/ramp/banks?token=${pajToken}&bankId=${selectedBank}&accountNumber=${accountNumber}`);
+            const res = await fetch(`/api/ramp/banks?token=${encodeURIComponent(pajToken)}&bankId=${selectedBank}&accountNumber=${accountNumber}`);
             const data = await res.json();
-            if (data.success) setResolvedAccount(data.account);
+            if (data.success) {
+                setResolvedAccount(data.account);
+            } else {
+                console.warn("[Ramp] Rate/Account resolve failed:", data.error);
+            }
         } catch (err) {
             console.error("Failed to resolve account", err);
         } finally {
@@ -384,7 +389,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                                     variant="primary"
                                     fullWidth
                                     onClick={handleCreateOrder}
-                                    disabled={loading || !amount}
+                                    disabled={loading || !amount || (type === 'offramp' && !resolvedAccount)}
                                 >
                                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : `Initiate ${type === 'onramp' ? 'Purchase' : 'Sale'}`}
                                 </Button>

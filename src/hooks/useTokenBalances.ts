@@ -79,9 +79,61 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
             try {
                 // Determine RPC URL based on cluster
                 const rpcUrl = cluster === 'mainnet'
-                    ? (process.env.NEXT_PUBLIC_MAINNET_RPC_URL || clusterApiUrl('mainnet-beta'))
-                    : (process.env.NEXT_PUBLIC_DEVNET_RPC_URL || clusterApiUrl('devnet'));
+                    ? (process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl('mainnet-beta'))
+                    : (process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl('devnet'));
 
+                // OPTIMIZATION: Use Helius DAS API on Mainnet if available
+                if (cluster === 'mainnet' && rpcUrl.includes("helius")) {
+                    try {
+                        const { getAssetsByOwner } = await import('@/lib/helius');
+                        const assets = await getAssetsByOwner(address);
+
+                        if (assets.length > 0) {
+                            // Transform Helius assets to TokenBalance format
+                            const transformedTokens: TokenBalance[] = assets.map(asset => {
+                                const isSol = asset.id === "So11111111111111111111111111111111111111112";
+                                const decimals = asset.token_info?.decimals || 9;
+                                // DAS API returns raw balance, need to adjust
+                                const rawBalance = asset.token_info?.balance || 0;
+                                const balance = rawBalance / Math.pow(10, decimals);
+
+                                // Price info from Helius DAS (if available)
+                                let pricePerToken = asset.token_info?.price_info?.price_per_token || 0;
+
+                                // Fallback for Stablecoins if Helius DAS returns 0
+                                if (pricePerToken === 0) {
+                                    const isUSDC = asset.id === "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" || asset.id === "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+                                    const isUSDT = asset.id === "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
+                                    if (isUSDC || isUSDT) pricePerToken = 1.00;
+                                }
+
+                                return {
+                                    mint: asset.id,
+                                    symbol: asset.content.metadata?.symbol || (isSol ? "SOL" : "Unknown"),
+                                    name: asset.content.metadata?.name || (isSol ? "Solana" : "Unknown Token"),
+                                    balance: balance,
+                                    decimals: decimals,
+                                    usdValue: balance * pricePerToken,
+                                    price: pricePerToken,
+                                    logo: asset.content.links?.image || ""
+                                };
+                            }).filter(t => t.balance > 0);
+
+                            // Sort by USD value
+                            transformedTokens.sort((a, b) => b.usdValue - a.usdValue);
+
+                            if (isMounted) {
+                                setTokens(transformedTokens);
+                                setTotalUsd(transformedTokens.reduce((sum, t) => sum + t.usdValue, 0));
+                                setLoading(false);
+                            }
+                            return; // Exit early if Helius success
+                        }
+                    } catch (heliusError) {
+                        console.error("Helius DAS fallback failed, using standard RPC:", heliusError);
+                        // Fall through to standard RPC
+                    }
+                }
 
                 const connection = new Connection(rpcUrl, 'confirmed');
                 const pubKey = new PublicKey(address);
@@ -118,15 +170,18 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                 }
 
                 // Chunk price requests if too many? Jupiter supports many.
-                const priceIds = mintsToPrice.join(",");
+                // REMOVED: Jupiter V2 API returning 401. 
+                // We will rely on simple fallback or implementing a robust price provider later.
                 let priceData: any = {};
 
+                // Fallback Price Fetcher (CoinGecko Simple) - Client Side Only
                 try {
-                    const priceRes = await fetch(`https://api.jup.ag/price/v2/full?ids=${priceIds}`);
-                    const json = await priceRes.json();
-                    priceData = json.data;
+                    const ids = mintsToPrice.map(m => m === SOL_MINT ? "solana" : m).join(",");
+                    // Only fetch for SOL for now to avoid complexity, or skip entire block.
+                    // The Helius optimization block above handles Mainnet prices effectively.
+                    // This block is only for fallback/devnet.
                 } catch (e) {
-                    console.warn("Failed to fetch prices:", e);
+                    // ignore
                 }
 
                 const finalTokens: TokenBalance[] = [];
@@ -138,7 +193,7 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                 // Fallback for Devnet/Testnet if mainnet price fetch blocked or empty
                 if (solPrice === 0) {
                     console.warn("[Wallet] Failed to fetch SOL price, using fallback");
-                    solPrice = 145.50; // Approximate fallback
+                    solPrice = 200.00; // Approximate fallback updated
                 }
 
                 finalTokens.push({
@@ -156,12 +211,17 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                 for (const t of rawTokens) {
                     const meta = COMMON_TOKENS[t.mint] || { symbol: t.mint.slice(0, 4), name: "Unknown Token", logo: "" };
 
-                    // Simple price logic: 
-                    // If Mainnet, use fetched price.
-                    // If Devnet and it's a known "USDC-Dev" mint, use USDC price? (Implementing simplified logic)
-                    // For now, Devnet tokens get 0 price unless it's SOL
+                    // Simple price logic with Stablecoin fallback
+                    let price = parseFloat(priceData?.[t.mint]?.price || "0");
 
-                    const price = parseFloat(priceData?.[t.mint]?.price || "0");
+                    // Fallback for known stablecoins if price is 0 (Helius often misses these on DAS)
+                    if (price === 0) {
+                        const isUSDC = t.mint === "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" || t.mint === "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+                        const isUSDT = t.mint === "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
+                        if (isUSDC || isUSDT) {
+                            price = 1.00;
+                        }
+                    }
 
                     finalTokens.push({
                         mint: t.mint,

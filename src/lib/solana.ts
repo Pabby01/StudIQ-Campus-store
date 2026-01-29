@@ -29,10 +29,15 @@ export const rpc = createSolanaRpc(SOLANA_RPC_URL);
 export const rpcSubscriptions = createSolanaRpcSubscriptions(SOLANA_WSS_URL);
 
 export function getClusterUrl(cluster: 'devnet' | 'mainnet') {
+    // If the configured network matches the requested cluster, use the configured RPC (which contains Helius keys)
+    if (cluster === SOLANA_CONFIG.network) {
+        return SOLANA_CONFIG.rpcUrl;
+    }
+
     if (cluster === 'mainnet') {
         return process.env.NEXT_PUBLIC_SOLANA_MAINNET_RPC_URL || "https://api.mainnet-beta.solana.com";
     }
-    return SOLANA_CONFIG.rpcUrl;
+    return process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || "https://api.devnet.solana.com";
 }
 
 export function getRpc(cluster: 'devnet' | 'mainnet' = 'devnet') {

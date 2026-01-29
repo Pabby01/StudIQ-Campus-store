@@ -5,9 +5,9 @@ export const revalidate = 60; // Cache for 60 seconds
 
 export async function GET() {
     try {
-        // Primary: Jupiter Price API V2
-        // Adding headers to mimic a browser/valid client if needed, or just standard API usage
-        const jupiterRes = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112", {
+        // Primary: CoinGecko (Simple Price)
+        // Switch to CoinGecko as primary since Jupiter V2 is 401 Unauthorized
+        const cgRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", {
             headers: {
                 'Accept': 'application/json',
                 'User-Agent': 'CampusStore/1.0'
@@ -15,20 +15,21 @@ export async function GET() {
             next: { revalidate: 60 }
         });
 
-        if (jupiterRes.ok) {
-            const data = await jupiterRes.json();
-            const price = Number(data.data["So11111111111111111111111111111111111111112"]?.price);
+        if (cgRes.ok) {
+            const data = await cgRes.json();
+            const price = Number(data.solana?.usd);
 
             if (price && !isNaN(price)) {
-                return NextResponse.json({ price, source: 'jupiter' });
+                return NextResponse.json({ price, source: 'coingecko' });
             }
         } else {
-            console.warn(`[PriceProxy] Jupiter API failed: ${jupiterRes.status}`);
+            console.error(`[PriceProxy] CoinGecko API failed: ${cgRes.status}`);
         }
+
 
         // Fallback: CoinGecko
         console.log("[PriceProxy] Switching to CoinGecko fallback");
-        const cgRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", {
+        const fallbackRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", {
             headers: {
                 'Accept': 'application/json',
                 'User-Agent': 'CampusStore/1.0'
