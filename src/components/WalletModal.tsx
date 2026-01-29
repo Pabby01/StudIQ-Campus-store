@@ -24,7 +24,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             const wallet = wallets.find(w => w.adapter.name === walletName);
             if (!wallet) return;
 
-            console.log('[WalletModal] Connecting to:', walletName);
 
             // Select the wallet
             select(wallet.adapter.name);
@@ -34,10 +33,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             await new Promise(resolve => setTimeout(resolve, 200));
 
             // Connect - this will trigger the deep link for mobile wallets
-            console.log('[WalletModal] Triggering connection...');
             await connect();
-
-            console.log('[WalletModal] Connection initiated, waiting for result...');
 
             // Wait for connection to complete
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -45,7 +41,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             // Check if profile exists and is complete
             if (publicKey) {
                 const address = publicKey.toString();
-                console.log("[WalletModal] Checking profile for:", address);
 
                 try {
                     const profileRes = await fetch(`/api/profile/get?address=${address}`, {
@@ -55,18 +50,12 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
                     if (profileRes.ok) {
                         const profile = await profileRes.json();
-                        console.log("[WalletModal] Profile found:", profile);
-
-                        // Check if profile is incomplete
                         if (!profile || !profile.name || !profile.school || !profile.campus) {
-                            console.log("[WalletModal] Incomplete profile, redirecting to onboarding");
                             onClose();
                             window.location.href = "/onboarding";
                             return;
                         }
                     } else {
-                        // Profile doesn't exist
-                        console.log("[WalletModal] Profile not found, redirecting to onboarding");
                         onClose();
                         window.location.href = "/onboarding";
                         return;

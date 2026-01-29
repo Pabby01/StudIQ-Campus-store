@@ -84,7 +84,6 @@ export default function CartPage() {
 
     // Determine final payment method: if pickup, force POD/POP logic
     const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
-    console.log("Starting checkout process...", { finalPaymentMethod, deliveryMethod, isAuthenticated });
 
     if (items.length === 0) {
       setError("Your cart is empty");
@@ -92,13 +91,11 @@ export default function CartPage() {
     }
 
     if (!isAuthenticated) {
-      console.log("Checkout blocked: Not authenticated");
       setShowAuthModal(true);
       return;
     }
 
     if (finalPaymentMethod === "solana" && !walletAddress) {
-      console.log("Checkout blocked: Wallet not ready for crypto");
       setError("Wallet not ready for crypto payment. Please wait or use Pay on Delivery.");
       return;
     }
@@ -145,11 +142,7 @@ export default function CartPage() {
       return;
     }
 
-    setCheckoutStatus("creating");
-    setError(null);
-
     try {
-      console.log("Creating order with payment method:", finalPaymentMethod);
 
       const createRes = await fetch("/api/checkout/create", {
         method: "POST",
@@ -164,7 +157,6 @@ export default function CartPage() {
       }
 
       const orderData = await createRes.json();
-      console.log("Order created:", orderData);
       setOrderId(orderData.orderId);
 
       // Handle Pay on Delivery or Free Orders
@@ -212,7 +204,6 @@ export default function CartPage() {
         mint = undefined; // SOL
       }
 
-      console.log(`[Checkout] Paying ${finalAmount.toFixed(6)} ${finalCurrency} (Rate: ${exchangeRate})`);
 
       const transaction = await createTransferTransaction(
         walletAddress,

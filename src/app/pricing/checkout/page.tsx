@@ -101,13 +101,9 @@ function CheckoutContent() {
             } catch (confirmError: any) {
                 // If confirmation times out, the transaction might still succeed
                 // Check transaction status manually
-                console.log('Confirmation timeout, checking transaction status...');
-
                 const status = await connection.getSignatureStatus(txSignature);
-                if (status?.value?.confirmationStatus === 'confirmed' ||
-                    status?.value?.confirmationStatus === 'finalized') {
-                    console.log('Transaction confirmed after timeout');
-                } else {
+                if (status?.value?.confirmationStatus !== 'confirmed' &&
+                    status?.value?.confirmationStatus !== 'finalized') {
                     throw new Error(`Transaction not confirmed. Signature: ${txSignature}. Please check Solana Explorer.`);
                 }
             }

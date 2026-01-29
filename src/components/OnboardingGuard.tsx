@@ -32,19 +32,15 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
                 const res = await fetch(url);
 
                 if (res.status === 401) {
-                    console.warn("[OnboardingGuard] Unauthorized profile check, skipping redirect");
                     return;
                 }
 
                 const data = await res.json();
-                console.log("[OnboardingGuard] Profile check result:", data);
-
                 if (data.exists === false) {
-                    console.log("[OnboardingGuard] New user detected, redirecting to onboarding");
                     router.push("/onboarding");
                 }
             } catch (error) {
-                console.error("[OnboardingGuard] Profile check failed:", error);
+                // Silently fail on check errors during production
             }
         };
 
