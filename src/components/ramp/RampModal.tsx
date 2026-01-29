@@ -16,6 +16,9 @@ import {
     Wallet
 } from "lucide-react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { SOLANA_CONFIG } from "@/lib/solana-config";
 
 interface RampModalProps {
@@ -28,7 +31,9 @@ type Step = "type" | "verify" | "otp" | "form" | "confirm" | "success";
 type RampType = "onramp" | "offramp";
 
 export default function RampModal({ isOpen, onClose, initialType }: RampModalProps) {
-    const { walletAddress, email } = useCivicWallet();
+    const { walletAddress, email, signTransaction } = useCivicWallet();
+    const { connection } = useConnection();
+    // usage of useWallet removed to prevent conflicts with embedded wallet context
 
     const [step, setStep] = useState<Step>(initialType ? "verify" : "type");
     const [type, setType] = useState<RampType>(initialType || "onramp");
@@ -206,6 +211,24 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
     };
 
     const handleCreateOrder = async () => {
+        console.log("Create Order Clicked. State:", { type, walletAddress, amount });
+
+        if (type === "offramp" && !walletAddress) {
+            console.error("No wallet address found!");
+            setError("Wallet not connected. Please connect your wallet.");
+            return;
+        }
+
+        if (!amount || parseFloat(amount) <= 0) {
+            setError("Please enter a valid amount");
+            return;
+        }
+
+        if (type === 'offramp' && !resolvedAccount) {
+            setError("Please wait for account resolution to complete");
+            return;
+        }
+
         setLoading(true);
         setError(null);
         try {
@@ -224,6 +247,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                 orderData.recipient = walletAddress;
             }
 
+            // 1. Create the Order
             const res = await fetch("/api/ramp/orders", {
                 method: "POST",
                 body: JSON.stringify({
@@ -233,14 +257,71 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                 }),
             });
             const data = await res.json();
+
             if (data.success) {
                 setOrder(data.order);
-                setStep("confirm");
+
+                // 2. FOR OFFRAMP: TRIGGER WALLET TRANSACTION
+                if (type === "offramp") {
+                    console.log("[Ramp] Triggering Offramp Transaction...", data.order);
+                    const depositAddress = data.order.address || data.order.walletAddress;
+
+                    if (!depositAddress) {
+                        throw new Error("No deposit address received from Paj Cash");
+                    }
+
+                    const destinationPubkey = new PublicKey(depositAddress);
+                    const usdcMintPubkey = new PublicKey(SOLANA_CONFIG.usdcMint);
+                    const amountInBaseUnits = Math.floor(parseFloat(amount) * 1_000_000); // 6 decimals for USDC
+
+                    // Use the wallet address from Civic hook
+                    const userPublicKey = new PublicKey(walletAddress!);
+
+                    // Get User's Token Account
+                    const sourceATA = await getAssociatedTokenAddress(usdcMintPubkey, userPublicKey);
+
+                    // Get Paj's Token Account (Deposit Address)
+                    const destATA = await getAssociatedTokenAddress(usdcMintPubkey, destinationPubkey);
+
+                    // Create Transaction
+                    const transaction = new Transaction().add(
+                        createTransferInstruction(
+                            sourceATA,
+                            destATA,
+                            userPublicKey,
+                            amountInBaseUnits,
+                            [],
+                            TOKEN_PROGRAM_ID
+                        )
+                    );
+
+                    transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+                    transaction.feePayer = userPublicKey;
+
+                    console.log("[Ramp] Requesting Wallet Signature via Civic...");
+                    if (!signTransaction) {
+                        throw new Error("Signer not available");
+                    }
+
+                    const signedTx = await signTransaction(transaction);
+
+                    console.log("[Ramp] Sending Signed Transaction...");
+                    // signTransaction returns a signed Transaction object
+                    const rawTx = signedTx.serialize();
+                    const signature = await connection.sendRawTransaction(rawTx);
+
+                    console.log("[Ramp] Transaction Sent:", signature);
+                    await connection.confirmTransaction(signature, "confirmed");
+                    console.log("[Ramp] Transaction Confirmed!");
+                }
+
+                setStep("success");
             } else {
                 setError(data.error);
             }
-        } catch (err) {
-            setError("Failed to create order");
+        } catch (err: any) {
+            console.error("Order failed", err);
+            setError(err.message || "Failed to create order");
         } finally {
             setLoading(false);
         }
@@ -452,7 +533,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                                     variant="primary"
                                     fullWidth
                                     onClick={handleCreateOrder}
-                                    disabled={loading || !amount || (type === 'offramp' && !resolvedAccount)}
+                                    disabled={loading}
                                 >
                                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : `Initiate ${type === 'onramp' ? 'Purchase' : 'Sale'}`}
                                 </Button>
