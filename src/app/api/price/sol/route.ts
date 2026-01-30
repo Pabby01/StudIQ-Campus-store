@@ -1,3 +1,4 @@
+ 
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -37,15 +38,15 @@ export async function GET() {
             next: { revalidate: 60 }
         });
 
-        if (cgRes.ok) {
-            const data = await cgRes.json();
+        if (fallbackRes.ok) {
+            const data = await fallbackRes.json();
             const price = Number(data.solana?.usd);
 
             if (price && !isNaN(price)) {
                 return NextResponse.json({ price, source: 'coingecko' });
             }
         } else {
-            console.error(`[PriceProxy] CoinGecko API failed: ${cgRes.status}`);
+            console.error(`[PriceProxy] CoinGecko API failed: ${fallbackRes.status}`);
         }
 
         // Deep Fallback: Hardcoded "Safe" Price (Last known average) or Error

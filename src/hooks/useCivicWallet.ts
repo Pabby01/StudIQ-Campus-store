@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useUser } from "@civic/auth-web3/react";
 import { useWallet } from "@solana/wallet-adapter-react";
