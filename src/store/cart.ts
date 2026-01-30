@@ -15,6 +15,7 @@ type CartState = Readonly<{
   items: CartItem[];
   solPrice: number | null;
   lastSolPriceFetch: number;
+  isFetchingSolPrice: boolean;
   add(item: Omit<CartItem, "qty">, qty?: number): void;
   remove(id: string): void;
   clear(): void;
@@ -27,6 +28,7 @@ export const useCart = create<CartState>((set, get) => ({
   items: [],
   solPrice: null,
   lastSolPriceFetch: 0,
+  isFetchingSolPrice: false,
   add: (item, qty = 1) => {
     const items = get().items.slice();
     const index = items.findIndex((i) => i.id === item.id);
@@ -47,7 +49,11 @@ export const useCart = create<CartState>((set, get) => ({
   total: () => get().items.reduce((sum, i) => sum + i.price * i.qty, 0),
   fetchSolPrice: async () => {
     const now = Date.now();
-    const { lastSolPriceFetch, solPrice } = get();
+    const { lastSolPriceFetch, solPrice, isFetchingSolPrice } = get();
+
+    if (isFetchingSolPrice) {
+      return;
+    }
 
     // Cache for 60 seconds (Client-side cache)
     if (solPrice && (now - lastSolPriceFetch < 60000)) {
@@ -55,6 +61,7 @@ export const useCart = create<CartState>((set, get) => ({
     }
 
     try {
+      set({ isFetchingSolPrice: true });
       // Use our internal secure proxy (Handles Jupiter -> CoinGecko fallback on server)
       const res = await fetch("/api/price/sol");
       if (!res.ok) throw new Error(`Price proxy error: ${res.status}`);
@@ -69,7 +76,8 @@ export const useCart = create<CartState>((set, get) => ({
       }
     } catch (err) {
       console.error("Failed to fetch SOL price:", err);
+    } finally {
+      set({ isFetchingSolPrice: false });
     }
   }
 }));
-
