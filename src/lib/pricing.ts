@@ -1,4 +1,5 @@
 // Utility for converting USD to SOL and handling pricing
+import { SOLANA_CONFIG } from "./solana-config";
 
 const SOL_PRICE_USD = 100; // Approximate SOL price in USD - should be fetched from an API in production
 
@@ -63,4 +64,4 @@ export function calculateYearlySavings(plan: PlanName): number {
 }
 
 // Platform wallet address for receiving payments
-export const PLATFORM_WALLET = process.env.NEXT_PUBLIC_PLATFORM_WALLET || 'Hjg614To7b1jWiaGhkTXzPsnsv6dKYKD9CVkzCU8ghhY';
+export const PLATFORM_WALLET = SOLANA_CONFIG.platformWallet;

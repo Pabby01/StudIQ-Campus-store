@@ -2,11 +2,10 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { checkoutCreateSchema } from "@/lib/validators";
 import { triggerNotification } from "@/lib/notifications";
 import { getSessionWallet } from "@/lib/session";
+import { SOLANA_CONFIG } from "@/lib/solana-config";
 
 export async function POST(req: Request) {
   try {
-    console.log("[Checkout Create] Starting checkout process");
-
     const sessionAddress = await getSessionWallet(req);
     if (!sessionAddress) {
       return Response.json({ ok: false, error: "Unauthorized: Active wallet session required" }, { status: 401 });
@@ -25,8 +24,6 @@ export async function POST(req: Request) {
 
     // Override buyer with verified session address
     const buyerAddress = sessionAddress;
-
-    console.log("[Checkout Create] Validation passed, parsed data:", parsed.data);
 
     if ((!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return Response.json(
@@ -66,13 +63,11 @@ export async function POST(req: Request) {
           { status: 500 }
         );
       }
-      console.log("[Checkout Create] Buyer profile created successfully");
     }
 
     const items = parsed.data.items;
 
     // Step 1: Fetch product details
-    console.log("[Checkout Create] Fetching products:", items.map(i => i.productId));
     const { data: prods, error: prodsError } = await supabase
       .from("products")
       .select("id, name, image_url, price, store_id, inventory")
@@ -88,8 +83,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    console.log("[Checkout Create] Products found:", prods.length);
-
     // Step 2: Check inventory availability
     for (const item of items) {
       const product = prods.find((p) => p.id === item.productId);
@@ -199,7 +192,7 @@ export async function POST(req: Request) {
     const vendorEarnings = amount - feeAmount; // Use totalAmount
 
     // Platform wallet receives all payments
-    const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET || "Hx912yR4vDEwUqQNUZcaxwsjmE8B6Lq6grokrPh8a6Js";
+    const platformWallet = SOLANA_CONFIG.platformWallet;
 
     // Step 6: Create order (Updated)
     const { data: newOrder, error: orderError } = await supabase // Renamed 'order' to 'newOrder'
@@ -237,8 +230,6 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-    console.log("[Checkout Create] Order created successfully:", newOrder.id);
-
     // Step 7: Create order items
     const itemsRows = items.map((i) => {
       const p = prods.find((pp) => pp.id === i.productId)!;
@@ -266,8 +257,6 @@ export async function POST(req: Request) {
       try {
         // Import email functions
         const { sendOrderConfirmation, sendSellerNotification } = await import('@/lib/email');
-
-        console.log("[Checkout Email] Sending confirmations. Buyer Email:", parsed.data.buyerEmail);
 
         // Get store information for seller email
         const { data: store } = await supabase

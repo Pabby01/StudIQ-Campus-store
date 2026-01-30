@@ -1,3 +1,5 @@
+import { SOLANA_CONFIG } from "./solana-config";
+
 export const POINTS = {
     PROFILE_COMPLETE: 150,
     FIRST_PURCHASE: 100,
@@ -12,4 +14,4 @@ export const POINTS = {
     MILESTONE_100_SALES: 500,
 };
 
-export const PLATFORM_WALLET = process.env.NEXT_PUBLIC_PLATFORM_WALLET || "Hx912yR4vDEwUqQNUZcaxwsjmE8B6Lq6grokrPh8a6Js";
+export const PLATFORM_WALLET = SOLANA_CONFIG.platformWallet;

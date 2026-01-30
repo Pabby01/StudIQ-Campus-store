@@ -2,11 +2,10 @@ import { useState } from "react";
 import { X, Loader2, Send, CheckCircle2, AlertCircle, ArrowRight, Wallet, Info } from "lucide-react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useTokenBalances } from "@/hooks/useTokenBalances";
-import { createTransferTransaction, broadcastTransaction, waitForConfirmation } from "@/lib/solana";
+import { createTransferTransaction, broadcastTransaction, waitForConfirmation, isValidSolanaAddress } from "@/lib/solana";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Dialog from "@/components/ui/Dialog";
-
 import { Cluster } from "@/hooks/useSolanaBalance";
 
 interface SendModalProps {
@@ -21,13 +20,19 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
     const { tokens } = useTokenBalances(walletAddress, cluster);
     const [recipient, setRecipient] = useState("");
     const [amount, setAmount] = useState("");
+    const [selectedMint, setSelectedMint] = useState("SOL");
     const [status, setStatus] = useState<"idle" | "creating" | "signing" | "sending" | "success" | "error">("idle");
     const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
-    const solToken = tokens.find(t => t.symbol === "SOL");
-    const solBalance = solToken?.balance || 0;
-    const solLogo = solToken?.logo;
+    // Find the currently selected token from the balances list
+    const selectedToken = tokens.find(t =>
+        t.mint === (selectedMint === "SOL" ? "So11111111111111111111111111111111111111112" : selectedMint)
+    ) || tokens.find(t => t.symbol === "SOL");
+
+    const balance = selectedToken?.balance || 0;
+    const tokenLogo = selectedToken?.logo;
+    const isSol = selectedToken?.symbol === "SOL";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,12 +50,14 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
 
         if (!trimmedRecipient) {
             newErrors.recipient = "Recipient address is required";
+        } else if (!isValidSolanaAddress(trimmedRecipient)) {
+            newErrors.recipient = "Invalid Solana address format";
         }
 
         if (!amount || Number.isNaN(amountValue) || amountValue <= 0) {
             newErrors.amount = "Enter a valid amount greater than zero";
-        } else if (amountValue > solBalance) {
-            newErrors.amount = "Amount exceeds available balance";
+        } else if (amountValue > balance) {
+            newErrors.amount = `Amount exceeds available ${selectedToken?.symbol} balance`;
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -64,20 +71,18 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
         setError(null);
 
         try {
-            // 1. Create Transaction
             const tx = await createTransferTransaction(
                 walletAddress,
-                recipient,
-                Number(amount),
-                undefined, // mint (optional)
-                cluster
+                trimmedRecipient,
+                amountValue,
+                isSol ? undefined : selectedToken?.mint,
+                cluster,
+                selectedToken?.decimals
             );
 
-            // 2. Sign
             setStatus("signing");
             const signedTx = await signTransaction(tx as any);
 
-            // 3. Send
             setStatus("sending");
             const signature = await broadcastTransaction(signedTx);
 
@@ -90,6 +95,7 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
                 // Reset form
                 setRecipient("");
                 setAmount("");
+                setSelectedMint("SOL");
                 setStatus("idle");
             }, 3000);
 
@@ -100,11 +106,8 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
         }
     };
 
-    const isStepActive = (s: typeof status) => status === s;
-    const isStepDone = (steps: (typeof status)[]) => steps.includes(status) || status === "success";
-
     return (
-        <Dialog isOpen={isOpen} onClose={onClose} title="Send SOL">
+        <Dialog isOpen={isOpen} onClose={onClose} title={`Send ${selectedToken?.symbol || 'SOL'}`}>
             <div className="py-2">
                 {status === "success" ? (
                     <div className="text-center py-10 space-y-4 animate-in fade-in zoom-in-95">
@@ -121,13 +124,12 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
                         <div className="pt-6">
                             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col items-center gap-2">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Amount Sent</span>
-                                <span className="text-xl font-black text-gray-900">{amount} SOL</span>
+                                <span className="text-xl font-black text-gray-900">{amount} {selectedToken?.symbol}</span>
                             </div>
                         </div>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Status Tracker */}
                         {status !== "idle" && status !== "error" && (
                             <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between px-6">
                                 <div className="flex flex-col items-center gap-2">
@@ -155,6 +157,22 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
 
                         <div className="space-y-5">
                             <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Select Asset</label>
+                                <select
+                                    className="w-full h-12 px-4 bg-gray-50/50 border border-gray-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 outline-none transition-all font-bold text-sm"
+                                    value={selectedMint}
+                                    onChange={(e) => setSelectedMint(e.target.value)}
+                                    disabled={status !== "idle" && status !== "error"}
+                                >
+                                    {tokens.map(token => (
+                                        <option key={token.mint} value={token.symbol === "SOL" ? "SOL" : token.mint}>
+                                            {token.symbol} ({token.balance.toFixed(4)})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Recipient Address</label>
                                 <div className="relative">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
@@ -174,22 +192,22 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center ml-1">
                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Amount to Send</label>
-                                    <span className="text-[10px] font-bold text-gray-400">Balance: {solBalance.toFixed(4)} SOL</span>
+                                    <span className="text-[10px] font-bold text-gray-400">Balance: {balance.toFixed(4)} {selectedToken?.symbol}</span>
                                 </div>
                                 <div className="relative">
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 bg-white border border-gray-100 rounded-lg px-2 py-1 shadow-sm">
-                                        {solLogo ? (
-                                            <img src={solLogo} alt="SOL" className="w-3.5 h-3.5 object-contain" />
+                                        {tokenLogo ? (
+                                            <img src={tokenLogo} alt={selectedToken?.symbol} className="w-3.5 h-3.5 object-contain" />
                                         ) : (
                                             <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-purple-500 to-blue-500" />
                                         )}
-                                        <span className="text-[10px] font-bold text-gray-400">SOL</span>
+                                        <span className="text-[10px] font-bold text-gray-400">{selectedToken?.symbol}</span>
                                     </div>
                                     <Input
                                         className="h-12 bg-gray-50/50 border-gray-100 focus:bg-white transition-all rounded-xl font-bold text-lg"
                                         placeholder="0.00"
                                         type="number"
-                                        step="0.000000001"
+                                        step="any"
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
                                         disabled={status !== "idle" && status !== "error"}
@@ -204,7 +222,7 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            const maxAmount = Math.max(0, solBalance - 0.000005);
+                                            const maxAmount = isSol ? Math.max(0, balance - 0.000005) : balance;
                                             setAmount(maxAmount.toString());
                                         }}
                                         className="text-[10px] font-bold text-gray-400 hover:text-blue-600 transition-colors uppercase"
@@ -225,7 +243,7 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
                         <Button
                             variant="primary"
                             className="w-full h-14 text-base font-black shadow-xl shadow-blue-200 rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
-                            disabled={status !== "idle" && status !== "error" || !recipient || !amount}
+                            disabled={(status !== "idle" && status !== "error") || !recipient || !amount}
                         >
                             {status === "idle" || status === "error" ? (
                                 <>Review & Send <ArrowRight className="w-5 h-5" /></>

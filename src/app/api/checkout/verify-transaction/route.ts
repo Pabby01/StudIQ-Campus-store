@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { verifyTransaction } from "@/lib/solana";
 import { getPlatformFee, calculateFees, recordPlatformFee } from "@/lib/platformFees";
 import { POINTS } from "@/lib/constants";
+import { SOLANA_CONFIG } from "@/lib/solana-config";
 
 export async function POST(req: Request) {
     try {
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
         }
 
         // Platform wallet receives all payments
-        const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET || "Hx912yR4vDEwUqQNUZcaxwsjmE8B6Lq6grokrPh8a6Js";
+        const platformWallet = SOLANA_CONFIG.platformWallet;
 
         let expectedSolAmount = order.amount;
 
@@ -46,9 +47,10 @@ export async function POST(req: Request) {
             let solPrice = null;
 
             try {
-                // Primary: CoinGecko (Simple Price)
+                // Fetch SOL price from CoinGecko
                 const cgRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", {
-                    headers: { 'Accept': 'application/json', 'User-Agent': 'CampusStore/1.0' }
+                    headers: { 'Accept': 'application/json', 'User-Agent': 'CampusStore/1.0' },
+                    next: { revalidate: 60 } // Cache for 1 minute
                 });
 
                 if (cgRes.ok) {
@@ -56,30 +58,13 @@ export async function POST(req: Request) {
                     solPrice = Number(data.solana?.usd);
                 }
             } catch (e) {
-                console.warn("[Verify] CoinGecko fetch failed:", e);
-            }
-
-            if (!solPrice || isNaN(solPrice)) {
-                console.log("[Verify] Switching to CoinGecko fallback");
-                try {
-                    // Fallback: CoinGecko
-                    const cgRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", {
-                        headers: { 'Accept': 'application/json', 'User-Agent': 'CampusStore/1.0' }
-                    });
-                    if (cgRes.ok) {
-                        const data = await cgRes.json();
-                        solPrice = Number(data.solana?.usd);
-                    }
-                } catch (e) {
-                    console.error("[Verify] CoinGecko fetch failed:", e);
-                }
+                console.warn("[Verify] Price fetch failed:", e);
             }
 
             if (solPrice && !isNaN(solPrice)) {
                 // Allow a slightly wider margin for error (5%) due to potential rate differences
                 // between checkout time and verification time.
                 expectedSolAmount = order.amount / solPrice;
-                console.log(`[Verify] Converted order amount $${order.amount} to ~${expectedSolAmount.toFixed(4)} SOL (Rate: ${solPrice})`);
             } else {
                 console.error("[Verify] Failed to fetch price from all sources");
                 return Response.json(

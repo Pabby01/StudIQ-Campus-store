@@ -113,7 +113,6 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             });
             const data = await res.json();
             if (data.success) {
-                console.log("[Ramp] Verify Success. Response:", data.response);
                 setPajToken(data.response.token);
                 if (type === "offramp") {
                     fetchBanks(data.response.token);
@@ -147,9 +146,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
     // Debounce state for account resolution
     useEffect(() => {
         const timer = setTimeout(() => {
-            console.log("[Ramp] Checking auto-resolve:", { len: accountNumber.length, bank: selectedBank, hasToken: !!pajToken });
             if (accountNumber.length >= 10 && selectedBank && pajToken) {
-                console.log("[Ramp] Triggering resolution...");
                 handleResolveAccount();
             }
         }, 1000);
@@ -160,27 +157,16 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
     const handleResolveAccount = async () => {
         const currentParams = `${selectedBank}-${accountNumber}`;
 
-        console.log("[Ramp] Handle Resolve called", {
-            selectedBank,
-            accountNumber,
-            hasToken: !!pajToken,
-            loading,
-            isDuplicate: lastResolvedParams === currentParams
-        });
-
         if (!pajToken || !selectedBank || accountNumber.length < 10) {
-            console.warn("[Ramp] Missing requirements for resolution");
             return;
         }
 
         // BLOCKER: If we already resolved this exact combo, DO NOT call again.
         if (lastResolvedParams === currentParams) {
-            console.log("[Ramp] Skipping duplicate resolution call");
             return;
         }
 
         if (loading) {
-            console.log("[Ramp] Skipping resolve: Already loading");
             return;
         }
 
@@ -189,10 +175,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
         // Note: We don't clear error here immediately to avoid flickering if it's a re-try
 
         try {
-            console.log("[Ramp] Fetching resolution from API...");
-            const res = await fetch(`/api/ramp/banks?token=${encodeURIComponent(pajToken)}&bankId=${selectedBank}&accountNumber=${accountNumber}`);
             const data = await res.json();
-            console.log("[Ramp] Resolution Result:", data);
 
             if (data.success) {
                 setResolvedAccount(data.account);
@@ -211,7 +194,6 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
     };
 
     const handleCreateOrder = async () => {
-        console.log("Create Order Clicked. State:", { type, walletAddress, amount });
 
         if (type === "offramp" && !walletAddress) {
             console.error("No wallet address found!");
@@ -261,9 +243,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             if (data.success) {
                 setOrder(data.order);
 
-                // 2. FOR OFFRAMP: TRIGGER WALLET TRANSACTION
                 if (type === "offramp") {
-                    console.log("[Ramp] Triggering Offramp Transaction...", data.order);
                     const depositAddress = data.order.address || data.order.walletAddress;
 
                     if (!depositAddress) {
@@ -298,21 +278,13 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                     transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
                     transaction.feePayer = userPublicKey;
 
-                    console.log("[Ramp] Requesting Wallet Signature via Civic...");
                     if (!signTransaction) {
                         throw new Error("Signer not available");
                     }
 
                     const signedTx = await signTransaction(transaction);
 
-                    console.log("[Ramp] Sending Signed Transaction...");
-                    // signTransaction returns a signed Transaction object
-                    const rawTx = signedTx.serialize();
-                    const signature = await connection.sendRawTransaction(rawTx);
-
-                    console.log("[Ramp] Transaction Sent:", signature);
                     await connection.confirmTransaction(signature, "confirmed");
-                    console.log("[Ramp] Transaction Confirmed!");
                 }
 
                 setStep("success");

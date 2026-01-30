@@ -1,17 +1,26 @@
-import { Copy, QrCode, Check, Info } from "lucide-react";
+import { Copy, Check, Info } from "lucide-react";
 import { useState } from "react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
+import { useTokenBalances } from "@/hooks/useTokenBalances";
 import Dialog from "@/components/ui/Dialog";
-import Button from "@/components/ui/Button";
+import { Cluster } from "@/hooks/useSolanaBalance";
 
 interface ReceiveModalProps {
     isOpen: boolean;
     onClose: () => void;
+    cluster: Cluster;
 }
 
-export default function ReceiveModal({ isOpen, onClose }: ReceiveModalProps) {
+export default function ReceiveModal({ isOpen, onClose, cluster }: ReceiveModalProps) {
     const { walletAddress } = useCivicWallet();
+    const { tokens } = useTokenBalances(walletAddress, cluster);
     const [copied, setCopied] = useState(false);
+    const [selectedMint, setSelectedMint] = useState("SOL");
+
+    // Find the currently selected token from the balances list
+    const selectedToken = tokens.find(t =>
+        t.mint === (selectedMint === "SOL" ? "So11111111111111111111111111111111111111112" : selectedMint)
+    ) || tokens.find(t => t.symbol === "SOL");
 
     const copyAddress = () => {
         if (walletAddress) {
@@ -22,8 +31,24 @@ export default function ReceiveModal({ isOpen, onClose }: ReceiveModalProps) {
     };
 
     return (
-        <Dialog isOpen={isOpen} onClose={onClose} title="Receive SOL">
-            <div className="flex flex-col items-center gap-8 py-2">
+        <Dialog isOpen={isOpen} onClose={onClose} title={`Receive ${selectedToken?.symbol || 'SOL'}`}>
+            <div className="flex flex-col items-center gap-6 py-2">
+                {/* Token Selector */}
+                <div className="w-full space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Asset to Receive</label>
+                    <select
+                        className="w-full h-12 px-4 bg-gray-50/50 border border-gray-100 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 outline-none transition-all font-bold text-sm"
+                        value={selectedMint}
+                        onChange={(e) => setSelectedMint(e.target.value)}
+                    >
+                        {tokens.map(token => (
+                            <option key={token.mint} value={token.symbol === "SOL" ? "SOL" : token.mint}>
+                                {token.symbol}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 {/* QR Code Section */}
                 <div className="relative group">
                     <div className="absolute -inset-4 bg-gradient-to-tr from-blue-500/10 to-purple-500/10 rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -36,19 +61,23 @@ export default function ReceiveModal({ isOpen, onClose }: ReceiveModalProps) {
                             />
                             {/* Floating Coin Icon */}
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-2 rounded-xl shadow-lg border border-gray-100">
-                                <img
-                                    src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png"
-                                    alt="SOL"
-                                    className="w-6 h-6 object-contain"
-                                />
+                                {selectedToken?.logo ? (
+                                    <img
+                                        src={selectedToken.logo}
+                                        alt={selectedToken.symbol}
+                                        className="w-6 h-6 object-contain"
+                                    />
+                                ) : (
+                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-blue-500" />
+                                )}
                             </div>
                         </div>
                     </div>
                     <div className="mt-4 flex flex-col items-center gap-1">
                         <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">
-                            Your Personal QR Code
+                            Your {selectedToken?.symbol} QR Code
                         </span>
-                        <p className="text-sm text-gray-500 font-medium">Scan to send funds to this wallet</p>
+                        <p className="text-sm text-gray-500 font-medium text-center">Scan to send {selectedToken?.symbol} to this wallet</p>
                     </div>
                 </div>
 
@@ -60,7 +89,7 @@ export default function ReceiveModal({ isOpen, onClose }: ReceiveModalProps) {
                     <div className="group relative">
                         <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                         <div className="relative flex items-center gap-3 bg-white border border-gray-200 p-1.5 pl-4 rounded-xl shadow-sm transition-all">
-                            <code className="text-[13px] font-mono font-medium text-gray-800 truncate flex-1">
+                            <code className="text-[13px] font-mono font-medium text-gray-800 truncate flex-1 leading-none pt-1">
                                 {walletAddress}
                             </code>
                             <button
@@ -88,7 +117,7 @@ export default function ReceiveModal({ isOpen, onClose }: ReceiveModalProps) {
                     <div className="space-y-1">
                         <p className="text-xs font-bold text-blue-900 uppercase tracking-tight">Security Notice</p>
                         <p className="text-xs text-blue-700 leading-relaxed font-medium">
-                            Send only <strong className="font-bold">Solana (SOL)</strong> or SPL tokens to this address. Sending other assets may result in permanent loss.
+                            Send only <strong className="font-bold">{selectedToken?.symbol}</strong> or other Solana assets to this address. Sending other assets may result in permanent loss.
                         </p>
                     </div>
                 </div>

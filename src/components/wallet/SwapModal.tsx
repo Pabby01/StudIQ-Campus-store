@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Dialog from "@/components/ui/Dialog";
 import { Cluster } from "@/hooks/useSolanaBalance";
+import { SOLANA_CONFIG } from "@/lib/solana-config";
 
 interface SwapModalProps {
     isOpen: boolean;
@@ -125,7 +126,7 @@ export default function SwapModal({ isOpen, onClose, onSuccess, cluster }: SwapM
             const { swap } = await createRes.json();
             const swapId = swap.id;
 
-            const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET || "Hx912yR4vDEwUqQNUZcaxwsjmE8B6Lq6grokrPh8a6Js";
+            const platformWallet = SOLANA_CONFIG.platformWallet;
             const { createTransferTransaction, createSplTransferTransaction } = await import("@/lib/solana");
 
             let userTx;
@@ -138,7 +139,7 @@ export default function SwapModal({ isOpen, onClose, onSuccess, cluster }: SwapM
                     cluster
                 );
             } else {
-                const usdcMint = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+                const usdcMint = SOLANA_CONFIG.usdcMint;
                 userTx = await createSplTransferTransaction(
                     walletAddress,
                     platformWallet,
