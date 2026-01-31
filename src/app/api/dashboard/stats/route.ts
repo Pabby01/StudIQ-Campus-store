@@ -2,6 +2,152 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 import { getSessionWallet } from "@/lib/session";
 
+type StatsPayload = {
+    buyer: {
+        totalOrders: number;
+        revenue: number;
+        revenueBreakdown: {
+            sol: number;
+            usdc: number;
+            usd: number;
+        };
+        currency: string;
+        growth: number;
+        points: number;
+        recentActivity: any[];
+    };
+    seller: {
+        totalOrders: number;
+        revenue: number;
+        revenueBreakdown: {
+            sol: number;
+            usdc: number;
+            usd: number;
+        };
+        currency: string;
+        growth: number;
+        points: number;
+        recentActivity: any[];
+        storeId?: string;
+    };
+    hasStore: boolean;
+};
+
+const statsCache = new Map<string, { data: StatsPayload; timestamp: number }>();
+const statsInFlight = new Map<string, Promise<StatsPayload>>();
+const STATS_TTL_MS = 30000;
+
+async function computeStats(address: string): Promise<StatsPayload> {
+    const supabase = getSupabaseServerClient();
+
+    const { data: buyerOrders } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("buyer_address", address)
+        .neq("status", "failed");
+
+    const { data: store } = await supabase
+        .from("stores")
+        .select("id")
+        .eq("owner_address", address)
+        .maybeSingle();
+
+    let sellerOrders: any[] = [];
+    if (store) {
+        const { data } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("store_id", store.id)
+            .neq("status", "failed");
+        sellerOrders = data || [];
+    }
+
+    const { data: pointsData } = await supabase
+        .from("points_log")
+        .select("points")
+        .eq("address", address);
+
+    const totalPoints = pointsData?.reduce((sum, log) => sum + log.points, 0) || 0;
+
+    let solPrice = 0;
+    try {
+        const priceRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
+        const priceData = await priceRes.json();
+        solPrice = parseFloat(priceData?.solana?.usd || "0");
+    } catch (e) {
+        console.error("Failed to fetch SOL price", e);
+    }
+
+    if (solPrice === 0) {
+        solPrice = 145.5;
+    }
+
+    const buyerStats = calculateStats(buyerOrders || [], solPrice);
+    const sellerStats = calculateStats(sellerOrders, solPrice);
+
+    const recentBuyerOrders = await supabase
+        .from("orders")
+        .select(`
+        id,
+        created_at,
+        status,
+        amount,
+        currency,
+        order_items(
+          products(name)
+        )
+      `)
+        .eq("buyer_address", address)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+    const recentSellerOrders = store ? await supabase
+        .from("orders")
+        .select(`
+        id,
+        created_at,
+        status,
+        amount,
+        currency,
+        order_items(
+          products(name)
+        )
+      `)
+        .eq("store_id", store.id)
+        .order("created_at", { ascending: false })
+        .limit(5) : { data: [] };
+
+    const recentActivity = [
+        ...(recentBuyerOrders.data || []).map(order => formatActivity(order, "purchase")),
+        ...(recentSellerOrders.data || []).map(order => formatActivity(order, "sale"))
+    ]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 5);
+
+    return {
+        buyer: {
+            totalOrders: buyerStats.totalOrders,
+            revenue: buyerStats.revenueUsd,
+            revenueBreakdown: buyerStats.breakdown,
+            currency: "USD",
+            growth: buyerStats.growth,
+            points: totalPoints,
+            recentActivity: recentActivity.filter(a => a.type === "purchase")
+        },
+        seller: {
+            totalOrders: sellerStats.totalOrders,
+            revenue: sellerStats.revenueUsd,
+            revenueBreakdown: sellerStats.breakdown,
+            currency: "USD",
+            growth: sellerStats.growth,
+            points: totalPoints,
+            recentActivity: recentActivity.filter(a => a.type === "sale"),
+            storeId: store?.id
+        },
+        hasStore: !!store
+    };
+}
+
 export async function GET(req: Request) {
     const address = await getSessionWallet(req);
 
@@ -9,131 +155,29 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Session required" }, { status: 401 });
     }
 
-    const supabase = getSupabaseServerClient();
+    const key = address;
+    const now = Date.now();
+    const cached = statsCache.get(key);
+
+    if (cached && now - cached.timestamp < STATS_TTL_MS) {
+        return NextResponse.json(cached.data);
+    }
+
+    let promise = statsInFlight.get(key);
+    if (!promise) {
+        promise = computeStats(address);
+        statsInFlight.set(key, promise);
+    }
 
     try {
-        // Fetch user's orders (both as buyer and seller)
-        const { data: buyerOrders } = await supabase
-            .from("orders")
-            .select("*")
-            .eq("buyer_address", address)
-            .neq("status", "failed");
-
-        // Fetch seller's store and orders
-        const { data: store } = await supabase
-            .from("stores")
-            .select("id")
-            .eq("owner_address", address)
-            .maybeSingle();
-
-        let sellerOrders: any[] = [];
-        if (store) {
-            const { data } = await supabase
-                .from("orders")
-                .select("*")
-                .eq("store_id", store.id)
-                .neq("status", "failed");
-            sellerOrders = data || [];
-        }
-
-        // Fetch points - FIXED TABLE NAME
-        const { data: pointsData } = await supabase
-            .from("points_log")
-            .select("points")
-            .eq("address", address);
-
-        const totalPoints = pointsData?.reduce((sum, log) => sum + log.points, 0) || 0;
-
-        // Fetch SOL Price for currency conversion
-        // Fetch SOL Price for currency conversion
-        let solPrice = 0;
-        try {
-            // Use CoinGecko fallback
-            const priceRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
-            const priceData = await priceRes.json();
-            solPrice = parseFloat(priceData?.solana?.usd || "0");
-        } catch (e) {
-            console.error("Failed to fetch SOL price", e);
-        }
-
-        // Fallback price if fetch fails (prevent $0.00 stats for SOL users)
-        if (solPrice === 0) {
-            solPrice = 145.50; // Approximate fallback
-        }
-
-        // Calculate buyer stats
-        const buyerStats = calculateStats(buyerOrders || [], solPrice);
-
-        // Calculate seller stats
-        const sellerStats = calculateStats(sellerOrders, solPrice);
-
-        // Fetch recent activity (last 5 orders)
-        const recentBuyerOrders = await supabase
-            .from("orders")
-            .select(`
-        id,
-        created_at,
-        status,
-        amount,
-        currency,
-        order_items(
-          products(name)
-        )
-      `)
-            .eq("buyer_address", address)
-            .order("created_at", { ascending: false })
-            .limit(5);
-
-        const recentSellerOrders = store ? await supabase
-            .from("orders")
-            .select(`
-        id,
-        created_at,
-        status,
-        amount,
-        currency,
-        order_items(
-          products(name)
-        )
-      `)
-            .eq("store_id", store.id)
-            .order("created_at", { ascending: false })
-            .limit(5) : { data: [] };
-
-        // Combine and format recent activity
-        const recentActivity = [
-            ...(recentBuyerOrders.data || []).map(order => formatActivity(order, "purchase")),
-            ...(recentSellerOrders.data || []).map(order => formatActivity(order, "sale"))
-        ]
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-            .slice(0, 5);
-
-        return NextResponse.json({
-            buyer: {
-                totalOrders: buyerStats.totalOrders,
-                revenue: buyerStats.revenueUsd, // Use USD total
-                revenueBreakdown: buyerStats.breakdown, // Pass breakdown
-                currency: "USD",
-                growth: buyerStats.growth,
-                points: totalPoints,
-                recentActivity: recentActivity.filter(a => a.type === "purchase")
-            },
-            seller: {
-                totalOrders: sellerStats.totalOrders,
-                revenue: sellerStats.revenueUsd,
-                revenueBreakdown: sellerStats.breakdown,
-                currency: "USD",
-                growth: sellerStats.growth,
-                points: totalPoints,
-                recentActivity: recentActivity.filter(a => a.type === "sale"),
-                storeId: store?.id
-            },
-            hasStore: !!store
-        });
-
+        const data = await promise;
+        statsCache.set(key, { data, timestamp: Date.now() });
+        return NextResponse.json(data);
     } catch (error) {
         console.error("Dashboard stats error:", error);
         return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });
+    } finally {
+        statsInFlight.delete(key);
     }
 }
 
