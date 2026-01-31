@@ -4,6 +4,8 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { CATEGORIES } from "@/lib/categories";
 import { getSessionWallet } from "@/lib/session";
 import { getBalance } from "@/lib/solana";
+import { SOLANA_CONFIG } from "@/lib/solana-config";
+import { Connection, PublicKey } from "@solana/web3.js";
 
 const BASE_SYSTEM_PROMPT = `
 You are **Studi** (short for StudIQ), the friendly and knowledgeable AI assistant for the **StudIQ Campus Store**.
@@ -89,10 +91,63 @@ export async function POST(req: Request) {
                     .limit(5);
 
                 let walletBalanceSol: number | null = null;
+                let walletBalanceSolUsd: number | null = null;
+                let walletBalanceUsdc: number | null = null;
+                let solPriceUsd: number | null = null;
+                let totalWalletUsd: number | null = null;
+
                 try {
                     walletBalanceSol = await getBalance(sessionAddress);
                 } catch {
                     walletBalanceSol = null;
+                }
+
+                try {
+                    const priceRes = await fetch(
+                        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/price/sol`
+                    );
+                    if (priceRes.ok) {
+                        const { price } = await priceRes.json();
+                        if (typeof price === "number" && !Number.isNaN(price)) {
+                            solPriceUsd = price;
+                        }
+                    }
+                } catch {
+                    solPriceUsd = null;
+                }
+
+                try {
+                    const rpcUrl =
+                        SOLANA_CONFIG.rpcUrl ||
+                        (SOLANA_CONFIG.network === "mainnet"
+                            ? process.env.NEXT_PUBLIC_SOLANA_MAINNET_RPC_URL || "https://api.mainnet-beta.solana.com"
+                            : process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || "https://api.devnet.solana.com");
+
+                    const connection = new Connection(rpcUrl);
+                    const walletPubkey = new PublicKey(sessionAddress);
+                    const mintPubkey = new PublicKey(SOLANA_CONFIG.usdcMint);
+
+                    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPubkey, {
+                        mint: mintPubkey,
+                    });
+
+                    if (tokenAccounts.value.length > 0) {
+                        const accountInfo = tokenAccounts.value[0].account.data.parsed.info;
+                        const uiAmount = accountInfo.tokenAmount?.uiAmount;
+                        if (typeof uiAmount === "number" && !Number.isNaN(uiAmount)) {
+                            walletBalanceUsdc = uiAmount;
+                        }
+                    }
+                } catch {
+                    walletBalanceUsdc = null;
+                }
+
+                if (walletBalanceSol !== null && solPriceUsd !== null) {
+                    walletBalanceSolUsd = walletBalanceSol * solPriceUsd;
+                }
+
+                if (walletBalanceSolUsd !== null || walletBalanceUsdc !== null) {
+                    totalWalletUsd = (walletBalanceSolUsd || 0) + (walletBalanceUsdc || 0);
                 }
 
                 const totalSpent = (buyerOrders || []).reduce((sum, o) => {
@@ -107,7 +162,18 @@ export async function POST(req: Request) {
                 userContext += `\n**User Session Snapshot:**\n`;
                 userContext += `Wallet Address: ${shortAddress}\n`;
                 if (walletBalanceSol !== null) {
-                    userContext += `Approx Wallet Balance: ${walletBalanceSol.toFixed(4)} SOL\n`;
+                    userContext += `Approx Wallet Balance: ${walletBalanceSol.toFixed(4)} SOL`;
+                    if (walletBalanceSolUsd !== null) {
+                        userContext += ` (~$${walletBalanceSolUsd.toFixed(2)} USD at latest price)\n`;
+                    } else {
+                        userContext += `\n`;
+                    }
+                }
+                if (walletBalanceUsdc !== null) {
+                    userContext += `USDC Balance: ${walletBalanceUsdc.toFixed(2)} (~$${walletBalanceUsdc.toFixed(2)} USD)\n`;
+                }
+                if (totalWalletUsd !== null) {
+                    userContext += `Estimated Total Wallet Value (SOL + USDC): ~$${totalWalletUsd.toFixed(2)} USD\n`;
                 }
                 if (profile) {
                     userContext += `Profile: ${profile.name || "Unknown"} at ${profile.school || "Unknown school"} ${profile.campus ? `(${profile.campus})` : ""}\n`;
@@ -177,7 +243,8 @@ export async function POST(req: Request) {
 - Point them to the right page using the URLs above.
 - Keep answers consistent with FAQ (/faq) and pricing (/pricing) content.
 - Be concise, clear, and student-friendly.
-- If a User Session Snapshot is available, use it to answer questions about their wallet, points, spending, and recent orders.
+- If a User Session Snapshot is available, use it to answer questions about their wallet, points, spending, recent orders, and approximate USD value.
+- When users ask for conversions like "in USD", use the wallet balances and latest SOL price from the snapshot instead of guessing.
 - When giving financial suggestions, be conservative, encourage budgeting, and avoid pushing users to overspend.`;
 
         const finalSystemPrompt = BASE_SYSTEM_PROMPT + contextString + userContext;
