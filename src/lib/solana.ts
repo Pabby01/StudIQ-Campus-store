@@ -29,10 +29,15 @@ export const rpc = createSolanaRpc(SOLANA_RPC_URL);
 export const rpcSubscriptions = createSolanaRpcSubscriptions(SOLANA_WSS_URL);
 
 export function getClusterUrl(cluster: 'devnet' | 'mainnet') {
+    // If the configured network matches the requested cluster, use the configured RPC (which contains Helius keys)
+    if (cluster === SOLANA_CONFIG.network) {
+        return SOLANA_CONFIG.rpcUrl;
+    }
+
     if (cluster === 'mainnet') {
         return process.env.NEXT_PUBLIC_SOLANA_MAINNET_RPC_URL || "https://api.mainnet-beta.solana.com";
     }
-    return SOLANA_CONFIG.rpcUrl;
+    return process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || "https://api.devnet.solana.com";
 }
 
 export function getRpc(cluster: 'devnet' | 'mainnet' = 'devnet') {
@@ -51,10 +56,11 @@ export async function createTransferTransaction(
     to: string,
     amount: number,
     mint?: string, // Optional mint address for SPL tokens
-    cluster: 'devnet' | 'mainnet' = 'devnet'
+    cluster: 'devnet' | 'mainnet' = 'devnet',
+    decimals: number = 9 // Default to 9 for SOL
 ) {
     if (mint && mint !== "SOL") {
-        return createSplTransferTransaction(from, to, amount, mint);
+        return createSplTransferTransaction(from, to, amount, mint, decimals);
     }
 
     console.log("Creating SOL transaction:", { from, to, amount });
@@ -128,16 +134,16 @@ export async function createSplTransferTransaction(
     from: string,
     to: string,
     amount: number,
-    mint: string
+    mint: string,
+    decimals: number = 6 // Default to 6 for USDC if not provided
 ) {
-    console.log("Creating SPL transaction:", { from, to, amount, mint });
+    console.log("Creating SPL transaction:", { from, to, amount, mint, decimals });
 
     const fromAddress = address(from);
     // const toAddress = address(to); // Used for ATA derivation
     const mintAddress = address(mint);
 
-    // Calculate Amount (USDC has 6 decimals)
-    const decimals = 6;
+    // Calculate Amount
     const amountBigInt = BigInt(Math.floor(amount * Math.pow(10, decimals)));
 
     // Get latest blockhash
@@ -243,7 +249,7 @@ export async function verifyTransaction(
             return { valid: false, error: "Recipient address mismatch" };
         }
 
-        // Verify amount
+        // Verify SOL amount (Note: SPL Token verification not yet implemented in this helper)
         const preBalances = transaction.meta?.preBalances || [];
         const postBalances = transaction.meta?.postBalances || [];
 
@@ -266,7 +272,6 @@ export async function verifyTransaction(
         return { valid: true, transaction };
 
     } catch (error) {
-        console.error("Transaction verification error:", error);
         return {
             valid: false,
             error: error instanceof Error ? error.message : "Verification failed",

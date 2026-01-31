@@ -4,18 +4,16 @@ import { useMemo, useEffect, useState } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { CivicAuthProvider } from "@civic/auth-web3/react";
+import { SOLANA_CONFIG } from "@/lib/solana-config";
 import type { ReactNode } from "react";
 
 // Import wallet adapter CSS
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 function getRpcConfig() {
-  const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet";
-  const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
-
   return {
-    network,
-    endpoint
+    network: SOLANA_CONFIG.network,
+    endpoint: SOLANA_CONFIG.rpcUrl
   };
 }
 

@@ -10,6 +10,7 @@ import SwapModal from "@/components/wallet/SwapModal";
 import TransactionHistory from "@/components/wallet/TransactionHistory";
 import { Loader2, Rocket } from "lucide-react";
 import { Cluster } from "@/hooks/useSolanaBalance";
+import { SOLANA_CONFIG } from "@/lib/solana-config";
 import Dialog from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
 import TokenList from "@/components/wallet/TokenList";
@@ -17,7 +18,7 @@ import RampModal from "@/components/ramp/RampModal";
 
 export default function WalletPage() {
     const { walletAddress, isAuthenticated } = useCivicWallet();
-    const [cluster, setCluster] = useState<Cluster>('devnet');
+    const [cluster, setCluster] = useState<Cluster>(SOLANA_CONFIG.network);
 
     // Updated to use Multi-Token Hook
     const { tokens, totalUsd, loading: balanceLoading } = useTokenBalances(walletAddress, cluster);
@@ -84,6 +85,7 @@ export default function WalletPage() {
             <ReceiveModal
                 isOpen={isReceiveOpen}
                 onClose={() => setIsReceiveOpen(false)}
+                cluster={cluster}
             />
 
             <RampModal

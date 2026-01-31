@@ -17,11 +17,11 @@ export async function POST(req: Request) {
             identifier,
             otp,
             deviceInfo || {
-                uuid: "unknown",
-                device: "web",
-                os: "web",
-                browser: "web",
-                ip: "0.0.0.0"
+                uuid: "123e4567-e89b-12d3-a456-426614174000",
+                device: "desktop",
+                os: "windows",
+                browser: "Chrome",
+                ip: "127.0.0.1"
             },
             PAJ_CONFIG.apiKey
         );

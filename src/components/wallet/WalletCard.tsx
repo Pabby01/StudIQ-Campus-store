@@ -55,14 +55,10 @@ export default function WalletCard({
                         <span className="font-medium tracking-wide">Civic Wallet</span>
                     </div>
 
-                    <button
-                        onClick={() => onClusterChange(cluster === 'devnet' ? 'mainnet' : 'devnet')}
-                        className="flex items-center gap-2 bg-black/20 hover:bg-black/30 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border border-white/10"
-                    >
-                        <div className={`w-2 h-2 rounded-full ${cluster === 'mainnet' ? 'bg-green-400' : 'bg-yellow-400'} animate-pulse`}></div>
-                        <span className="uppercase tracking-wider">{cluster}</span>
-                        <ChevronDown className="w-3 h-3 opacity-75" />
-                    </button>
+                    <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-semibold border border-white/10 cursor-default">
+                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                        <span className="uppercase tracking-wider">MAINNET</span>
+                    </div>
                 </div>
 
                 {/* Total Balance */}
