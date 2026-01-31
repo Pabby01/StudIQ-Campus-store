@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -175,6 +176,21 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
         // Note: We don't clear error here immediately to avoid flickering if it's a re-try
 
         try {
+            const res = await fetch("/api/ramp/resolve-account", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    token: pajToken,
+                    bankId: selectedBank,
+                    accountNumber,
+                }),
+            });
+
+            if (!res.ok) {
+                setError("Failed to resolve account");
+                return;
+            }
+
             const data = await res.json();
 
             if (data.success) {
@@ -283,6 +299,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                     }
 
                     const signedTx = await signTransaction(transaction);
+                    const signature = await connection.sendRawTransaction(signedTx.serialize());
 
                     await connection.confirmTransaction(signature, "confirmed");
                 }
