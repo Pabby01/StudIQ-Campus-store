@@ -406,15 +406,33 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
 
             const statusForReceipt = mapStatusForReceipt(order.status);
 
+            const parsedAmount = parseFloat(amount || "0");
+            const onRampRate = rates?.onRampRate?.rate || 0;
+            const offRampRate = rates?.offRampRate?.rate || 0;
+
+            const amountFiat =
+                type === "onramp"
+                    ? parsedAmount
+                    : order.fiatAmount ?? (offRampRate > 0 ? parsedAmount * offRampRate : parsedAmount);
+
+            const amountToken =
+                type === "onramp"
+                    ? (typeof order.tokenAmount === "number" && order.tokenAmount > 0
+                        ? order.tokenAmount
+                        : onRampRate > 0
+                            ? parsedAmount / onRampRate
+                            : parsedAmount)
+                    : parsedAmount;
+
             generatePajReceipt({
                 id: baseIdString,
                 date: new Date(),
                 type: receiptType,
                 userAddress: walletAddress || "",
                 userName: identifier || null,
-                amountFiat: type === "onramp" ? parseFloat(amount) : order.fiatAmount || parseFloat(amount),
+                amountFiat,
                 fiatCurrency: order.currency || "NGN",
-                amountToken: type === "onramp" ? (order.tokenAmount || parseFloat(amount)) : parseFloat(amount),
+                amountToken,
                 tokenSymbol: "USDC",
                 pajOrderId: order.id || "",
                 trackingCode,
