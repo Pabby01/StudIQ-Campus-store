@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -77,14 +78,19 @@ export async function POST(req: Request) {
 
         // Platform sends tokens back to user
         const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET!;
-        const platformPrivateKey = process.env.PLATFORM_WALLET_PRIVATE_KEY!;
 
-        if (!platformPrivateKey) {
+        if (typeof window !== "undefined") {
+            throw new Error("Platform wallet key must never be accessed on the client");
+        }
+
+        const platformPrivateKey = process.env.PLATFORM_WALLET_PRIVATE_KEY;
+
+        if (!platformPrivateKey || !platformPrivateKey.trim()) {
             throw new Error("Platform wallet private key not configured");
         }
 
         const platformKeypair = Keypair.fromSecretKey(
-            bs58.decode(platformPrivateKey)
+            bs58.decode(platformPrivateKey.trim())
         );
 
         const netToAmount = swap.to_amount;
