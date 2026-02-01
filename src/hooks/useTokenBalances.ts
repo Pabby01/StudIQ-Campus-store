@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { Cluster } from "./useSolanaBalance";
+import { SOLANA_CONFIG } from "@/lib/solana-config";
 
 // Basic Token Info
 export interface TokenBalance {
@@ -77,10 +78,7 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
 
         const fetchBalances = async () => {
             try {
-                // Determine RPC URL based on cluster
-                const rpcUrl = cluster === 'mainnet'
-                    ? (process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl('mainnet-beta'))
-                    : (process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl('devnet'));
+                const rpcUrl = SOLANA_CONFIG.rpcUrl;
 
                 // OPTIMIZATION: Use Helius DAS API on Mainnet if available
                 const enableHeliusOptimization = false;
@@ -170,26 +168,13 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                     mintsToPrice.push(...rawTokens.map(t => t.mint));
                 }
 
-                // Chunk price requests if too many? Jupiter supports many.
-                // REMOVED: Jupiter V2 API returning 401. 
-                // We will rely on simple fallback or implementing a robust price provider later.
-                let priceData: any = {};
-
-                // Fallback Price Fetcher (CoinGecko Simple) - Client Side Only
-                try {
-                    const ids = mintsToPrice.map(m => m === SOL_MINT ? "solana" : m).join(",");
-                    // Only fetch for SOL for now to avoid complexity, or skip entire block.
-                    // The Helius optimization block above handles Mainnet prices effectively.
-                    // This block is only for fallback/devnet.
-                } catch (e) {
-                    // ignore
-                }
+                const priceData: Record<string, { price: number }> = {};
 
                 const finalTokens: TokenBalance[] = [];
 
 
                 // Add SOL
-                let solPrice = parseFloat(priceData?.[SOL_MINT]?.price || "0");
+                let solPrice = parseFloat((priceData[SOL_MINT]?.price ?? 0).toString());
 
                 // Fallback for Devnet/Testnet if mainnet price fetch blocked or empty
                 if (solPrice === 0) {
@@ -213,7 +198,7 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                     const meta = COMMON_TOKENS[t.mint] || { symbol: t.mint.slice(0, 4), name: "Unknown Token", logo: "" };
 
                     // Simple price logic with Stablecoin fallback
-                    let price = parseFloat(priceData?.[t.mint]?.price || "0");
+                    let price = parseFloat((priceData[t.mint]?.price ?? 0).toString());
 
                     // Fallback for known stablecoins if price is 0 (Helius often misses these on DAS)
                     if (price === 0) {
