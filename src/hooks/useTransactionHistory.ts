@@ -36,11 +36,17 @@ export function useTransactionHistory(address: string | null, _cluster?: Cluster
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Reset history when switching clusters
+        console.log("[History] Effect run", {
+            address,
+            network: SOLANA_CONFIG.network,
+            rpcUrl: SOLANA_CONFIG.rpcUrl,
+        });
+
         setHistory([]);
         setError(null);
 
         if (!address || !isValidSolanaAddress(address)) {
+            console.warn("[History] Invalid or missing address, skipping fetch", { address });
             return;
         }
 
@@ -51,9 +57,17 @@ export function useTransactionHistory(address: string | null, _cluster?: Cluster
 
         const fetchHistory = async () => {
             try {
+                console.log("[History] Fetching signatures for address", address);
+
                 const signatures = await rpc
                     .getSignaturesForAddress(solAddress(address), { limit: 50 })
                     .send();
+
+                console.log("[History] Signatures fetched", {
+                    count: signatures.length,
+                    first: signatures[0],
+                    last: signatures[signatures.length - 1],
+                });
 
                 const detailed = await Promise.all(
                     signatures.map(async (sig): Promise<TransactionHistoryItem> => {
@@ -63,6 +77,10 @@ export function useTransactionHistory(address: string | null, _cluster?: Cluster
                         let amount: number | null = null;
 
                         try {
+                            console.log("[History] Fetching transaction details", {
+                                signature: sig.signature,
+                            });
+
                             const tx = (await rpc
                                 .getTransaction(sig.signature as Signature, {
                                     maxSupportedTransactionVersion: 0,
@@ -175,6 +193,16 @@ export function useTransactionHistory(address: string | null, _cluster?: Cluster
                             }
                         } catch {
                         }
+
+                        console.log("[History] Processed transaction", {
+                            signature: sig.signature,
+                            status: sig.err ? "error" : "success",
+                            direction,
+                            kind,
+                            tokenSymbol,
+                            amount,
+                            blockTime: sig.blockTime,
+                        });
 
                         return {
                             signature: sig.signature,

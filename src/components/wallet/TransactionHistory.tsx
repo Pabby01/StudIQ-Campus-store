@@ -43,19 +43,27 @@ export default function TransactionHistory({ address, cluster }: TransactionHist
         );
     }
 
+    const hasHistory = history.length > 0;
+
     return (
         <Card className="p-6">
             <h3 className="text-xl font-bold text-black mb-4">Transaction History</h3>
 
             <div className="space-y-4">
-                {error && (
+                {error && !hasHistory && (
                     <div className="text-center py-4 bg-red-50 rounded-lg border border-red-100 mb-4">
                         <p className="text-red-600 font-medium mb-1">{error}</p>
-                        {cluster === 'mainnet' && (
-                            <p className="text-xs text-red-500/80 px-4">
-                                The public Mainnet node is busy. Add a custom RPC URL to your env variables for better reliability.
-                            </p>
-                        )}
+                        <p className="text-xs text-red-500/80 px-4">
+                            This can happen if your Solana RPC endpoint is temporarily unavailable. Check your
+                            network connection or RPC URL in your environment variables and try again.
+                        </p>
+                    </div>
+                )}
+
+                {error && hasHistory && (
+                    <div className="text-center py-3 bg-amber-50 rounded-lg border border-amber-200 mb-4 px-4 text-xs text-amber-700">
+                        <p className="font-medium mb-1">Could not refresh latest transactions.</p>
+                        <p>Showing the last successfully loaded history. You can retry in a few seconds.</p>
                     </div>
                 )}
 
