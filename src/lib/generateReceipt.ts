@@ -250,18 +250,35 @@ export function generatePajReceipt(receipt: PajReceiptData): void {
         doc.line(margin, y, pageWidth - margin, y);
     };
 
-    doc.setFontSize(24);
+    const isDeposit = receipt.type === 'deposit';
+    const primaryColor = isDeposit
+        ? { r: 34, g: 197, b: 94 }
+        : { r: 249, g: 115, b: 22 };
+    const accentColor = isDeposit
+        ? { r: 16, g: 185, b: 129 }
+        : { r: 234, g: 88, b: 12 };
+
+    doc.setFillColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    doc.rect(margin, yPos, pageWidth - margin * 2, 24, 'F');
+
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(37, 99, 235);
-    addText('StudIQ Paj Cash Receipt', pageWidth / 2, yPos, { align: 'center' });
+    doc.setTextColor(255, 255, 255);
+    addText(
+        isDeposit ? 'Paj Cash Deposit Receipt' : 'Paj Cash Withdrawal Receipt',
+        pageWidth / 2,
+        yPos + 9,
+        { align: 'center' }
+    );
 
-    yPos += 8;
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    addText('Deposit / Withdrawal Confirmation', pageWidth / 2, yPos, { align: 'center' });
+    doc.setTextColor(226, 232, 240);
+    addText('StudIQ Campus Store • Solana Web3', pageWidth / 2, yPos + 17, {
+        align: 'center',
+    });
 
-    yPos += 15;
+    yPos += 34;
     addLine(yPos);
     yPos += 10;
 
@@ -284,10 +301,12 @@ export function generatePajReceipt(receipt: PajReceiptData): void {
     yPos += 6;
     addText(`Date: ${receiptDate}`, margin, yPos);
     yPos += 6;
-    addText(`Type: ${receipt.type === 'deposit' ? 'Deposit via Paj Cash' : 'Withdrawal via Paj Cash'}`, margin, yPos);
+    addText(`Type: ${isDeposit ? 'Deposit' : 'Withdrawal'}`, margin, yPos);
     yPos += 6;
     if (receipt.status) {
+        doc.setTextColor(accentColor.r, accentColor.g, accentColor.b);
         addText(`Status: ${receipt.status}`, margin, yPos);
+        doc.setTextColor(60, 60, 60);
         yPos += 6;
     }
     if (receipt.network) {
