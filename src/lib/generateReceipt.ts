@@ -20,27 +20,27 @@ interface TransactionData {
     network?: 'devnet' | 'mainnet-beta';
 }
 
-/**
- * Generate and download a PDF receipt for a transaction
- * 
- * @param transaction - Transaction data including items, amounts, and blockchain info
- * 
- * @example
- * generateReceipt({
- *   id: 'ORDER-123',
- *   date: new Date(),
- *   buyerAddress: 'ABC...XYZ',
- *   sellerAddress: 'DEF...UVW',
- *   items: [
- *     { name: 'Textbook', quantity: 1, price: 50, total: 50 }
- *   ],
- *   subtotal: 50,
- *   platformFee: 2.5,
- *   total: 52.5,
- *   txHash: '5x...',
- *   network: 'devnet'
- * });
- */
+interface PajReceiptData {
+    id: string;
+    date: Date | string;
+    type: 'deposit' | 'withdrawal';
+    userAddress: string;
+    userName?: string | null;
+    amountFiat: number;
+    fiatCurrency: string;
+    amountToken: number;
+    tokenSymbol: string;
+    pajOrderId: string;
+    trackingCode: string;
+    network?: 'devnet' | 'mainnet-beta';
+    status?: string;
+}
+
+type TextAlign = 'left' | 'center' | 'right';
+type TextOptions = {
+    align?: TextAlign;
+};
+
 export function generateReceipt(transaction: TransactionData): void {
     // Create new PDF document (A4 size)
     const doc = new jsPDF({
@@ -54,7 +54,7 @@ export function generateReceipt(transaction: TransactionData): void {
     let yPos = 20;
 
     // Helper function to add text
-    const addText = (text: string, x: number, y: number, options?: any) => {
+    const addText = (text: string, x: number, y: number, options?: TextOptions) => {
         doc.text(text, x, y, options);
     };
 
@@ -227,6 +227,161 @@ export function generateReceipt(transaction: TransactionData): void {
 
     // ===== SAVE PDF =====
     const fileName = `StudIQ_Receipt_${transaction.id}.pdf`;
+    doc.save(fileName);
+}
+
+export function generatePajReceipt(receipt: PajReceiptData): void {
+    const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let yPos = 20;
+
+    const addText = (text: string, x: number, y: number, options?: TextOptions) => {
+        doc.text(text, x, y, options);
+    };
+
+    const addLine = (y: number) => {
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, y, pageWidth - margin, y);
+    };
+
+    const isDeposit = receipt.type === 'deposit';
+    const primaryColor = isDeposit
+        ? { r: 34, g: 197, b: 94 }
+        : { r: 249, g: 115, b: 22 };
+    const accentColor = isDeposit
+        ? { r: 16, g: 185, b: 129 }
+        : { r: 234, g: 88, b: 12 };
+
+    doc.setFillColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    doc.rect(margin, yPos, pageWidth - margin * 2, 24, 'F');
+
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    addText(
+        isDeposit ? 'Paj Cash Deposit Receipt' : 'Paj Cash Withdrawal Receipt',
+        pageWidth / 2,
+        yPos + 9,
+        { align: 'center' }
+    );
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(226, 232, 240);
+    addText('StudIQ Campus Store • Solana Web3', pageWidth / 2, yPos + 17, {
+        align: 'center',
+    });
+
+    yPos += 34;
+    addLine(yPos);
+    yPos += 10;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    addText('Receipt Information', margin, yPos);
+
+    yPos += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+
+    const receiptDate = receipt.date instanceof Date
+        ? receipt.date.toLocaleString()
+        : new Date(receipt.date).toLocaleString();
+
+    addText(`Receipt ID: ${receipt.id}`, margin, yPos);
+    yPos += 6;
+    addText(`Tracking Code: ${receipt.trackingCode}`, margin, yPos);
+    yPos += 6;
+    addText(`Date: ${receiptDate}`, margin, yPos);
+    yPos += 6;
+    addText(`Type: ${isDeposit ? 'Deposit' : 'Withdrawal'}`, margin, yPos);
+    yPos += 6;
+    if (receipt.status) {
+        doc.setTextColor(accentColor.r, accentColor.g, accentColor.b);
+        addText(`Status: ${receipt.status}`, margin, yPos);
+        doc.setTextColor(60, 60, 60);
+        yPos += 6;
+    }
+    if (receipt.network) {
+        addText(`Network: Solana ${receipt.network === 'mainnet-beta' ? 'Mainnet' : 'Devnet'}`, margin, yPos);
+        yPos += 6;
+    }
+
+    yPos += 4;
+    addLine(yPos);
+    yPos += 10;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    addText('User Details', margin, yPos);
+
+    yPos += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    doc.setFontSize(9);
+
+    if (receipt.userName) {
+        addText(`Name: ${receipt.userName}`, margin, yPos);
+        yPos += 6;
+    }
+    addText('Wallet:', margin, yPos);
+    addText(shortenAddress(receipt.userAddress), margin + 20, yPos);
+
+    yPos += 10;
+    doc.setFontSize(10);
+    addLine(yPos);
+    yPos += 10;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    addText('Payment Summary', margin, yPos);
+
+    yPos += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    doc.setFontSize(10);
+
+    addText(`Fiat Amount: ${receipt.amountFiat.toFixed(2)} ${receipt.fiatCurrency}`, margin, yPos);
+    yPos += 6;
+    addText(`Token Amount: ${receipt.amountToken.toFixed(6)} ${receipt.tokenSymbol}`, margin, yPos);
+    yPos += 6;
+    addText(`Paj Order ID: ${receipt.pajOrderId}`, margin, yPos);
+
+    yPos += 10;
+    addLine(yPos);
+    yPos += 10;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    addText('Verification', margin, yPos);
+
+    yPos += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(60, 60, 60);
+
+    addText('Keep this receipt and tracking code for your records.', margin, yPos);
+    yPos += 5;
+    addText('In case of any dispute, share the tracking code with support', margin, yPos);
+    yPos += 5;
+    addText('so we can quickly locate and verify this Paj Cash transaction.', margin, yPos);
+
+    yPos = doc.internal.pageSize.getHeight() - 20;
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    addText('Thank you for using StudIQ Campus Store!', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 5;
+    addText('For support, contact: support@studiq.fun', pageWidth / 2, yPos, { align: 'center' });
+
+    const fileName = `StudIQ_Paj_Receipt_${receipt.id}.pdf`;
     doc.save(fileName);
 }
 

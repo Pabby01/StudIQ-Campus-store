@@ -174,6 +174,11 @@ Current test coverage:
 
 ## 📝 Recent Updates
 
+- **v1.5 - Wallet History & Paj Receipts**
+  - Fixed SOL/USDC balances to use the configured Helius RPC and correct token amounts.
+  - Upgraded transaction history with colored deposit/withdraw arrows, Paj Cash labels, expandable details, and clearer error states.
+  - Added Web3-style Paj Cash PDF receipts with per-type theming and accurate NGN/USDC breakdown.
+  - Implemented `/api/ramp/resolve-account` and auto bank account verification for Naira withdrawals.
 - **v1.4 - Wallet & Ramp UI**: Complete overhaul of the Wallet dashboard and Paj Cash integration with direct Withdraw/Deposit flows.
 - **v1.3 - Security**: Removed test endpoints, improved mainnet configuration.
 - **v1.2 - Optimization**: Added global price caching to speed up checkout flow significantly.

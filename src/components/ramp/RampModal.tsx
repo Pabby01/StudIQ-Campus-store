@@ -1,26 +1,26 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import {
     X,
-    ArrowRightLeft,
     ArrowUpCircle,
     ArrowDownCircle,
     CheckCircle2,
     Loader2,
     AlertCircle,
-    Building2,
-    Wallet
+    Building2
 } from "lucide-react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { SOLANA_CONFIG } from "@/lib/solana-config";
+import { generatePajReceipt } from "@/lib/generateReceipt";
 
 interface RampModalProps {
     isOpen: boolean;
@@ -28,7 +28,7 @@ interface RampModalProps {
     initialType?: RampType;
 }
 
-type Step = "type" | "verify" | "otp" | "form" | "confirm" | "success";
+type Step = "type" | "verify" | "otp" | "form" | "confirm" | "tracking" | "success";
 type RampType = "onramp" | "offramp";
 
 export default function RampModal({ isOpen, onClose, initialType }: RampModalProps) {
@@ -57,21 +57,39 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
     // Order State
     const [order, setOrder] = useState<any>(null);
     const [lastResolvedParams, setLastResolvedParams] = useState<string>("");
+    const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
+    const trackingIntervalRef = useRef<number | null>(null);
 
     useEffect(() => {
         if (isOpen) {
             fetchRates();
             setError(null);
-            setLastResolvedParams(""); // Reset on open
+            setLastResolvedParams("");
+            setTransactionStatus(null);
             if (initialType) {
                 setType(initialType);
                 setStep("verify");
-                setPajToken(null); // Ensure clean slate
+                setPajToken(null);
             } else {
                 setStep("type");
             }
+        } else {
+            if (trackingIntervalRef.current) {
+                clearInterval(trackingIntervalRef.current);
+                trackingIntervalRef.current = null;
+            }
+            setTransactionStatus(null);
         }
     }, [isOpen, initialType]);
+
+    useEffect(() => {
+        return () => {
+            if (trackingIntervalRef.current) {
+                clearInterval(trackingIntervalRef.current);
+                trackingIntervalRef.current = null;
+            }
+        };
+    }, []);
 
     const fetchRates = async () => {
         try {
@@ -97,7 +115,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             } else {
                 setError(data.error);
             }
-        } catch (err) {
+        } catch {
             setError("Failed to initiate verification");
         } finally {
             setLoading(false);
@@ -122,7 +140,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             } else {
                 setError(data.error);
             }
-        } catch (err) {
+        } catch {
             setError("Verification failed");
         } finally {
             setLoading(false);
@@ -144,25 +162,13 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
         }
     };
 
-    // Debounce state for account resolution
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (accountNumber.length >= 10 && selectedBank && pajToken) {
-                handleResolveAccount();
-            }
-        }, 1000);
-
-        return () => clearTimeout(timer);
-    }, [accountNumber, selectedBank, pajToken]);
-
-    const handleResolveAccount = async () => {
+    const handleResolveAccount = useCallback(async () => {
         const currentParams = `${selectedBank}-${accountNumber}`;
 
         if (!pajToken || !selectedBank || accountNumber.length < 10) {
             return;
         }
 
-        // BLOCKER: If we already resolved this exact combo, DO NOT call again.
         if (lastResolvedParams === currentParams) {
             return;
         }
@@ -173,7 +179,6 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
 
         setLoading(true);
         setResolvedAccount(null);
-        // Note: We don't clear error here immediately to avoid flickering if it's a re-try
 
         try {
             const res = await fetch("/api/ramp/resolve-account", {
@@ -195,22 +200,30 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
 
             if (data.success) {
                 setResolvedAccount(data.account);
-                setLastResolvedParams(currentParams); // Mark as resolved
+                setLastResolvedParams(currentParams);
             } else {
                 console.warn("[Ramp] Rate/Account resolve failed:", data.error);
-                // Only show error if it's a real failure
                 setResolvedAccount(null);
-                setError(typeof data.error === 'string' ? data.error : "Failed to resolve account");
+                setError(typeof data.error === "string" ? data.error : "Failed to resolve account");
             }
         } catch (err) {
             console.error("Failed to resolve account", err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [accountNumber, selectedBank, pajToken, lastResolvedParams, loading]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (accountNumber.length >= 10 && selectedBank && pajToken) {
+                handleResolveAccount();
+            }
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [accountNumber, selectedBank, pajToken, handleResolveAccount]);
 
     const handleCreateOrder = async () => {
-
         if (type === "offramp" && !walletAddress) {
             console.error("No wallet address found!");
             setError("Wallet not connected. Please connect your wallet.");
@@ -257,10 +270,11 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             const data = await res.json();
 
             if (data.success) {
-                setOrder(data.order);
+                const createdOrder = data.order;
+                setOrder(createdOrder);
 
                 if (type === "offramp") {
-                    const depositAddress = data.order.address || data.order.walletAddress;
+                    const depositAddress = createdOrder.address || createdOrder.walletAddress;
 
                     if (!depositAddress) {
                         throw new Error("No deposit address received from Paj Cash");
@@ -302,9 +316,15 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                     const signature = await connection.sendRawTransaction(signedTx.serialize());
 
                     await connection.confirmTransaction(signature, "confirmed");
-                }
 
-                setStep("success");
+                    if (createdOrder.id) {
+                        startStatusTracking(createdOrder.id);
+                    } else {
+                        setStep("success");
+                    }
+                } else {
+                    setStep("confirm");
+                }
             } else {
                 setError(data.error);
             }
@@ -313,6 +333,114 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             setError(err.message || "Failed to create order");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const startStatusTracking = (orderId: string) => {
+        if (!orderId) return;
+
+        if (trackingIntervalRef.current) {
+            clearInterval(trackingIntervalRef.current);
+            trackingIntervalRef.current = null;
+        }
+
+        setStep("tracking");
+        setTransactionStatus("PROCESSING");
+
+        const checkStatus = async () => {
+            try {
+                const res = await fetch(`/api/ramp/status?id=${encodeURIComponent(orderId)}`);
+                if (!res.ok) {
+                    return;
+                }
+                const data = await res.json();
+                if (!data.success || !data.transaction) {
+                    return;
+                }
+
+                const currentStatus = data.transaction.status as string | null;
+                if (currentStatus) {
+                    setTransactionStatus(currentStatus);
+                }
+
+                const normalized = currentStatus?.toUpperCase();
+                if (normalized === "COMPLETED") {
+                    setOrder((prev: any) => prev ? { ...prev, status: "COMPLETED" } : prev);
+                    if (trackingIntervalRef.current) {
+                        clearInterval(trackingIntervalRef.current);
+                        trackingIntervalRef.current = null;
+                    }
+                    setStep("success");
+                }
+            } catch (err) {
+                console.error("Failed to check Paj transaction status", err);
+            }
+        };
+
+        checkStatus();
+        const intervalId = window.setInterval(checkStatus, 5000);
+        trackingIntervalRef.current = intervalId;
+    };
+
+    const mapStatusForReceipt = (status?: string | null) => {
+        if (!status) return "Processing";
+        const normalized = status.toUpperCase();
+        if (normalized === "INIT") return "Processing";
+        if (normalized === "PAID") return "Processing";
+        if (normalized === "COMPLETED") return "Completed";
+        return status;
+    };
+
+    const handleDownloadReceipt = () => {
+        if (!order) return;
+
+        try {
+            const receiptType = type === "onramp" ? "deposit" : "withdrawal";
+            const baseId = order.id || order.reference || order.address || String(Date.now());
+            const baseIdString = typeof baseId === "string" ? baseId : String(baseId);
+            const trackingCode = `PAJ-${receiptType === "deposit" ? "IN" : "OUT"}-${baseIdString.slice(-8).toUpperCase()}`;
+
+            const rawNetwork = process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet";
+            const isMainnet = rawNetwork === "mainnet" || rawNetwork === "mainnet-beta";
+            const network = isMainnet ? "mainnet-beta" : "devnet";
+
+            const statusForReceipt = mapStatusForReceipt(order.status);
+
+            const parsedAmount = parseFloat(amount || "0");
+            const onRampRate = rates?.onRampRate?.rate || 0;
+            const offRampRate = rates?.offRampRate?.rate || 0;
+
+            const amountFiat =
+                type === "onramp"
+                    ? parsedAmount
+                    : order.fiatAmount ?? (offRampRate > 0 ? parsedAmount * offRampRate : parsedAmount);
+
+            const amountToken =
+                type === "onramp"
+                    ? (typeof order.tokenAmount === "number" && order.tokenAmount > 0
+                        ? order.tokenAmount
+                        : onRampRate > 0
+                            ? parsedAmount / onRampRate
+                            : parsedAmount)
+                    : parsedAmount;
+
+            generatePajReceipt({
+                id: baseIdString,
+                date: new Date(),
+                type: receiptType,
+                userAddress: walletAddress || "",
+                userName: identifier || null,
+                amountFiat,
+                fiatCurrency: order.currency || "NGN",
+                amountToken,
+                tokenSymbol: "USDC",
+                pajOrderId: order.id || "",
+                trackingCode,
+                network,
+                status: statusForReceipt,
+            });
+        } catch (receiptError) {
+            console.error("Failed to generate Paj Cash receipt", receiptError);
         }
     };
 
@@ -566,7 +694,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                                     {isOnramp ? `₦${parseFloat(amount).toLocaleString()}` : `${order.amount} USDC`}
                                 </p>
 
-                                <div className="space-y-3 pt-4 border-t border-gray-200/50 text-left">
+                                <div className="space-y-4 pt-4 border-t border-gray-200/50 text-left">
                                     <div className="flex justify-between">
                                         <span className="text-xs font-bold text-gray-400 uppercase">Status</span>
                                         <span className="text-sm font-bold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-md">Processing</span>
@@ -575,16 +703,71 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                                         <span className="text-xs font-bold text-gray-400 uppercase">Order ID</span>
                                         <span className="text-sm font-bold text-gray-900 font-mono tracking-wider">#{order.id?.slice(0, 8)}</span>
                                     </div>
+                                    {isOnramp && (
+                                        <>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs font-bold text-gray-400 uppercase">Bank</span>
+                                                <span className="text-sm font-semibold text-gray-900">{order.bank}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs font-bold text-gray-400 uppercase">Account Name</span>
+                                                <span className="text-sm font-semibold text-gray-900">{order.accountName}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs font-bold text-gray-400 uppercase">Account Number</span>
+                                                <span className="text-sm font-mono font-bold text-gray-900 tracking-wider">
+                                                    {order.accountNumber}
+                                                </span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
                             <Button
                                 className={`${buttonClass} h-12 rounded-xl font-bold`}
                                 fullWidth
-                                onClick={() => { setStep("success"); }}
+                                onClick={() => {
+                                    if (order?.id) {
+                                        startStatusTracking(order.id);
+                                    }
+                                }}
                             >
                                 I have completed the transfer
                             </Button>
+                        </div>
+                    )}
+
+                    {/* Step: Tracking */}
+                    {step === "tracking" && (
+                        <div className="text-center py-8">
+                            <div className="relative inline-block mb-8">
+                                <div className={`absolute inset-0 blur-2xl rounded-full animate-pulse ${isOnramp ? 'bg-green-500/20' : 'bg-orange-500/20'}`}></div>
+                                <div className={`relative w-24 h-24 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-xl border-4 border-white ${isOnramp ? 'bg-green-100' : 'bg-orange-100'}`}>
+                                    <Loader2 className={`w-10 h-10 animate-spin ${isOnramp ? 'text-green-600' : 'text-orange-600'}`} />
+                                </div>
+                            </div>
+                            <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">
+                                {isOnramp ? "Confirming your payment" : "Processing your withdrawal"}
+                            </h3>
+                            <p className="text-gray-500 mb-4 max-w-[320px] mx-auto font-medium leading-relaxed">
+                                We are checking with Paj Cash to confirm your {isOnramp ? "bank transfer" : "withdrawal"}.
+                            </p>
+                            {transactionStatus && (
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.25em]">
+                                    Status: {mapStatusForReceipt(transactionStatus)}
+                                </p>
+                            )}
+                            <div className="mt-6 flex flex-col gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="h-12 rounded-2xl font-bold text-sm"
+                                    fullWidth
+                                    onClick={onClose}
+                                >
+                                    Close
+                                </Button>
+                            </div>
                         </div>
                     )}
 
@@ -601,13 +784,24 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                             <p className="text-gray-500 mb-8 max-w-[280px] mx-auto font-medium leading-relaxed">
                                 Your {type === 'onramp' ? 'purchase' : 'withdrawal'} has been initiated and is being processed.
                             </p>
-                            <Button
-                                className={`${buttonClass} h-14 rounded-2xl font-bold text-lg`}
-                                fullWidth
-                                onClick={onClose}
-                            >
-                                Awesome, Thanks!
-                            </Button>
+                            <div className="flex flex-col gap-3">
+                                <Button
+                                    className={`${buttonClass} h-12 rounded-2xl font-bold text-lg`}
+                                    fullWidth
+                                    onClick={handleDownloadReceipt}
+                                    disabled={!order}
+                                >
+                                    Download Receipt
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="h-12 rounded-2xl font-bold text-lg"
+                                    fullWidth
+                                    onClick={onClose}
+                                >
+                                    Close
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </div>
