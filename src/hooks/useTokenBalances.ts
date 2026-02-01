@@ -83,7 +83,8 @@ export function useTokenBalances(address: string | null, cluster: Cluster = 'dev
                     : (process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl('devnet'));
 
                 // OPTIMIZATION: Use Helius DAS API on Mainnet if available
-                if (cluster === 'mainnet' && rpcUrl.includes("helius")) {
+                const enableHeliusOptimization = false;
+                if (enableHeliusOptimization && cluster === 'mainnet' && rpcUrl.includes("helius")) {
                     try {
                         const { getAssetsByOwner } = await import('@/lib/helius');
                         const assets = await getAssetsByOwner(address);
