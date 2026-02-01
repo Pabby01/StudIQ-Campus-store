@@ -30,12 +30,21 @@ interface Stats {
     orders: { total: number; completed: number; pending: number };
     revenue: {
         gmv: number;
+        gmvUsdc: number;
+        gmvUsd: number;
         platformFees: number;
+        platformFeesUsdc: number;
+        platformFeesUsd: number;
         sellerRevenue: number;
+        sellerRevenueUsdc: number;
+        sellerRevenueUsd: number;
         subscriptionRevenue: number;
         subscriptionRevenueSol: number;
         subscriptionRevenueUsdc: number;
+        subscriptionRevenueUsd: number;
         totalRevenue: number;
+        totalRevenueUsd: number;
+        solPriceUsd: number;
         currency: string;
     };
     withdrawals: {
@@ -43,6 +52,7 @@ interface Stats {
         processing: number;
         completed: number;
         totalPaidOut: number;
+        totalPaidOutUsd: number;
     };
 }
 
@@ -67,6 +77,10 @@ interface User {
     points: number;
     totalSpent: number;
     totalRevenue: number;
+    totalSpentSol: number;
+    totalSpentUsdc: number;
+    totalRevenueSol: number;
+    totalRevenueUsdc: number;
     storeCount: number;
     joinedAt: string;
 }
@@ -372,7 +386,6 @@ export default function AdminPage() {
                 {/* Overview Tab */}
                 {activeTab === "overview" && stats && (
                     <div className="space-y-6">
-                        {/* Stats Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <Card className="p-6">
                                 <div className="flex items-center justify-between mb-4">
@@ -386,14 +399,18 @@ export default function AdminPage() {
                             </Card>
 
                             <Card className="p-6">
-                                <div className="flex items-center justify<br/> between mb-4">
+                                <div className="flex items-center justify-between mb-4">
                                     <div className="p-3 bg-green-100 rounded-lg">
                                         <DollarSign className="w-6 h-6 text-green-600" />
                                     </div>
                                 </div>
-                                <h3 className="text-2xl font-bold text-black">{stats.revenue.gmv.toFixed(2)}</h3>
-                                <p className="text-sm text-muted-text">Total GMV (SOL)</p>
-                                <p className="text-xs text-muted-text mt-1">Platform fees: {stats.revenue.platformFees.toFixed(4)}</p>
+                                <h3 className="text-2xl font-bold text-black">
+                                    ${stats.revenue.gmvUsd.toFixed(2)}
+                                </h3>
+                                <p className="text-sm text-muted-text">Total GMV (USD)</p>
+                                <p className="text-xs text-muted-text mt-1">
+                                    {stats.revenue.gmv.toFixed(4)} SOL • {stats.revenue.gmvUsdc.toFixed(2)} USDC
+                                </p>
                             </Card>
 
                             <Card className="p-6">
@@ -415,26 +432,34 @@ export default function AdminPage() {
                                 </div>
                                 <h3 className="text-2xl font-bold text-black">{stats.withdrawals.pending}</h3>
                                 <p className="text-sm text-muted-text">Pending Withdrawals</p>
-                                <p className="text-xs text-muted-text mt-1">{stats.withdrawals.totalPaidOut.toFixed(2)} SOL paid out</p>
+                                <p className="text-xs text-muted-text mt-1">
+                                    ${stats.withdrawals.totalPaidOutUsd.toFixed(2)} paid out
+                                </p>
                             </Card>
                         </div>
 
                         {/* Quick Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Card className="p-6">
-                                <h3 className="text-lg font-bold text-black mb-4">Platform Revenue</h3>
+                                <h3 className="text-lg font-bold text-black mb-4">Platform Revenue (USD)</h3>
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
                                         <span className="text-muted-text">Gross Merchandise Value</span>
-                                        <span className="font-semibold">{stats.revenue.gmv.toFixed(4)} SOL</span>
+                                        <span className="font-semibold">
+                                            ${stats.revenue.gmvUsd.toFixed(2)}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-muted-text">Platform Fees (5%)</span>
-                                        <span className="font-semibold text-green-600">{stats.revenue.platformFees.toFixed(4)} SOL</span>
+                                        <span className="font-semibold text-green-600">
+                                            ${stats.revenue.platformFeesUsd.toFixed(2)}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-muted-text">Seller Revenue (95%)</span>
-                                        <span className="font-semibold">{stats.revenue.sellerRevenue.toFixed(4)} SOL</span>
+                                        <span className="font-semibold">
+                                            ${stats.revenue.sellerRevenueUsd.toFixed(2)}
+                                        </span>
                                     </div>
                                 </div>
                             </Card>
@@ -453,6 +478,12 @@ export default function AdminPage() {
                                     <div className="flex justify-between">
                                         <span className="text-muted-text">Completed</span>
                                         <span className="font-semibold text-green-600">{stats.withdrawals.completed}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-text">Total Paid Out</span>
+                                        <span className="font-semibold">
+                                            ${stats.withdrawals.totalPaidOutUsd.toFixed(2)}
+                                        </span>
                                     </div>
                                 </div>
                             </Card>
@@ -528,7 +559,6 @@ export default function AdminPage() {
                             <h3 className="text-lg font-bold text-black mb-6">Platform Earnings Breakdown</h3>
 
                             <div className="grid md:grid-cols-2 gap-6">
-                                {/* SOL */}
                                 <div className="space-y-4">
                                     <h4 className="font-semibold text-purple-600 flex items-center gap-2">
                                         <DollarSign className="w-5 h-5" />
@@ -537,43 +567,90 @@ export default function AdminPage() {
                                     <div className="space-y-3">
                                         <div className="flex justify-between pb-2 border-b">
                                             <span className="text-muted-text">Gross Merchandise Value</span>
-                                            <span className="font-semibold">{stats.revenue.gmv.toFixed(4)} SOL</span>
+                                            <span className="font-semibold">
+                                                {stats.revenue.gmv.toFixed(4)} SOL • $
+                                                {(stats.revenue.gmv * stats.revenue.solPriceUsd).toFixed(2)}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between pb-2 border-b">
                                             <span className="text-muted-text">Platform Fees (5%)</span>
-                                            <span className="font-bold text-green-600">{stats.revenue.platformFees.toFixed(4)} SOL</span>
+                                            <span className="font-bold text-green-600">
+                                                {stats.revenue.platformFees.toFixed(4)} SOL • $
+                                                {(stats.revenue.platformFees * stats.revenue.solPriceUsd).toFixed(2)}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between pb-2 border-b">
                                             <span className="text-muted-text">Seller Share (95%)</span>
-                                            <span className="font-semibold">{stats.revenue.sellerRevenue.toFixed(4)} SOL</span>
+                                            <span className="font-semibold">
+                                                {stats.revenue.sellerRevenue.toFixed(4)} SOL • $
+                                                {(stats.revenue.sellerRevenue * stats.revenue.solPriceUsd).toFixed(2)}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between pb-2 border-b bg-blue-50 p-2 rounded">
                                             <span className="text-muted-text font-medium">Subscription Revenue</span>
-                                            <span className="font-bold text-blue-600">{(stats.revenue.subscriptionRevenue || 0).toFixed(4)} SOL</span>
+                                            <span className="font-bold text-blue-600">
+                                                {(stats.revenue.subscriptionRevenueSol || 0).toFixed(4)} SOL • $
+                                                {((stats.revenue.subscriptionRevenueSol || 0) * stats.revenue.solPriceUsd).toFixed(2)}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between pb-2 border-b">
                                             <span className="text-muted-text">Paid to Sellers</span>
-                                            <span className="font-semibold text-red-600">-{stats.withdrawals.totalPaidOut.toFixed(4)} SOL</span>
+                                            <span className="font-semibold text-red-600">
+                                                -{stats.withdrawals.totalPaidOut.toFixed(4)} SOL • -$
+                                                {stats.withdrawals.totalPaidOutUsd.toFixed(2)}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between p-3 bg-green-50 rounded-lg">
                                             <span className="font-medium">Platform Balance</span>
                                             <span className="font-bold text-green-600">
-                                                {((stats.revenue.platformFees || 0) + (stats.revenue.subscriptionRevenue || 0) + (stats.revenue.sellerRevenue || 0) - stats.withdrawals.totalPaidOut).toFixed(4)} SOL
+                                                {(
+                                                    (stats.revenue.platformFees || 0) +
+                                                    (stats.revenue.subscriptionRevenueSol || 0) +
+                                                    (stats.revenue.sellerRevenue || 0) -
+                                                    stats.withdrawals.totalPaidOut
+                                                ).toFixed(4)}{" "}
+                                                SOL • $
+                                                {(
+                                                    (stats.revenue.platformFeesUsd || 0) +
+                                                    (stats.revenue.subscriptionRevenueUsd || 0) +
+                                                    (stats.revenue.sellerRevenueUsd || 0) -
+                                                    (stats.withdrawals.totalPaidOutUsd || 0)
+                                                ).toFixed(2)}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* USDC */}
                                 <div className="space-y-4">
                                     <h4 className="font-semibold text-green-600 flex items-center gap-2">
                                         <DollarSign className="w-5 h-5" />
                                         USDC Revenue
                                     </h4>
-                                    <div className="p-4 bg-gray-50 rounded-lg text-center">
-                                        <p className="text-muted-text text-sm">
-                                            USDC transactions will appear here once users start paying with USDC
-                                        </p>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between pb-2 border-b">
+                                            <span className="text-muted-text">Gross Merchandise Value</span>
+                                            <span className="font-semibold">
+                                                {stats.revenue.gmvUsdc.toFixed(2)} USDC
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between pb-2 border-b">
+                                            <span className="text-muted-text">Platform Fees (5%)</span>
+                                            <span className="font-bold text-green-600">
+                                                {stats.revenue.platformFeesUsdc.toFixed(2)} USDC
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between pb-2 border-b">
+                                            <span className="text-muted-text">Seller Share (95%)</span>
+                                            <span className="font-semibold">
+                                                {stats.revenue.sellerRevenueUsdc.toFixed(2)} USDC
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between pb-2 border-b bg-blue-50 p-2 rounded">
+                                            <span className="text-muted-text font-medium">Subscription Revenue</span>
+                                            <span className="font-bold text-blue-600">
+                                                {(stats.revenue.subscriptionRevenueUsdc || 0).toFixed(2)} USDC
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -582,28 +659,56 @@ export default function AdminPage() {
                         <div className="grid md:grid-cols-4 gap-4">
                             <Card className="p-6">
                                 <h4 className="text-sm font-medium text-muted-text mb-2">Product Sales Fees</h4>
-                                <p className="text-2xl font-bold text-green-600">{stats.revenue.platformFees.toFixed(4)} SOL</p>
-                                <p className="text-xs text-muted-text mt-1">5% of all product sales</p>
+                                <p className="text-2xl font-bold text-green-600">
+                                    ${stats.revenue.platformFeesUsd.toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-text mt-1">
+                                    {stats.revenue.platformFees.toFixed(4)} SOL •{" "}
+                                    {stats.revenue.platformFeesUsdc.toFixed(2)} USDC
+                                </p>
                             </Card>
 
                             <Card className="p-6 bg-blue-50">
                                 <h4 className="text-sm font-medium text-blue-700 mb-2">Subscription Revenue</h4>
-                                <p className="text-2xl font-bold text-blue-600">{(stats.revenue.subscriptionRevenue || 0).toFixed(4)} SOL</p>
-                                <p className="text-xs text-muted-text mt-1">Premium & Enterprise plans</p>
+                                <p className="text-2xl font-bold text-blue-600">
+                                    ${stats.revenue.subscriptionRevenueUsd.toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-text mt-1">
+                                    {(stats.revenue.subscriptionRevenueSol || 0).toFixed(4)} SOL •{" "}
+                                    {(stats.revenue.subscriptionRevenueUsdc || 0).toFixed(2)} USDC
+                                </p>
                             </Card>
 
                             <Card className="p-6">
                                 <h4 className="text-sm font-medium text-muted-text mb-2">Total Seller Payments</h4>
-                                <p className="text-2xl font-bold text-orange-600">{stats.withdrawals.totalPaidOut.toFixed(4)} SOL</p>
-                                <p className="text-xs text-muted-text mt-1">{stats.withdrawals.completed} withdrawals</p>
+                                <p className="text-2xl font-bold text-orange-600">
+                                    ${stats.withdrawals.totalPaidOutUsd.toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-text mt-1">
+                                    {stats.withdrawals.totalPaidOut.toFixed(4)} SOL • {stats.withdrawals.completed} withdrawals
+                                </p>
                             </Card>
 
                             <Card className="p-6">
                                 <h4 className="text-sm font-medium text-muted-text mb-2">Platform Wallet Balance</h4>
                                 <p className="text-2xl font-bold text-purple-600">
-                                    {(stats.revenue.gmv - stats.withdrawals.totalPaidOut).toFixed(4)} SOL
+                                    $
+                                    {(
+                                        (stats.revenue.platformFeesUsd || 0) +
+                                        (stats.revenue.subscriptionRevenueUsd || 0) +
+                                        (stats.revenue.sellerRevenueUsd || 0) -
+                                        (stats.withdrawals.totalPaidOutUsd || 0)
+                                    ).toFixed(2)}
                                 </p>
-                                <p className="text-xs text-muted-text mt-1">Held in escrow</p>
+                                <p className="text-xs text-muted-text mt-1">
+                                    {(
+                                        (stats.revenue.platformFees || 0) +
+                                        (stats.revenue.subscriptionRevenueSol || 0) +
+                                        (stats.revenue.sellerRevenue || 0) -
+                                        stats.withdrawals.totalPaidOut
+                                    ).toFixed(4)}{" "}
+                                    SOL equivalent
+                                </p>
                             </Card>
                         </div>
                     </div>
@@ -710,8 +815,8 @@ export default function AdminPage() {
                                     <tr className="text-left text-sm text-muted-text">
                                         <th className="p-3">Name</th>
                                         <th className="p-3">Email</th>
-                                        <th className="p-3">Revenue (Seller)</th>
-                                        <th className="p-3">Spent (Buyer)</th>
+                                        <th className="p-3">Revenue (Seller, USD)</th>
+                                        <th className="p-3">Spent (Buyer, USD)</th>
                                         <th className="p-3">Points</th>
                                         <th className="p-3">Stores</th>
                                     </tr>
@@ -721,8 +826,22 @@ export default function AdminPage() {
                                         <tr key={user.address} className="hover:bg-soft-gray-bg">
                                             <td className="p-3 font-medium text-black">{user.name}</td>
                                             <td className="p-3 text-sm text-muted-text">{user.email}</td>
-                                            <td className="p-3 font-semibold text-green-600">{user.totalRevenue.toFixed(2)} SOL</td>
-                                            <td className="p-3 font-semibold">{user.totalSpent.toFixed(2)} SOL</td>
+                                            <td className="p-3">
+                                                <div className="font-semibold text-green-600">
+                                                    ${user.totalRevenue.toFixed(2)}
+                                                </div>
+                                                <div className="text-xs text-muted-text">
+                                                    {user.totalRevenueSol.toFixed(4)} SOL • {user.totalRevenueUsdc.toFixed(2)} USDC
+                                                </div>
+                                            </td>
+                                            <td className="p-3">
+                                                <div className="font-semibold">
+                                                    ${user.totalSpent.toFixed(2)}
+                                                </div>
+                                                <div className="text-xs text-muted-text">
+                                                    {user.totalSpentSol.toFixed(4)} SOL • {user.totalSpentUsdc.toFixed(2)} USDC
+                                                </div>
+                                            </td>
                                             <td className="p-3">{user.points}</td>
                                             <td className="p-3">{user.storeCount}</td>
                                         </tr>

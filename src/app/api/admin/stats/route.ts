@@ -6,7 +6,6 @@ export async function GET(req: Request) {
     try {
         const address = await getSessionWallet(req);
 
-        // Verify admin access via session
         await requireAdmin(address);
 
         const supabase = getSupabaseServerClient();
@@ -36,18 +35,29 @@ export async function GET(req: Request) {
             .select("*", { count: "exact", head: true })
             .eq("status", "pending");
 
-        // 4. Calculate revenue (from completed orders)
         const { data: completedOrdersData } = await supabase
             .from("orders")
             .select("amount, currency")
             .eq("status", "completed");
 
-        const gmv = completedOrdersData?.reduce((sum, order) => {
-            return sum + (parseFloat(order.amount.toString()) || 0);
-        }, 0) || 0;
+        let gmvSol = 0;
+        let gmvUsdc = 0;
 
-        const platformFees = gmv * 0.05; // 5% platform fee
-        const sellerRevenue = gmv * 0.95;
+        if (completedOrdersData && completedOrdersData.length > 0) {
+            for (const order of completedOrdersData as any[]) {
+                const amount = parseFloat(order.amount?.toString?.() || "0") || 0;
+                if (order.currency === "USDC") {
+                    gmvUsdc += amount;
+                } else {
+                    gmvSol += amount;
+                }
+            }
+        }
+
+        const platformFeesSol = gmvSol * 0.05;
+        const platformFeesUsdc = gmvUsdc * 0.05;
+        const sellerRevenueSol = gmvSol * 0.95;
+        const sellerRevenueUsdc = gmvUsdc * 0.95;
 
         // 5. Get withdrawal stats
         const { count: pendingWithdrawals } = await supabase
@@ -90,20 +100,46 @@ export async function GET(req: Request) {
             .eq("status", "completed");
 
         const subscriptionRevenueSol = subscriptionTransactions?.reduce((sum, tx) => {
-            if (tx.currency === 'SOL') {
+            if (tx.currency === "SOL") {
                 return sum + (parseFloat(tx.amount.toString()) || 0);
             }
             return sum;
         }, 0) || 0;
 
         const subscriptionRevenueUsdc = subscriptionTransactions?.reduce((sum, tx) => {
-            if (tx.currency === 'USDC') {
+            if (tx.currency === "USDC") {
                 return sum + (parseFloat(tx.amount.toString()) || 0);
             }
             return sum;
         }, 0) || 0;
 
-        const totalSubscriptionRevenue = subscriptionRevenueSol; // + USDC when available
+        let solPriceUsd = 0;
+        try {
+            const priceRes = await fetch(
+                `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/price/sol`
+            );
+            if (priceRes.ok) {
+                const { price } = await priceRes.json();
+                if (typeof price === "number" && !Number.isNaN(price)) {
+                    solPriceUsd = price;
+                }
+            }
+        } catch {
+            solPriceUsd = 0;
+        }
+
+        if (!solPriceUsd || Number.isNaN(solPriceUsd)) {
+            solPriceUsd = 100;
+        }
+
+        const gmvUsd = gmvSol * solPriceUsd + gmvUsdc;
+        const platformFeesUsd = platformFeesSol * solPriceUsd + platformFeesUsdc;
+        const sellerRevenueUsd = sellerRevenueSol * solPriceUsd + sellerRevenueUsdc;
+        const subscriptionRevenueUsd =
+            subscriptionRevenueSol * solPriceUsd + subscriptionRevenueUsdc;
+        const totalSubscriptionRevenueSol = subscriptionRevenueSol;
+        const totalRevenueUsd = gmvUsd + subscriptionRevenueUsd;
+        const totalPaidOutUsd = totalPaidOut * solPriceUsd;
 
         return Response.json({
             ok: true,
@@ -121,20 +157,30 @@ export async function GET(req: Request) {
                     pending: pendingOrders || 0,
                 },
                 revenue: {
-                    gmv: gmv,
-                    platformFees: platformFees,
-                    sellerRevenue: sellerRevenue,
-                    subscriptionRevenue: totalSubscriptionRevenue,
+                    gmv: gmvSol,
+                    gmvUsdc: gmvUsdc,
+                    gmvUsd: gmvUsd,
+                    platformFees: platformFeesSol,
+                    platformFeesUsdc: platformFeesUsdc,
+                    platformFeesUsd: platformFeesUsd,
+                    sellerRevenue: sellerRevenueSol,
+                    sellerRevenueUsdc: sellerRevenueUsdc,
+                    sellerRevenueUsd: sellerRevenueUsd,
+                    subscriptionRevenue: totalSubscriptionRevenueSol,
                     subscriptionRevenueSol: subscriptionRevenueSol,
                     subscriptionRevenueUsdc: subscriptionRevenueUsdc,
-                    totalRevenue: gmv + totalSubscriptionRevenue,
-                    currency: "SOL",
+                    subscriptionRevenueUsd: subscriptionRevenueUsd,
+                    totalRevenue: totalRevenueUsd,
+                    totalRevenueUsd: totalRevenueUsd,
+                    solPriceUsd: solPriceUsd,
+                    currency: "USD",
                 },
                 withdrawals: {
                     pending: pendingWithdrawals || 0,
                     processing: processingWithdrawals || 0,
                     completed: completedWithdrawals || 0,
                     totalPaidOut: totalPaidOut,
+                    totalPaidOutUsd: totalPaidOutUsd,
                 },
             },
         });
