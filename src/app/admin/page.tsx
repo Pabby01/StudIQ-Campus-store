@@ -1,3 +1,7 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -95,7 +99,7 @@ export default function AdminPage() {
     }, []);
 
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<"overview" | "withdrawals" | "users" | "transactions" | "earnings" | "subscriptions">("overview");
+    const [activeTab, setActiveTab] = useState<"overview" | "withdrawals" | "users" | "transactions" | "earnings" | "subscriptions" | "paj">("overview");
 
     const [stats, setStats] = useState<Stats | null>(null);
     const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
@@ -103,6 +107,11 @@ export default function AdminPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [subscriptionStats, setSubscriptionStats] = useState<any>(null);
+    const [pajTransactions, setPajTransactions] = useState<any[]>([]);
+    const [verificationCode, setVerificationCode] = useState("");
+    const [verificationResult, setVerificationResult] = useState<any | null>(null);
+    const [verificationError, setVerificationError] = useState<string | null>(null);
+    const [verifying, setVerifying] = useState(false);
 
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [showProcessModal, setShowProcessModal] = useState(false);
@@ -186,6 +195,12 @@ export default function AdminPage() {
             if (transactionsRes.ok) {
                 const data = await transactionsRes.json();
                 setTransactions(data.transactions);
+            }
+
+            const pajRes = await fetch(`/api/admin/ramp-transactions?range=30&limit=50`);
+            if (pajRes.ok) {
+                const data = await pajRes.json();
+                setPajTransactions(data.transactions || []);
             }
 
             // Fetch subscriptions
@@ -292,7 +307,6 @@ export default function AdminPage() {
                             onChange={(e) => setAccessCode(e.target.value)}
                             className="w-full px-4 py-3 text-center text-2xl tracking-widest border border-border-gray rounded-lg focus:ring-2 focus:ring-primary-blue focus:outline-none"
                             placeholder="• • • • • •"
-                            maxLength={6}
                         />
                         <Button variant="primary" onClick={checkAccessCode} className="w-full">
                             Verify Access
@@ -335,6 +349,7 @@ export default function AdminPage() {
                         { id: "users", label: "Users" },
                         { id: "transactions", label: "Transactions" },
                         { id: "subscriptions", label: "Subscriptions", badge: subscriptionStats?.active },
+                        { id: "paj", label: "Paj Cash" },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -760,6 +775,203 @@ export default function AdminPage() {
                             </table>
                         </div>
                     </Card>
+                )}
+
+                {activeTab === "paj" && (
+                    <div className="grid lg:grid-cols-3 gap-6 items-start">
+                        <Card className="p-6 lg:col-span-2">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 className="text-lg font-bold text-black">Paj Cash Transactions</h3>
+                                    <p className="text-sm text-muted-text">Onramp and withdrawal activity from ramp_transactions</p>
+                                </div>
+                            </div>
+                            {pajTransactions.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <Wallet className="w-16 h-16 text-muted-text mx-auto mb-4 opacity-50" />
+                                    <p className="text-muted-text">No Paj Cash transactions yet</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-soft-gray-bg">
+                                            <tr className="text-left text-sm text-muted-text">
+                                                <th className="p-3">Type</th>
+                                                <th className="p-3">Fiat</th>
+                                                <th className="p-3">Status</th>
+                                                <th className="p-3">User</th>
+                                                <th className="p-3">Paj Order ID</th>
+                                                <th className="p-3">Created</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border-gray">
+                                            {pajTransactions.map((tx: any) => (
+                                                <tr key={tx.id} className="hover:bg-soft-gray-bg">
+                                                    <td className="p-3">
+                                                        <span className={`px-2 py-1 rounded text-xs font-medium ${tx.type === "onramp"
+                                                            ? "bg-green-100 text-green-800"
+                                                            : "bg-orange-100 text-orange-800"
+                                                            }`}>
+                                                            {tx.type === "onramp" ? "Deposit" : "Withdrawal"}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-3 text-sm">
+                                                        <span className="font-semibold">
+                                                            {(tx.fiatAmount || 0).toFixed(2)} {tx.currency || "NGN"}
+                                                        </span>
+                                                        {tx.cryptoAmount && (
+                                                            <div className="text-xs text-muted-text">
+                                                                {(tx.cryptoAmount || 0).toFixed(6)} USDC
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-3">
+                                                        <span
+                                                            className={`text-xs px-2 py-1 rounded-full ${String(tx.status || "").toUpperCase() === "COMPLETED"
+                                                                ? "bg-green-100 text-green-800"
+                                                                : "bg-yellow-100 text-yellow-800"
+                                                                }`}
+                                                        >
+                                                            {tx.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-3 text-xs font-mono">
+                                                        {tx.userAddress ? `${tx.userAddress.slice(0, 6)}...${tx.userAddress.slice(-4)}` : "-"}
+                                                    </td>
+                                                    <td className="p-3 text-xs font-mono">
+                                                        {tx.pajId ? tx.pajId.slice(0, 10) + "..." : "-"}
+                                                    </td>
+                                                    <td className="p-3 text-sm text-muted-text">
+                                                        {tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "-"}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </Card>
+
+                        <Card className="p-6 space-y-4">
+                            <h3 className="text-lg font-bold text-black">Verify Paj Transaction</h3>
+                            <p className="text-sm text-muted-text">
+                                Enter the Paj Order ID or the tracking code from the Paj receipt to look up a transaction.
+                            </p>
+                            <input
+                                type="text"
+                                value={verificationCode}
+                                onChange={(e) => {
+                                    setVerificationCode(e.target.value);
+                                    setVerificationError(null);
+                                }}
+                                className="w-full px-4 py-2 border border-border-gray rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                                placeholder="PAJ-IN-XXXXXX or Paj order id"
+                            />
+                            {verificationError && (
+                                <p className="text-sm text-red-600">{verificationError}</p>
+                            )}
+                            <Button
+                                variant="primary"
+                                className="w-full"
+                                disabled={!verificationCode.trim() || verifying}
+                                onClick={async () => {
+                                    if (!verificationCode.trim()) {
+                                        return;
+                                    }
+                                    setVerifying(true);
+                                    setVerificationError(null);
+                                    setVerificationResult(null);
+                                    try {
+                                        const res = await fetch(`/api/admin/ramp-verify?code=${encodeURIComponent(verificationCode.trim())}`);
+                                        const data = await res.json();
+                                        if (res.ok && data.ok) {
+                                            setVerificationResult(data.transaction);
+                                        } else {
+                                            setVerificationError(data.error || "Verification failed");
+                                        }
+                                    } catch (err) {
+                                        setVerificationError("Verification failed");
+                                    } finally {
+                                        setVerifying(false);
+                                    }
+                                }}
+                            >
+                                {verifying ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Verifying...
+                                    </>
+                                ) : (
+                                    "Verify Transaction"
+                                )}
+                            </Button>
+
+                            {verificationResult && (
+                                <div className="mt-4 space-y-3 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-text">Type</span>
+                                        <span className="font-semibold">
+                                            {verificationResult.type === "onramp" ? "Deposit" : "Withdrawal"}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-text">Status</span>
+                                        <span className="font-semibold">{verificationResult.status}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-text">Fiat Amount</span>
+                                        <span className="font-semibold">
+                                            {(verificationResult.fiatAmount || 0).toFixed(2)} {verificationResult.currency || "NGN"}
+                                        </span>
+                                    </div>
+                                    {verificationResult.cryptoAmount && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-text">USDC Amount</span>
+                                            <span className="font-semibold">
+                                                {(verificationResult.cryptoAmount || 0).toFixed(6)} USDC
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-text">Paj Order ID</span>
+                                        <span className="font-mono text-xs">{verificationResult.pajId}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-text">User Wallet</span>
+                                        <span className="font-mono text-xs">
+                                            {verificationResult.userAddress
+                                                ? `${verificationResult.userAddress.slice(0, 6)}...${verificationResult.userAddress.slice(-4)}`
+                                                : "-"}
+                                        </span>
+                                    </div>
+                                    {verificationResult.txSignature && (
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-muted-text">Tx Signature</span>
+                                            <span className="font-mono text-xs break-all">
+                                                {verificationResult.txSignature}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-muted-text">Created</span>
+                                        <span className="text-xs text-muted-text">
+                                            {verificationResult.createdAt
+                                                ? new Date(verificationResult.createdAt).toLocaleString()
+                                                : "-"}
+                                        </span>
+                                    </div>
+                                    {verificationResult.updatedAt && (
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-muted-text">Last Updated</span>
+                                            <span className="text-xs text-muted-text">
+                                                {new Date(verificationResult.updatedAt).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </Card>
+                    </div>
                 )}
 
                 {/* Process Withdrawal Modal */}
