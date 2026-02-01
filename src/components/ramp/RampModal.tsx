@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -28,7 +28,7 @@ interface RampModalProps {
     initialType?: RampType;
 }
 
-type Step = "type" | "verify" | "otp" | "form" | "confirm" | "success";
+type Step = "type" | "verify" | "otp" | "form" | "confirm" | "tracking" | "success";
 type RampType = "onramp" | "offramp";
 
 export default function RampModal({ isOpen, onClose, initialType }: RampModalProps) {
@@ -57,12 +57,15 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
     // Order State
     const [order, setOrder] = useState<any>(null);
     const [lastResolvedParams, setLastResolvedParams] = useState<string>("");
+    const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
+    const trackingIntervalRef = useRef<number | null>(null);
 
     useEffect(() => {
         if (isOpen) {
             fetchRates();
             setError(null);
             setLastResolvedParams("");
+            setTransactionStatus(null);
             if (initialType) {
                 setType(initialType);
                 setStep("verify");
@@ -70,8 +73,23 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             } else {
                 setStep("type");
             }
+        } else {
+            if (trackingIntervalRef.current) {
+                clearInterval(trackingIntervalRef.current);
+                trackingIntervalRef.current = null;
+            }
+            setTransactionStatus(null);
         }
     }, [isOpen, initialType]);
+
+    useEffect(() => {
+        return () => {
+            if (trackingIntervalRef.current) {
+                clearInterval(trackingIntervalRef.current);
+                trackingIntervalRef.current = null;
+            }
+        };
+    }, []);
 
     const fetchRates = async () => {
         try {
@@ -299,7 +317,11 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
 
                     await connection.confirmTransaction(signature, "confirmed");
 
-                    setStep("success");
+                    if (createdOrder.id) {
+                        startStatusTracking(createdOrder.id);
+                    } else {
+                        setStep("success");
+                    }
                 } else {
                     setStep("confirm");
                 }
@@ -312,6 +334,61 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
         } finally {
             setLoading(false);
         }
+    };
+
+    const startStatusTracking = (orderId: string) => {
+        if (!orderId) return;
+
+        if (trackingIntervalRef.current) {
+            clearInterval(trackingIntervalRef.current);
+            trackingIntervalRef.current = null;
+        }
+
+        setStep("tracking");
+        setTransactionStatus("PROCESSING");
+
+        const checkStatus = async () => {
+            try {
+                const res = await fetch(`/api/ramp/status?id=${encodeURIComponent(orderId)}`);
+                if (!res.ok) {
+                    return;
+                }
+                const data = await res.json();
+                if (!data.success || !data.transaction) {
+                    return;
+                }
+
+                const currentStatus = data.transaction.status as string | null;
+                if (currentStatus) {
+                    setTransactionStatus(currentStatus);
+                }
+
+                const normalized = currentStatus?.toUpperCase();
+                if (normalized === "COMPLETED") {
+                    setOrder((prev: any) => prev ? { ...prev, status: "COMPLETED" } : prev);
+                    if (trackingIntervalRef.current) {
+                        clearInterval(trackingIntervalRef.current);
+                        trackingIntervalRef.current = null;
+                    }
+                    setStep("success");
+                }
+            } catch (err) {
+                console.error("Failed to check Paj transaction status", err);
+            }
+        };
+
+        checkStatus();
+        const intervalId = window.setInterval(checkStatus, 5000);
+        trackingIntervalRef.current = intervalId;
+    };
+
+    const mapStatusForReceipt = (status?: string | null) => {
+        if (!status) return "Processing";
+        const normalized = status.toUpperCase();
+        if (normalized === "INIT") return "Processing";
+        if (normalized === "PAID") return "Processing";
+        if (normalized === "COMPLETED") return "Completed";
+        return status;
     };
 
     const handleDownloadReceipt = () => {
@@ -327,7 +404,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             const isMainnet = rawNetwork === "mainnet" || rawNetwork === "mainnet-beta";
             const network = isMainnet ? "mainnet-beta" : "devnet";
 
-            const statusForReceipt = order.status === "INIT" ? "processing" : (order.status || "processing");
+            const statusForReceipt = mapStatusForReceipt(order.status);
 
             generatePajReceipt({
                 id: baseIdString,
@@ -599,7 +676,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                                     {isOnramp ? `₦${parseFloat(amount).toLocaleString()}` : `${order.amount} USDC`}
                                 </p>
 
-                                <div className="space-y-3 pt-4 border-t border-gray-200/50 text-left">
+                                <div className="space-y-4 pt-4 border-t border-gray-200/50 text-left">
                                     <div className="flex justify-between">
                                         <span className="text-xs font-bold text-gray-400 uppercase">Status</span>
                                         <span className="text-sm font-bold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-md">Processing</span>
@@ -608,16 +685,71 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                                         <span className="text-xs font-bold text-gray-400 uppercase">Order ID</span>
                                         <span className="text-sm font-bold text-gray-900 font-mono tracking-wider">#{order.id?.slice(0, 8)}</span>
                                     </div>
+                                    {isOnramp && (
+                                        <>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs font-bold text-gray-400 uppercase">Bank</span>
+                                                <span className="text-sm font-semibold text-gray-900">{order.bank}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs font-bold text-gray-400 uppercase">Account Name</span>
+                                                <span className="text-sm font-semibold text-gray-900">{order.accountName}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs font-bold text-gray-400 uppercase">Account Number</span>
+                                                <span className="text-sm font-mono font-bold text-gray-900 tracking-wider">
+                                                    {order.accountNumber}
+                                                </span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
                             <Button
                                 className={`${buttonClass} h-12 rounded-xl font-bold`}
                                 fullWidth
-                                onClick={() => { setStep("success"); }}
+                                onClick={() => {
+                                    if (order?.id) {
+                                        startStatusTracking(order.id);
+                                    }
+                                }}
                             >
                                 I have completed the transfer
                             </Button>
+                        </div>
+                    )}
+
+                    {/* Step: Tracking */}
+                    {step === "tracking" && (
+                        <div className="text-center py-8">
+                            <div className="relative inline-block mb-8">
+                                <div className={`absolute inset-0 blur-2xl rounded-full animate-pulse ${isOnramp ? 'bg-green-500/20' : 'bg-orange-500/20'}`}></div>
+                                <div className={`relative w-24 h-24 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-xl border-4 border-white ${isOnramp ? 'bg-green-100' : 'bg-orange-100'}`}>
+                                    <Loader2 className={`w-10 h-10 animate-spin ${isOnramp ? 'text-green-600' : 'text-orange-600'}`} />
+                                </div>
+                            </div>
+                            <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">
+                                {isOnramp ? "Confirming your payment" : "Processing your withdrawal"}
+                            </h3>
+                            <p className="text-gray-500 mb-4 max-w-[320px] mx-auto font-medium leading-relaxed">
+                                We are checking with Paj Cash to confirm your {isOnramp ? "bank transfer" : "withdrawal"}.
+                            </p>
+                            {transactionStatus && (
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.25em]">
+                                    Status: {mapStatusForReceipt(transactionStatus)}
+                                </p>
+                            )}
+                            <div className="mt-6 flex flex-col gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="h-12 rounded-2xl font-bold text-sm"
+                                    fullWidth
+                                    onClick={onClose}
+                                >
+                                    Close
+                                </Button>
+                            </div>
                         </div>
                     )}
 
