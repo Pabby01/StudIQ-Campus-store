@@ -42,14 +42,18 @@ export async function executeSwapTransaction(
     } = params;
 
     const platformWallet = SOLANA_CONFIG.platformWallet;
-    const platformPrivateKey = process.env.PLATFORM_WALLET_PRIVATE_KEY!;
 
-    if (!platformPrivateKey) {
+    if (typeof window !== "undefined") {
+        throw new Error("Platform wallet key must never be accessed on the client");
+    }
+
+    const platformPrivateKey = process.env.PLATFORM_WALLET_PRIVATE_KEY;
+
+    if (!platformPrivateKey || !platformPrivateKey.trim()) {
         throw new Error("Platform wallet private key not configured");
     }
 
-    // Decode platform wallet keypair
-    const platformKeypair = Keypair.fromSecretKey(bs58.decode(platformPrivateKey));
+    const platformKeypair = Keypair.fromSecretKey(bs58.decode(platformPrivateKey.trim()));
 
     // Step 1: User sends fromAmount to platform
     console.log(`[Swap] Creating user -> platform transaction: ${fromAmount} ${fromToken}`);

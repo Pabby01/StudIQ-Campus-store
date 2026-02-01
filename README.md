@@ -117,8 +117,7 @@ Create a `.env` file with the following variables:
 | `PAJ_BUSINESS_API_KEY` | Your Paj Cash business API key |
 | `PAJ_ENVIRONMENT` | `production` or `staging` |
 | `PAJ_WEBHOOK_URL` | URL for payment notifications |
-| `NEXT_PUBLIC_PLATFORM_WALLET` | Platform wallet receiving fees |
-| `NEXT_PUBLIC_MERCHANT_WALLET` | Primary merchant payout wallet |
+| `NEXT_PUBLIC_PLATFORM_WALLET` | Platform wallet receiving fees and liquidity |
 | `NEXT_PUBLIC_USDC_MINT` | USDC token mint address |
 
 ### AI & Support
@@ -154,7 +153,6 @@ PAJ_ENVIRONMENT=production
 - [ ] Get a production RPC from Helius or QuickNode
 - [ ] Update USDC mint to mainnet address
 - [ ] Set `PAJ_ENVIRONMENT=production`
-- [ ] Verify `NEXT_PUBLIC_MERCHANT_WALLET` is correct
 - [ ] Test with small transactions first
 
 ---

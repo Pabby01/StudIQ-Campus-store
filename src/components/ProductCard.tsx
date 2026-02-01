@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Star, Heart } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -53,7 +54,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   // Check if current user is the seller
   const isOwnProduct = address && p.owner_address && address === p.owner_address;
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -82,7 +83,11 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const router = useRouter();
 
-  const toggleWishlist = async (e: React.MouseEvent) => {
+  const openDetails = () => {
+    router.push(`/product/${p.id}`);
+  };
+
+  const toggleWishlist = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -115,6 +120,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
     } catch (error) {
       setIsWishlisted(previousState);
       toast.error("Failed to update wishlist");
+      console.error("[Wishlist] Failed to update wishlist:", error);
     }
   };
 
@@ -125,8 +131,11 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   };
 
   return (
-    <Link href={`/product/${p.id}`} className="block h-full">
-      <div className="bg-white rounded-xl border border-border-gray overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative">
+    <div className="h-full">
+      <div
+        className="bg-white rounded-xl border border-border-gray overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative cursor-pointer"
+        onClick={openDetails}
+      >
 
         {/* Wishlist Button - Hidden for own products */}
         {!isOwnProduct && (
@@ -155,10 +164,11 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         {/* Image */}
         <div className="relative w-full pt-[100%] bg-gray-100 overflow-hidden">
           {p.image_url ? (
-            <img
+            <Image
               src={p.image_url}
               alt={p.name}
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-300"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">
@@ -185,7 +195,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             <Link
               href={`/store/${p.store_id}`}
               className="text-[10px] text-primary-blue mb-1 hover:underline block w-fit"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
             >
               For {p.stores.name}
             </Link>
@@ -246,7 +256,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                     variant="outline"
                     size="sm"
                     className="flex-1 text-[10px] py-1 h-7"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
                       onEdit();
@@ -260,7 +270,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                     variant="danger"
                     size="sm"
                     className="flex-1 text-[10px] py-1 h-7"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
                       onDelete();
@@ -283,6 +293,6 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
