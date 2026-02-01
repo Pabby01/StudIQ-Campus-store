@@ -1,26 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import {
     X,
-    ArrowRightLeft,
     ArrowUpCircle,
     ArrowDownCircle,
     CheckCircle2,
     Loader2,
     AlertCircle,
-    Building2,
-    Wallet
+    Building2
 } from "lucide-react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { SOLANA_CONFIG } from "@/lib/solana-config";
+import { generatePajReceipt } from "@/lib/generateReceipt";
 
 interface RampModalProps {
     isOpen: boolean;
@@ -62,11 +61,11 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
         if (isOpen) {
             fetchRates();
             setError(null);
-            setLastResolvedParams(""); // Reset on open
+            setLastResolvedParams("");
             if (initialType) {
                 setType(initialType);
                 setStep("verify");
-                setPajToken(null); // Ensure clean slate
+                setPajToken(null);
             } else {
                 setStep("type");
             }
@@ -97,7 +96,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             } else {
                 setError(data.error);
             }
-        } catch (err) {
+        } catch {
             setError("Failed to initiate verification");
         } finally {
             setLoading(false);
@@ -122,7 +121,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             } else {
                 setError(data.error);
             }
-        } catch (err) {
+        } catch {
             setError("Verification failed");
         } finally {
             setLoading(false);
@@ -144,25 +143,13 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
         }
     };
 
-    // Debounce state for account resolution
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (accountNumber.length >= 10 && selectedBank && pajToken) {
-                handleResolveAccount();
-            }
-        }, 1000);
-
-        return () => clearTimeout(timer);
-    }, [accountNumber, selectedBank, pajToken]);
-
-    const handleResolveAccount = async () => {
+    const handleResolveAccount = useCallback(async () => {
         const currentParams = `${selectedBank}-${accountNumber}`;
 
         if (!pajToken || !selectedBank || accountNumber.length < 10) {
             return;
         }
 
-        // BLOCKER: If we already resolved this exact combo, DO NOT call again.
         if (lastResolvedParams === currentParams) {
             return;
         }
@@ -173,7 +160,6 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
 
         setLoading(true);
         setResolvedAccount(null);
-        // Note: We don't clear error here immediately to avoid flickering if it's a re-try
 
         try {
             const res = await fetch("/api/ramp/resolve-account", {
@@ -195,19 +181,28 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
 
             if (data.success) {
                 setResolvedAccount(data.account);
-                setLastResolvedParams(currentParams); // Mark as resolved
+                setLastResolvedParams(currentParams);
             } else {
                 console.warn("[Ramp] Rate/Account resolve failed:", data.error);
-                // Only show error if it's a real failure
                 setResolvedAccount(null);
-                setError(typeof data.error === 'string' ? data.error : "Failed to resolve account");
+                setError(typeof data.error === "string" ? data.error : "Failed to resolve account");
             }
         } catch (err) {
             console.error("Failed to resolve account", err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [accountNumber, selectedBank, pajToken, lastResolvedParams, loading]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (accountNumber.length >= 10 && selectedBank && pajToken) {
+                handleResolveAccount();
+            }
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [accountNumber, selectedBank, pajToken, handleResolveAccount]);
 
     const handleCreateOrder = async () => {
 
@@ -302,6 +297,32 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                     const signature = await connection.sendRawTransaction(signedTx.serialize());
 
                     await connection.confirmTransaction(signature, "confirmed");
+                }
+
+                try {
+                    const receiptType = type === "onramp" ? "deposit" : "withdrawal";
+                    const baseId = data.order.id || data.order.reference || data.order.address || String(Date.now());
+                    const baseIdString = typeof baseId === "string" ? baseId : String(baseId);
+                    const trackingCode = `PAJ-${receiptType === "deposit" ? "IN" : "OUT"}-${baseIdString.slice(-8).toUpperCase()}`;
+                    const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet" ? "mainnet-beta" : "devnet";
+
+                    generatePajReceipt({
+                        id: baseIdString,
+                        date: new Date(),
+                        type: receiptType,
+                        userAddress: walletAddress || "",
+                        userName: identifier || null,
+                        amountFiat: type === "onramp" ? parseFloat(amount) : data.order.fiatAmount || parseFloat(amount),
+                        fiatCurrency: data.order.currency || "NGN",
+                        amountToken: type === "onramp" ? (data.order.tokenAmount || parseFloat(amount)) : parseFloat(amount),
+                        tokenSymbol: "USDC",
+                        pajOrderId: data.order.id || "",
+                        trackingCode,
+                        network,
+                        status: data.order.status || "processing",
+                    });
+                } catch (receiptError) {
+                    console.error("Failed to generate Paj Cash receipt", receiptError);
                 }
 
                 setStep("success");

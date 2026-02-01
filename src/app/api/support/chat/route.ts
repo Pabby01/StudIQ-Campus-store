@@ -60,7 +60,7 @@ export async function POST(req: Request) {
             const supabase = getSupabaseServerClient();
             const { data } = await supabase
                 .from("products")
-                .select("name, price, currency, category, description")
+                .select("name, price, currency, category, description, inventory")
                 .order("created_at", { ascending: false })
                 .limit(5);
             products = data || [];
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
             if (sessionAddress) {
                 const { data: profile } = await supabase
                     .from("profiles")
-                    .select("name, school, campus")
+                    .select("name, school, campus, email, level, subscription_tier")
                     .eq("address", sessionAddress)
                     .maybeSingle();
 
@@ -89,6 +89,46 @@ export async function POST(req: Request) {
                     .eq("buyer_address", sessionAddress)
                     .order("created_at", { ascending: false })
                     .limit(5);
+
+                const { data: subscription } = await supabase
+                    .from("user_subscriptions")
+                    .select(`
+                        status,
+                        expires_at,
+                        plan:subscription_plans(name)
+                    `)
+                    .eq("user_address", sessionAddress)
+                    .eq("status", "active")
+                    .gte("expires_at", new Date().toISOString())
+                    .maybeSingle();
+
+                const { data: userStore } = await supabase
+                    .from("stores")
+                    .select("id, name")
+                    .eq("owner_address", sessionAddress)
+                    .maybeSingle();
+
+                let sellerProductsSummary = "";
+                if (userStore) {
+                    const { data: sellerProducts } = await supabase
+                        .from("products")
+                        .select("name, inventory, status")
+                        .eq("store_id", userStore.id)
+                        .limit(20);
+
+                    const available = (sellerProducts || []).filter(p => (p.inventory ?? 0) > 0 && p.status !== "archived");
+                    const soldOut = (sellerProducts || []).filter(p => (p.inventory ?? 0) <= 0 || p.status === "sold_out");
+
+                    sellerProductsSummary += `Store: ${userStore.name}\n`;
+                    sellerProductsSummary += `Products In Stock: ${available.length}, Sold Out: ${soldOut.length}\n`;
+
+                    if (available.length > 0) {
+                        sellerProductsSummary += `Examples In Stock: ${available.slice(0, 3).map(p => p.name).join(", ")}\n`;
+                    }
+                    if (soldOut.length > 0) {
+                        sellerProductsSummary += `Examples Sold Out: ${soldOut.slice(0, 3).map(p => p.name).join(", ")}\n`;
+                    }
+                }
 
                 let walletBalanceSol: number | null = null;
                 let walletBalanceSolUsd: number | null = null;
@@ -176,7 +216,35 @@ export async function POST(req: Request) {
                     userContext += `Estimated Total Wallet Value (SOL + USDC): ~$${totalWalletUsd.toFixed(2)} USD\n`;
                 }
                 if (profile) {
-                    userContext += `Profile: ${profile.name || "Unknown"} at ${profile.school || "Unknown school"} ${profile.campus ? `(${profile.campus})` : ""}\n`;
+                    const profileParts: string[] = [];
+                    if (profile.name) profileParts.push(profile.name);
+                    if (profile.school) profileParts.push(profile.school);
+                    if (profile.campus) profileParts.push(`Campus: ${profile.campus}`);
+                    if (profile.level) profileParts.push(`Level: ${profile.level}`);
+                    if (profile.email) profileParts.push(`Email: ${profile.email}`);
+                    if (profile.subscription_tier) profileParts.push(`Subscription Tier: ${profile.subscription_tier}`);
+                    if (profileParts.length > 0) {
+                        userContext += `Profile: ${profileParts.join(", ")}\n`;
+                    }
+                }
+                let activePlanLine: string | null = null;
+                if (subscription && subscription.plan) {
+                    const planField = subscription.plan as { name?: string | null } | { name?: string | null }[];
+                    let planName: string | null = null;
+                    if (Array.isArray(planField)) {
+                        planName = planField[0]?.name ?? null;
+                    } else {
+                        planName = planField.name ?? null;
+                    }
+                    if (planName) {
+                        activePlanLine = `Active Subscription Plan: ${planName} (status: ${subscription.status}, expires at: ${subscription.expires_at})`;
+                    }
+                }
+
+                if (activePlanLine) {
+                    userContext += `${activePlanLine}\n`;
+                } else {
+                    userContext += `Active Subscription Plan: Free or not yet upgraded\n`;
                 }
                 userContext += `Reward Points (store only): ${totalPoints}\n`;
                 userContext += `Recent Purchases (latest ${buyerOrders?.length || 0}):\n`;
@@ -192,7 +260,10 @@ export async function POST(req: Request) {
                 }
 
                 userContext += `Total Spent As Buyer (all time, raw sum): ${totalSpent.toFixed(2)} (mixed currencies)\n`;
-                userContext += `When asked about "my wallet", "my balance", "my orders", or "my spending", use this snapshot.\n`;
+                if (sellerProductsSummary) {
+                    userContext += `Seller Inventory Snapshot:\n${sellerProductsSummary}`;
+                }
+                userContext += `When asked about "my wallet", "my balance", "my orders", "my spending", or "my products", use this snapshot.\n`;
             }
         } catch {
             products = [];
