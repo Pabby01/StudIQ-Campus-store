@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -205,7 +206,6 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
     }, [accountNumber, selectedBank, pajToken, handleResolveAccount]);
 
     const handleCreateOrder = async () => {
-
         if (type === "offramp" && !walletAddress) {
             console.error("No wallet address found!");
             setError("Wallet not connected. Please connect your wallet.");
@@ -252,10 +252,11 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             const data = await res.json();
 
             if (data.success) {
-                setOrder(data.order);
+                const createdOrder = data.order;
+                setOrder(createdOrder);
 
                 if (type === "offramp") {
-                    const depositAddress = data.order.address || data.order.walletAddress;
+                    const depositAddress = createdOrder.address || createdOrder.walletAddress;
 
                     if (!depositAddress) {
                         throw new Error("No deposit address received from Paj Cash");
@@ -297,35 +298,11 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                     const signature = await connection.sendRawTransaction(signedTx.serialize());
 
                     await connection.confirmTransaction(signature, "confirmed");
+
+                    setStep("success");
+                } else {
+                    setStep("confirm");
                 }
-
-                try {
-                    const receiptType = type === "onramp" ? "deposit" : "withdrawal";
-                    const baseId = data.order.id || data.order.reference || data.order.address || String(Date.now());
-                    const baseIdString = typeof baseId === "string" ? baseId : String(baseId);
-                    const trackingCode = `PAJ-${receiptType === "deposit" ? "IN" : "OUT"}-${baseIdString.slice(-8).toUpperCase()}`;
-                    const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet" ? "mainnet-beta" : "devnet";
-
-                    generatePajReceipt({
-                        id: baseIdString,
-                        date: new Date(),
-                        type: receiptType,
-                        userAddress: walletAddress || "",
-                        userName: identifier || null,
-                        amountFiat: type === "onramp" ? parseFloat(amount) : data.order.fiatAmount || parseFloat(amount),
-                        fiatCurrency: data.order.currency || "NGN",
-                        amountToken: type === "onramp" ? (data.order.tokenAmount || parseFloat(amount)) : parseFloat(amount),
-                        tokenSymbol: "USDC",
-                        pajOrderId: data.order.id || "",
-                        trackingCode,
-                        network,
-                        status: data.order.status || "processing",
-                    });
-                } catch (receiptError) {
-                    console.error("Failed to generate Paj Cash receipt", receiptError);
-                }
-
-                setStep("success");
             } else {
                 setError(data.error);
             }
@@ -334,6 +311,41 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
             setError(err.message || "Failed to create order");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDownloadReceipt = () => {
+        if (!order) return;
+
+        try {
+            const receiptType = type === "onramp" ? "deposit" : "withdrawal";
+            const baseId = order.id || order.reference || order.address || String(Date.now());
+            const baseIdString = typeof baseId === "string" ? baseId : String(baseId);
+            const trackingCode = `PAJ-${receiptType === "deposit" ? "IN" : "OUT"}-${baseIdString.slice(-8).toUpperCase()}`;
+
+            const rawNetwork = process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet";
+            const isMainnet = rawNetwork === "mainnet" || rawNetwork === "mainnet-beta";
+            const network = isMainnet ? "mainnet-beta" : "devnet";
+
+            const statusForReceipt = order.status === "INIT" ? "processing" : (order.status || "processing");
+
+            generatePajReceipt({
+                id: baseIdString,
+                date: new Date(),
+                type: receiptType,
+                userAddress: walletAddress || "",
+                userName: identifier || null,
+                amountFiat: type === "onramp" ? parseFloat(amount) : order.fiatAmount || parseFloat(amount),
+                fiatCurrency: order.currency || "NGN",
+                amountToken: type === "onramp" ? (order.tokenAmount || parseFloat(amount)) : parseFloat(amount),
+                tokenSymbol: "USDC",
+                pajOrderId: order.id || "",
+                trackingCode,
+                network,
+                status: statusForReceipt,
+            });
+        } catch (receiptError) {
+            console.error("Failed to generate Paj Cash receipt", receiptError);
         }
     };
 
@@ -622,13 +634,24 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                             <p className="text-gray-500 mb-8 max-w-[280px] mx-auto font-medium leading-relaxed">
                                 Your {type === 'onramp' ? 'purchase' : 'withdrawal'} has been initiated and is being processed.
                             </p>
-                            <Button
-                                className={`${buttonClass} h-14 rounded-2xl font-bold text-lg`}
-                                fullWidth
-                                onClick={onClose}
-                            >
-                                Awesome, Thanks!
-                            </Button>
+                            <div className="flex flex-col gap-3">
+                                <Button
+                                    className={`${buttonClass} h-12 rounded-2xl font-bold text-lg`}
+                                    fullWidth
+                                    onClick={handleDownloadReceipt}
+                                    disabled={!order}
+                                >
+                                    Download Receipt
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="h-12 rounded-2xl font-bold text-lg"
+                                    fullWidth
+                                    onClick={onClose}
+                                >
+                                    Close
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </div>
