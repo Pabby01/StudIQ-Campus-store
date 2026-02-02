@@ -1,12 +1,24 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  // Empty turbopack config to silence webpack warning
-  turbopack: {},
+const imageDomains: string[] = ["i.postimg.cc", "cryptologos.cc"];
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  // Webpack config for fallback (if using --webpack flag)
+if (supabaseUrl) {
+  try {
+    const { hostname } = new URL(supabaseUrl);
+    if (hostname && !imageDomains.includes(hostname)) {
+      imageDomains.push(hostname);
+    }
+  } catch {
+  }
+}
+
+const nextConfig: NextConfig = {
+  turbopack: {},
+  images: {
+    domains: imageDomains,
+  },
   webpack: (config) => {
-    // Fix for WalletConnect libraries
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
