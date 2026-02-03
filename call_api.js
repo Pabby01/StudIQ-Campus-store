@@ -1,11 +1,11 @@
 
-const http = require('http');
+import { get } from 'http';
 
 const url = "http://localhost:3000/api/profile/get?address=Hx912yR4vDEwUqQNUZcaxwsjmE8B6Lq6grokrPh8a6Js";
 
 console.log('Calling:', url);
 
-http.get(url, (res) => {
+get(url, (res) => {
     let data = '';
     res.on('data', chunk => data += chunk);
     res.on('end', () => {
