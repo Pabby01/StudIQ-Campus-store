@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@civic/auth-web3/react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -18,12 +18,14 @@ function hasWallet(user: any): user is { solana: { address: string; wallet: any 
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const { user, isLoading } = useUser();
   const [loading, setLoading] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [referralCodeValue, setReferralCodeValue] = useState("");
 
   // Avoid hydration issues
   useEffect(() => {
@@ -44,6 +46,13 @@ export default function OnboardingPage() {
       }
     }
   }, [user, isLoading]);
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref && !referralCodeValue) {
+      setReferralCodeValue(ref.trim());
+    }
+  }, [searchParams, referralCodeValue]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -101,6 +110,7 @@ export default function OnboardingPage() {
         const error = await res.json();
         toast.error("Failed to save profile", error.error || "Please try again");
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast.error("Error", "Failed to save profile");
     } finally {
@@ -212,6 +222,8 @@ export default function OnboardingPage() {
             name="referralCode"
             placeholder="Enter a referral code"
             error={errors.referralCode}
+            value={referralCodeValue}
+            onChange={(e) => setReferralCodeValue(e.target.value)}
           />
 
           <Button

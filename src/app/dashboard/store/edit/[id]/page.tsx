@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,6 +10,7 @@ import Button from "@/components/ui/Button";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { CATEGORIES } from "@/lib/categories";
+import ImageUpload from "@/components/ImageUpload";
 
 export default function EditStorePage() {
     const router = useRouter();
@@ -256,28 +259,23 @@ export default function EditStorePage() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Banner Image URL (optional)
+                                Banner Image (optional)
                             </label>
-                            <input
-                                type="url"
-                                name="banner_url"
+                            <ImageUpload
                                 value={formData.banner_url}
-                                onChange={handleChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                                placeholder="https://example.com/banner.jpg"
+                                onChange={(val) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        banner_url: Array.isArray(val) ? (val[0] || "") : (val || "")
+                                    }))
+                                }
+                                folder="stores"
+                                allowMultiple={false}
+                                maxFiles={1}
                             />
-                            {formData.banner_url && (
-                                <div className="mt-3">
-                                    <img
-                                        src={formData.banner_url}
-                                        alt="Banner preview"
-                                        className="w-full h-32 object-cover rounded-lg"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                    />
-                                </div>
-                            )}
+                            <p className="mt-2 text-xs text-muted-text">
+                                Upload a banner to showcase your store. Recommended size ~1200x300.
+                            </p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -326,6 +324,9 @@ export default function EditStorePage() {
                                     }`}
                                 placeholder="0.00"
                             />
+                            <p className="mt-1 text-xs text-muted-text">
+                                Set a flat delivery fee per order when shipping is enabled.
+                            </p>
                             {errors.deliveryFee && (
                                 <p className="mt-1 text-sm text-red-600">{errors.deliveryFee}</p>
                             )}
