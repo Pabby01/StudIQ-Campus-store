@@ -220,10 +220,11 @@ export default function OnboardingPage() {
           <Input
             label="Referral Code (optional)"
             name="referralCode"
-            placeholder="Enter a referral code"
+            placeholder="Enter referral code"
             error={errors.referralCode}
             value={referralCodeValue}
-            onChange={(e) => setReferralCodeValue(e.target.value)}
+            maxLength={6}
+            onChange={(e) => setReferralCodeValue(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase())}
           />
 
           <Button

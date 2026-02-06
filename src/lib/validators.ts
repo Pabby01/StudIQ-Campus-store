@@ -21,7 +21,7 @@ export const updateProfileSchema = z.object({
   campus: z.string().min(2),
   level: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
-  referralCode: z.string().min(4).max(64).optional(),
+  referralCode: z.string().length(6).optional(),
 });
 
 export const createStoreSchema = z.object({

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -170,6 +172,24 @@ export default function DashboardPage() {
     }
   };
 
+  const renderReferralBlocks = (code?: string) => {
+    if (!code) {
+      return <span className="text-sm text-muted-text">—</span>;
+    }
+    return (
+      <div className="flex items-center gap-1.5">
+        {code.split("").map((char, index) => (
+          <span
+            key={`${char}-${index}`}
+            className="inline-flex items-center justify-center w-7 h-8 rounded-md border border-border-gray bg-white text-sm font-semibold text-black"
+          >
+            {char}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   // Re-fetch when toggling between buyer/seller
   useEffect(() => {
     if (walletAddress) {
@@ -199,7 +219,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold text-black mb-1 truncate">Dashboard</h1>
-            <p className="text-sm md:text-base text-muted-text">Welcome back! Here's your overview</p>
+            <p className="text-sm md:text-base text-muted-text">Welcome back! Here&apos;s your overview</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
@@ -336,10 +356,12 @@ export default function DashboardPage() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-lg border border-border-gray bg-white p-4">
                       <div className="text-xs text-muted-text">Your referral code</div>
-                      <div className="mt-1 flex items-center justify-between gap-3">
-                        <div className="text-base font-semibold text-black">
-                          {referralLoading ? "Loading..." : referralSummary?.referralCode || "—"}
-                        </div>
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    {referralLoading ? (
+                      <span className="text-sm text-muted-text">Loading...</span>
+                    ) : (
+                      renderReferralBlocks(referralSummary?.referralCode)
+                    )}
                         <Button
                           type="button"
                           variant="outline"

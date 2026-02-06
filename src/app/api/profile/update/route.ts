@@ -3,6 +3,15 @@ import { updateProfileSchema } from "@/lib/validators";
 import { POINTS } from "@/lib/constants";
 import { getSessionWallet } from "@/lib/session";
 
+function generateShortCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < 6; i++) {
+    out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return out;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -23,7 +32,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const referralCode = parsed.data.referralCode?.trim();
+    const referralCode = parsed.data.referralCode
+      ? parsed.data.referralCode.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
+      : null;
 
     // Verify session matches the address in the request
     if (sessionAddress !== parsed.data.address) {
@@ -59,6 +70,29 @@ export async function POST(req: Request) {
 
     console.log("[Profile Update] isNewProfile:", isNewProfile, "wasIncomplete:", wasIncomplete);
 
+    // Ensure a short unique referral_code
+    let referral_code_to_use = existing?.referral_code;
+    if (!referral_code_to_use || !/^[A-Z0-9]{6}$/.test(referral_code_to_use)) {
+      for (let i = 0; i < 20; i++) {
+        const candidate = generateShortCode();
+        const { data: clash } = await supabase
+          .from("profiles")
+          .select("address")
+          .eq("referral_code", candidate)
+          .maybeSingle();
+        if (!clash) {
+          referral_code_to_use = candidate;
+          break;
+        }
+      }
+      if (!referral_code_to_use) {
+        return Response.json(
+          { ok: false, error: "Failed to generate referral code" },
+          { status: 500 }
+        );
+      }
+    }
+
     const { data, error } = await supabase
       .from("profiles")
       .upsert({
@@ -72,8 +106,8 @@ export async function POST(req: Request) {
         campus: parsed.data.campus,
         level: parsed.data.level || existing?.level || null,
         phone: parsed.data.phone || existing?.phone || null,
-        referral_code: existing?.referral_code ?? parsed.data.address,
-        referred_by: existing?.referred_by ?? referralCode ?? null,
+        referral_code: referral_code_to_use,
+        referred_by: existing?.referred_by ?? (referralCode && referralCode.length === 6 ? referralCode : null),
         last_login: new Date().toISOString(),
       }, { onConflict: 'address' })
       .select()
@@ -122,12 +156,12 @@ export async function POST(req: Request) {
       }
     }
 
-    if (isNewProfile && referralCode) {
+    if (isNewProfile && referralCode && referralCode.length === 6) {
       try {
         const { data: referrer } = await supabase
           .from("profiles")
           .select("address")
-          .or(`referral_code.eq.${referralCode},address.eq.${referralCode}`)
+          .eq("referral_code", referralCode)
           .maybeSingle();
 
         if (referrer?.address && referrer.address !== data.address) {

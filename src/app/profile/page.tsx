@@ -71,6 +71,24 @@ export default function ProfilePage() {
     }
   };
 
+  const renderReferralBlocks = (code?: string) => {
+    if (!code) {
+      return <span className="text-sm text-muted-text">—</span>;
+    }
+    return (
+      <div className="flex items-center gap-1.5">
+        {code.split("").map((char, index) => (
+          <span
+            key={`${char}-${index}`}
+            className="inline-flex items-center justify-center w-7 h-8 rounded-md border border-border-gray bg-white text-sm font-semibold text-black"
+          >
+            {char}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   const isReady = isAuthenticated && !isCreatingWallet && walletAddress;
 
   return (
@@ -123,10 +141,12 @@ export default function ProfilePage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg border border-border-gray bg-white p-4">
                     <div className="text-xs text-muted-text">Your referral code</div>
-                    <div className="mt-1 flex items-center justify-between gap-3">
-                      <div className="text-base font-semibold text-black">
-                        {loading ? "Loading..." : summary?.referralCode || "—"}
-                      </div>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      {loading ? (
+                        <span className="text-sm text-muted-text">Loading...</span>
+                      ) : (
+                        renderReferralBlocks(summary?.referralCode)
+                      )}
                       <Button
                         type="button"
                         variant="outline"
