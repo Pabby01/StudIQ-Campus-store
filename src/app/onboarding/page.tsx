@@ -54,6 +54,32 @@ export default function OnboardingPage() {
     }
   }, [searchParams, referralCodeValue]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ref = searchParams.get("ref");
+    if (ref) {
+      const cleaned = ref.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+      if (cleaned) {
+        sessionStorage.setItem("referralCode", cleaned);
+        if (!referralCodeValue) {
+          setReferralCodeValue(cleaned);
+        }
+      }
+    } else if (!referralCodeValue) {
+      const stored = sessionStorage.getItem("referralCode");
+      if (stored) {
+        setReferralCodeValue(stored);
+      }
+    }
+  }, [searchParams, referralCodeValue]);
+
+  useEffect(() => {
+    if (!mounted || isLoading) return;
+    if (!user) {
+      router.push("/");
+    }
+  }, [mounted, isLoading, user, router]);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrors({});
@@ -132,9 +158,6 @@ export default function OnboardingPage() {
 
   // Redirect to home if not authenticated
   if (!user) {
-    if (typeof window !== 'undefined') {
-      router.push("/");
-    }
     return null;
   }
 
