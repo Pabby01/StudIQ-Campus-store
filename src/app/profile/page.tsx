@@ -45,6 +45,8 @@ export default function ProfilePage() {
         setSummary({
           referralCode: data.referralCode,
           totalReferrals: data.totalReferrals,
+          referralPointsTotal: data.referralPointsTotal ?? 0,
+          referralPointsHistory: data.referralPointsHistory ?? [],
         });
         setError(null);
       } catch (err) {

@@ -156,7 +156,10 @@ export async function POST(req: Request) {
       }
     }
 
-    if (isNewProfile && referralCode && referralCode.length === 6) {
+    const shouldAwardReferral =
+      referralCode && referralCode.length === 6 && !existing?.referred_by;
+
+    if (shouldAwardReferral) {
       try {
         const { data: referrer } = await supabase
           .from("profiles")

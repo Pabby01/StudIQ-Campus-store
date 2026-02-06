@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSessionWallet } from "@/lib/session";
+import { POINTS } from "@/lib/constants";
 
 function generateShortCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -11,6 +12,8 @@ function generateShortCode() {
 }
 
 export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const debug = url.searchParams.get("debug") === "1";
   const address = await getSessionWallet(req);
 
   if (!address) {
@@ -59,6 +62,40 @@ export async function GET(req: Request) {
 
   const { count } = await query;
 
+  const { data: referredProfiles } = await supabase
+    .from("profiles")
+    .select("address")
+    .or(`referred_by.eq.${referralCode},referred_by.eq.${address}`);
+
+  const { data: existingReferralRows } = await supabase
+    .from("points_log")
+    .select("reason")
+    .eq("address", address)
+    .ilike("reason", "Referral bonus - %");
+
+  const awardedAddresses = new Set(
+    (existingReferralRows || [])
+      .map((row) => row.reason?.replace("Referral bonus - ", "") || "")
+      .filter(Boolean)
+  );
+
+  const missingAwards = (referredProfiles || [])
+    .map((profile) => profile.address)
+    .filter(
+      (refAddress): refAddress is string =>
+        !!refAddress && refAddress !== address && !awardedAddresses.has(refAddress)
+    );
+
+  if (missingAwards.length > 0) {
+    await supabase.from("points_log").insert(
+      missingAwards.map((refAddress) => ({
+        address,
+        points: POINTS.REFERRAL,
+        reason: `Referral bonus - ${refAddress}`,
+      }))
+    );
+  }
+
   const { data: referralPointsRows } = await supabase
     .from("points_log")
     .select("points, reason, created_at")
@@ -72,11 +109,26 @@ export async function GET(req: Request) {
     0
   );
 
-  return Response.json({
+  const response = {
     ok: true,
     referralCode,
     totalReferrals: count ?? 0,
     referralPointsTotal,
     referralPointsHistory: referralPointsRows || [],
+  };
+
+  if (!debug) {
+    return Response.json(response);
+  }
+
+  return Response.json({
+    ...response,
+    debug: {
+      awardedCount: awardedAddresses.size,
+      missingCount: missingAwards.length,
+      awardedAddresses: Array.from(awardedAddresses),
+      missingAwards,
+      referredProfiles: (referredProfiles || []).map((profile) => profile.address),
+    },
   });
 }

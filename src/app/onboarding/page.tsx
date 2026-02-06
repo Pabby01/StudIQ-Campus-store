@@ -10,6 +10,7 @@ import Card from "@/components/ui/Card";
 import { useToast } from "@/hooks/useToast";
 import { Loader2, CheckCircle, User } from "lucide-react";
 import { updateProfileSchema } from "@/lib/validators";
+import CivicAuthButton from "@/components/CivicAuthButton";
 
 // Type guard to check if user has a Solana wallet
 function hasWallet(user: any): user is { solana: { address: string; wallet: any } } {
@@ -20,7 +21,8 @@ export default function OnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
-  const { user, isLoading } = useUser();
+  const userContext = useUser();
+  const { user, isLoading } = userContext;
   const [loading, setLoading] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -73,12 +75,21 @@ export default function OnboardingPage() {
     }
   }, [searchParams, referralCodeValue]);
 
+  const token = (userContext as any).idToken || (userContext as any).token || null;
+  const userAny = user as any;
+  const civicUserId = userAny?.id || userAny?.sub || null;
+
   useEffect(() => {
-    if (!mounted || isLoading) return;
-    if (!user) {
-      router.push("/");
-    }
-  }, [mounted, isLoading, user, router]);
+    if (!mounted || isLoading || !user || !token) return;
+    if (typeof document !== "undefined" && document.cookie.includes("sid=")) return;
+    const addressToUse = walletAddress || (civicUserId ? `civic_${civicUserId}` : null);
+    if (!addressToUse) return;
+    fetch("/api/auth/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, address: addressToUse }),
+    }).catch(() => {});
+  }, [mounted, isLoading, user, token, walletAddress, civicUserId]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -87,8 +98,12 @@ export default function OnboardingPage() {
     const formData = new FormData(e.currentTarget);
 
     const userEmail = user && "email" in user ? (user.email as string) : (formData.get("email") as string);
-    const civicUserId = user && "sub" in user ? (user.sub as string) : null;
-    const address = walletAddress || `civic_${civicUserId || Date.now()}`;
+    const civicUserId = userAny?.id || (user && "sub" in user ? (user.sub as string) : null);
+    const address = walletAddress || (civicUserId ? `civic_${civicUserId}` : null);
+    if (!address) {
+      toast.error("Missing account", "Please sign in again and retry");
+      return;
+    }
 
     const referralCode = String(formData.get("referralCode") || "").trim();
     const profileData = {
@@ -158,11 +173,24 @@ export default function OnboardingPage() {
 
   // Redirect to home if not authenticated
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
+        <Card className="max-w-md w-full p-8 text-center space-y-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary-blue to-accent-blue rounded-full flex items-center justify-center mx-auto">
+            <User className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-black">Sign in to continue</h1>
+          <p className="text-muted-text">Create your account to finish onboarding.</p>
+          <div className="flex justify-center">
+            <CivicAuthButton />
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   // Get user email for pre-filling
-  const userEmail = 'email' in user ? (user.email as string) : '';
+  const userEmail = "email" in user ? (user.email as string) : "";
 
   return (
     <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
