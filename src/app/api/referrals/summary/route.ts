@@ -59,9 +59,24 @@ export async function GET(req: Request) {
 
   const { count } = await query;
 
+  const { data: referralPointsRows } = await supabase
+    .from("points_log")
+    .select("points, reason, created_at")
+    .eq("address", address)
+    .ilike("reason", "Referral bonus - %")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const referralPointsTotal = (referralPointsRows || []).reduce(
+    (sum, row) => sum + (row.points || 0),
+    0
+  );
+
   return Response.json({
     ok: true,
     referralCode,
     totalReferrals: count ?? 0,
+    referralPointsTotal,
+    referralPointsHistory: referralPointsRows || [],
   });
 }

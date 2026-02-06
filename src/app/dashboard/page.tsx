@@ -39,6 +39,8 @@ type AnalyticsData = {
 type ReferralSummary = {
   referralCode: string;
   totalReferrals: number;
+  referralPointsTotal?: number;
+  referralPointsHistory?: { points: number; reason: string; created_at: string }[];
 };
 
 export default function DashboardPage() {
@@ -353,7 +355,7 @@ export default function DashboardPage() {
                       {referralError}
                     </div>
                   )}
-                  <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-lg border border-border-gray bg-white p-4">
                       <div className="text-xs text-muted-text">Your referral code</div>
                   <div className="mt-2 flex items-center justify-between gap-3">
@@ -382,6 +384,32 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   </div>
+
+              <div className="rounded-lg border border-border-gray bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-muted-text">Referral points</div>
+                    <div className="mt-1 text-xl font-bold text-black">
+                      {referralLoading ? "—" : referralSummary?.referralPointsTotal ?? 0}
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-text">
+                    Last 10 referral awards
+                  </div>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {(referralSummary?.referralPointsHistory || []).length === 0 ? (
+                    <div className="text-sm text-muted-text">No referral points yet</div>
+                  ) : (
+                    (referralSummary?.referralPointsHistory || []).map((row, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm">
+                        <span className="text-black">{row.reason}</span>
+                        <span className="font-semibold text-green-700">+{row.points}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
 
                   <div className="rounded-lg border border-border-gray bg-white p-4">
                     <div className="text-xs text-muted-text">Referral link</div>

@@ -50,7 +50,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     const ref = searchParams.get("ref");
     if (ref && !referralCodeValue) {
-      setReferralCodeValue(ref.trim());
+      setReferralCodeValue(ref.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
     }
   }, [searchParams, referralCodeValue]);
 
