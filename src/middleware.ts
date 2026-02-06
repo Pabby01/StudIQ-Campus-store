@@ -148,6 +148,10 @@ export default function middleware(request: NextRequest) {
     // Referrer Policy
     response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
+    // Allow cross-origin embeds needed for Civic auth and third-party scripts
+    response.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+    response.headers.set("Cross-Origin-Embedder-Policy", "unsafe-none");
+
     // Content Security Policy (updated for Civic Auth, Metakeep, and Solana wallets)
     response.headers.set(
         "Content-Security-Policy",

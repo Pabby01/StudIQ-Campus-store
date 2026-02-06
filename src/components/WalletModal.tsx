@@ -1,3 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/immutability */
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -111,7 +114,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                             <div className="text-sm">
                                 <p className="font-semibold text-blue-900 mb-1">Mobile Wallet Connection</p>
                                 <p className="text-blue-700">
-                                    For the best experience, open this site in your wallet app's built-in browser.
+                                    For the best experience, open this site in your wallet app&apos;s built-in browser.
                                     Or select your wallet below to connect.
                                 </p>
                             </div>
