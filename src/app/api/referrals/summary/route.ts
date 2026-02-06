@@ -69,13 +69,38 @@ export async function GET(req: Request) {
 
   const { data: existingReferralRows } = await supabase
     .from("points_log")
-    .select("reason")
+    .select("id, reason, created_at")
     .eq("address", address)
     .ilike("reason", "Referral bonus - %");
 
+  const referralRows = existingReferralRows || [];
+  const rowsByReason = new Map<string, typeof referralRows>();
+  for (const row of referralRows) {
+    const reason = row.reason || "";
+    if (!reason) continue;
+    const list = rowsByReason.get(reason) || [];
+    list.push(row);
+    rowsByReason.set(reason, list);
+  }
+
+  const duplicateIds: string[] = [];
+  for (const list of rowsByReason.values()) {
+    if (list.length <= 1) continue;
+    const sorted = [...list].sort((a, b) => {
+      const aTime = new Date(a.created_at || 0).getTime();
+      const bTime = new Date(b.created_at || 0).getTime();
+      return aTime - bTime;
+    });
+    duplicateIds.push(...sorted.slice(1).map((row) => row.id));
+  }
+
+  if (duplicateIds.length > 0) {
+    await supabase.from("points_log").delete().in("id", duplicateIds);
+  }
+
   const awardedAddresses = new Set(
-    (existingReferralRows || [])
-      .map((row) => row.reason?.replace("Referral bonus - ", "") || "")
+    Array.from(rowsByReason.keys())
+      .map((reason) => reason.replace("Referral bonus - ", ""))
       .filter(Boolean)
   );
 
