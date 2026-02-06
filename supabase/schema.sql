@@ -6,6 +6,8 @@ create table if not exists profiles (
   campus text,
   level text,
   phone text,
+  referral_code text,
+  referred_by text,
   seller_tier text default 'free',
   points int default 0
 );
@@ -26,6 +28,10 @@ create table if not exists stores (
   lon double precision,
   geohash text,
   banner_url text,
+  delivery_enabled boolean default true,
+  pickup_enabled boolean default true,
+  delivery_fee numeric default 0,
+  delivery_notes text,
   premium boolean default false
 );
 

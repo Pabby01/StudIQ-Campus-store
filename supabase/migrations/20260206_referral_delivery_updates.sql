@@ -1,0 +1,15 @@
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS referral_code TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS referred_by TEXT;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS banner_url TEXT;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS delivery_enabled BOOLEAN DEFAULT true;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS pickup_enabled BOOLEAN DEFAULT true;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS delivery_fee NUMERIC DEFAULT 0;
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS delivery_notes TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'SOL';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'SOL';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_method TEXT DEFAULT 'shipping';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_info JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'solana';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS buyer_email TEXT;
+CREATE INDEX IF NOT EXISTS idx_profiles_referral_code ON profiles(referral_code);
+CREATE INDEX IF NOT EXISTS idx_profiles_referred_by ON profiles(referred_by);

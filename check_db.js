@@ -1,14 +1,14 @@
 
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
+import { createClient } from '@supabase/supabase-js';
+import { existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
 
 // Manually parse .env
-const envPath = path.resolve(__dirname, '.env');
+const envPath = resolve(__dirname, '.env');
 const envConfig = {};
 
-if (fs.existsSync(envPath)) {
-    const file = fs.readFileSync(envPath, 'utf8');
+if (existsSync(envPath)) {
+    const file = readFileSync(envPath, 'utf8');
     file.split('\n').forEach(line => {
         const parts = line.split('=');
         if (parts.length >= 2) {

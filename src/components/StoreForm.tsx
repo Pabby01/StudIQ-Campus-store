@@ -42,10 +42,19 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
     const name = String(formData.get("name") || "").trim();
     const description = String(formData.get("description") || "").trim();
     const categoryValue = category.trim();
+    const deliveryEnabled = formData.get("deliveryEnabled") === "on";
+    const pickupEnabled = formData.get("pickupEnabled") === "on";
+    const deliveryFeeRaw = String(formData.get("deliveryFee") || "").trim();
+    const deliveryFee = deliveryFeeRaw ? Number(deliveryFeeRaw) : undefined;
+    const deliveryNotes = String(formData.get("deliveryNotes") || "").trim();
 
     if (!name) newErrors.name = "Store name is required";
     if (!description) newErrors.description = "Description is required";
     if (!categoryValue) newErrors.category = "Category is required";
+    if (!deliveryEnabled && !pickupEnabled) newErrors.deliveryMethods = "Select at least one delivery method";
+    if (deliveryFeeRaw && (Number.isNaN(deliveryFee) || (deliveryFee ?? 0) < 0)) {
+      newErrors.deliveryFee = "Delivery fee must be a valid number";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -63,6 +72,10 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
       bannerUrl: bannerUrl || undefined,
       lat: 0, // Default coordinates - you can add geolocation later
       lon: 0,
+      deliveryEnabled,
+      pickupEnabled,
+      deliveryFee,
+      deliveryNotes: deliveryNotes || undefined,
     };
 
     try {
@@ -181,6 +194,44 @@ export default function StoreForm({ onSuccess }: StoreFormProps) {
           placeholder="e.g., Building A, Room 101"
           error={errors.location}
         />
+        <div>
+          <label className="block text-sm font-medium text-black mb-2">
+            Delivery Options
+          </label>
+          <div className="flex flex-col gap-3">
+            <label className="flex items-center gap-2 text-sm text-black">
+              <input type="checkbox" name="deliveryEnabled" defaultChecked className="h-4 w-4" />
+              Offer shipping
+            </label>
+            <label className="flex items-center gap-2 text-sm text-black">
+              <input type="checkbox" name="pickupEnabled" defaultChecked className="h-4 w-4" />
+              Offer pickup
+            </label>
+          </div>
+          {errors.deliveryMethods && (
+            <p className="mt-1 text-sm text-red-600">{errors.deliveryMethods}</p>
+          )}
+        </div>
+        <Input
+          name="deliveryFee"
+          label="Delivery Fee (optional)"
+          placeholder="0.00"
+          type="number"
+          min="0"
+          step="0.01"
+          error={errors.deliveryFee}
+        />
+        <div>
+          <label className="block text-sm font-medium text-black mb-2">
+            Delivery Notes (optional)
+          </label>
+          <textarea
+            name="deliveryNotes"
+            placeholder="e.g., Deliver only on weekdays between 9am-6pm"
+            rows={3}
+            className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue resize-none"
+          />
+        </div>
 
         {/* Submit Button */}
         <Button

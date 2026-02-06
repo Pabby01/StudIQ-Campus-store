@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   campus TEXT,
   level TEXT,
   phone TEXT,
+  referral_code TEXT,
+  referred_by TEXT,
   avatar_url TEXT,
   bio TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),

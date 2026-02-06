@@ -13,6 +13,7 @@ import Input from "@/components/ui/Input";
 import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
 import { checkoutCreateSchema } from "@/lib/validators";
+import { useStore } from "@/hooks/useStore";
 
 type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifying" | "success" | "error";
 
@@ -49,6 +50,14 @@ export default function CartPage() {
 
   const solPrice = useCart((s) => s.solPrice);
   const fetchSolPrice = useCart((s) => s.fetchSolPrice);
+  const storeId = items[0]?.storeId ?? null;
+  const { store: storeResponse } = useStore(storeId);
+  const store = storeResponse?.store;
+  const deliveryEnabled = store?.delivery_enabled ?? true;
+  const pickupEnabled = store?.pickup_enabled ?? true;
+  const deliveryFee = deliveryMethod === "shipping" ? Number(store?.delivery_fee ?? 0) : 0;
+  const orderTotal = total + deliveryFee;
+  const deliveryUnavailable = !deliveryEnabled && !pickupEnabled;
 
   // Set default payment currency based on items
   useEffect(() => {
@@ -69,11 +78,19 @@ export default function CartPage() {
     }
   }, [email]);
 
+  useEffect(() => {
+    if (deliveryMethod === "shipping" && !deliveryEnabled && pickupEnabled) {
+      setDeliveryMethod("pickup");
+    }
+    if (deliveryMethod === "pickup" && !pickupEnabled && deliveryEnabled) {
+      setDeliveryMethod("shipping");
+    }
+  }, [deliveryEnabled, pickupEnabled, deliveryMethod]);
 
 
   // Calculate final amount and currency for display & transaction
   const { finalAmount, finalCurrency, exchangeRate, isRateReady } = calculatePayment(
-    total,
+    orderTotal,
     items[0]?.currency,
     paymentCurrency,
     solPrice
@@ -111,6 +128,8 @@ export default function CartPage() {
         address: deliveryMethod === "pickup" ? "pickup" : deliveryDetails.address,
         city: deliveryMethod === "pickup" ? "pickup" : deliveryDetails.city,
         zip: deliveryMethod === "pickup" ? "00000" : deliveryDetails.zip,
+        fee: deliveryFee,
+        notes: store?.delivery_notes || undefined,
       },
       paymentMethod: finalPaymentMethod,
       buyerEmail: deliveryDetails.email,
@@ -412,28 +431,40 @@ export default function CartPage() {
 
               <Card className="p-6">
                 <h3 className="text-lg font-semibold text-black mb-4">Delivery Method</h3>
+                {deliveryUnavailable && (
+                  <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                    This store is not accepting delivery or pickup orders right now.
+                  </div>
+                )}
                 <div className="flex flex-col sm:flex-row gap-4 mb-6">
                   <button
                     onClick={() => setDeliveryMethod("shipping")}
+                    disabled={!deliveryEnabled}
                     className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${deliveryMethod === "shipping"
                       ? "border-primary-blue bg-blue-50 text-primary-blue"
                       : "border-border-gray hover:bg-gray-50"
-                      }`}
+                      } ${!deliveryEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <Truck className="w-5 h-5" />
                     <span className="font-medium">Shipping</span>
                   </button>
                   <button
                     onClick={() => setDeliveryMethod("pickup")}
+                    disabled={!pickupEnabled}
                     className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${deliveryMethod === "pickup"
                       ? "border-primary-blue bg-blue-50 text-primary-blue"
                       : "border-border-gray hover:bg-gray-50"
-                      }`}
+                      } ${!pickupEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <MapPin className="w-5 h-5" />
                     <span className="font-medium">Pickup</span>
                   </button>
                 </div>
+                {deliveryMethod === "shipping" && store?.delivery_notes && (
+                  <div className="mb-4 p-3 bg-blue-50 text-blue-800 rounded-lg text-sm">
+                    {store.delivery_notes}
+                  </div>
+                )}
 
                 {/* Payment Method Selection */}
                 {deliveryMethod === "shipping" && items.every(i => i.isPodEnabled) && (
@@ -586,7 +617,12 @@ export default function CartPage() {
                   {deliveryMethod === "shipping" && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-text">Shipping</span>
-                      <span className="font-medium text-green-600">Free</span>
+                      <span className="font-medium text-black">
+                        {items[0]?.currency === "SOL"
+                          ? `${deliveryFee.toFixed(2)} SOL`
+                          : `$${deliveryFee.toFixed(2)}`
+                        }
+                      </span>
                     </div>
                   )}
                   <div className="border-t border-border-gray pt-3">
@@ -603,7 +639,7 @@ export default function CartPage() {
                         </span>
                         {finalCurrency !== items[0]?.currency && (
                           <span className="text-xs text-muted-text">
-                            (Original: {items[0]?.currency === "SOL" ? `${total.toFixed(2)} SOL` : `$${total.toFixed(2)}`})
+                            (Original: {items[0]?.currency === "SOL" ? `${orderTotal.toFixed(2)} SOL` : `$${orderTotal.toFixed(2)}`})
                           </span>
                         )}
                       </div>
@@ -617,7 +653,8 @@ export default function CartPage() {
                     onClick={() => void checkout()}
                     disabled={
                       (checkoutStatus !== "idle" && checkoutStatus !== "error") ||
-                      (!isRateReady && paymentMethod === 'solana')
+                      (!isRateReady && paymentMethod === 'solana') ||
+                      deliveryUnavailable
                     }
                   >
                     {!isRateReady && paymentMethod === 'solana' ? "Fetching Rates..." : getButtonText()}

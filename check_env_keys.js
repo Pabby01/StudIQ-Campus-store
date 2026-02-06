@@ -1,11 +1,11 @@
 
-const fs = require('fs');
-const path = require('path');
+import { existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
 
-const envPath = path.resolve(__dirname, '.env');
+const envPath = resolve(__dirname, '.env');
 
-if (fs.existsSync(envPath)) {
-    const content = fs.readFileSync(envPath, 'utf8');
+if (existsSync(envPath)) {
+    const content = readFileSync(envPath, 'utf8');
     console.log('--- Keys found in .env ---');
     content.split('\n').forEach(line => {
         const parts = line.split('=');

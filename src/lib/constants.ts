@@ -8,7 +8,7 @@ export const POINTS = {
     PRODUCT_LISTED: 5, // Seller
     REVIEW: 10, // Buyer
     REVIEW_5_STAR: 25, // Seller
-    REFERRAL: 50,
+    REFERRAL: 100,
     MILESTONE_10_SALES: 50,
     MILESTONE_50_SALES: 100,
     MILESTONE_100_SALES: 500,

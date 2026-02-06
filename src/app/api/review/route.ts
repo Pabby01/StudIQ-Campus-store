@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { POINTS } from "@/lib/constants";
 import { getSessionWallet } from "@/lib/session";
@@ -21,7 +22,29 @@ export async function GET(req: Request) {
         return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ reviews: data });
+    const reviewerAddresses = (data || [])
+        .map((review) => review.reviewer_address)
+        .filter(Boolean);
+
+    const { data: reviewerProfiles } = reviewerAddresses.length
+        ? await supabase
+            .from("profiles")
+            .select("address, name")
+            .in("address", reviewerAddresses)
+        : { data: [] };
+
+    const reviewerNameMap = new Map(
+        (reviewerProfiles || [])
+            .filter((profile) => profile.address)
+            .map((profile) => [profile.address, profile.name || null])
+    );
+
+    const reviews = (data || []).map((review) => ({
+        ...review,
+        reviewer_name: reviewerNameMap.get(review.reviewer_address) || null,
+    }));
+
+    return Response.json({ reviews });
 }
 
 export async function POST(req: Request) {
@@ -100,7 +123,7 @@ export async function POST(req: Request) {
                 .single();
 
             if (product) {
-                // @ts-ignore
+                // @ts-expect-error
                 const ownerAddress = product.stores?.owner_address;
                 if (ownerAddress) {
                     await fetch(`${origin}/api/points/award`, {

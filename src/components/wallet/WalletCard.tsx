@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react";
 import { Copy, Send, ArrowDown, Wallet, Eye, EyeOff, ChevronDown, Coins, ArrowLeftRight, ArrowUpCircle } from "lucide-react";
 import Card from "@/components/ui/Card";

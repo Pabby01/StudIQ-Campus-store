@@ -1,9 +1,11 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import DashboardCard from "@/components/DashboardCard";
-import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet } from "lucide-react";
+import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet, Users, Copy, Link2 } from "lucide-react";
 import ShareStoreButton from "@/components/ShareStoreButton";
 import RevenueChart from "@/components/charts/RevenueChart";
 import OrdersChart from "@/components/charts/OrdersChart";
@@ -34,6 +36,13 @@ type AnalyticsData = {
   points: number[];
 };
 
+type ReferralSummary = {
+  referralCode: string;
+  totalReferrals: number;
+  referralPointsTotal?: number;
+  referralPointsHistory?: { points: number; reason: string; created_at: string; referredAddress?: string | null; referredName?: string | null }[];
+};
+
 export default function DashboardPage() {
   const { walletAddress, user, email, isLoading: authLoading } = useCivicWallet();
   const [isBuyer, setIsBuyer] = useState(true);
@@ -41,6 +50,11 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [referralSummary, setReferralSummary] = useState<ReferralSummary | null>(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [referralError, setReferralError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [baseUrl, setBaseUrl] = useState("");
 
   // Use walletAddress if available, otherwise use email as identifier
   const identifier = walletAddress || (email ? `email:${email}` : null);
@@ -55,6 +69,12 @@ export default function DashboardPage() {
       setLoading(false);
     }
   }, [identifier, authLoading, user]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setBaseUrl(window.location.origin);
+    }
+  }, []);
 
   const fetchDashboardData = async (silent = false) => {
     if (!identifier) return;
@@ -109,6 +129,78 @@ export default function DashboardPage() {
     }
   };
 
+  useEffect(() => {
+    if (!walletAddress) {
+      setReferralSummary(null);
+      return;
+    }
+
+    const loadReferralSummary = async () => {
+      setReferralLoading(true);
+      try {
+        const res = await fetch("/api/referrals/summary", { cache: "no-store" });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error(payload.error || "Failed to load referrals");
+        }
+        const data = await res.json();
+        setReferralSummary({
+          referralCode: data.referralCode,
+          totalReferrals: data.totalReferrals,
+          referralPointsTotal: data.referralPointsTotal ?? 0,
+          referralPointsHistory: data.referralPointsHistory ?? [],
+        });
+        setReferralError(null);
+      } catch (err) {
+        setReferralError(err instanceof Error ? err.message : "Failed to load referrals");
+      } finally {
+        setReferralLoading(false);
+      }
+    };
+
+    loadReferralSummary();
+  }, [walletAddress]);
+
+  const referralLink = referralSummary?.referralCode && baseUrl
+    ? `${baseUrl}/onboarding?ref=${encodeURIComponent(referralSummary.referralCode)}`
+    : "";
+
+  const handleCopy = async (value: string, type: "code" | "link") => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(type);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {
+      setReferralError("Unable to copy to clipboard");
+    }
+  };
+
+  const renderReferralBlocks = (code?: string) => {
+    if (!code) {
+      return <span className="text-sm text-muted-text">—</span>;
+    }
+    return (
+      <div className="flex items-center gap-1.5">
+        {code.split("").map((char, index) => (
+          <span
+            key={`${char}-${index}`}
+            className="inline-flex items-center justify-center w-7 h-8 rounded-md border border-border-gray bg-white text-sm font-semibold text-black"
+          >
+            {char}
+          </span>
+        ))}
+      </div>
+    );
+  };
+  const formatReferralReason = (row: { reason: string; referredAddress?: string | null; referredName?: string | null }) => {
+    const name = row.referredName?.trim();
+    const address = row.referredAddress || row.reason?.replace("Referral bonus - ", "");
+    if (name) return `Referral bonus - ${name}`;
+    if (address) return `Referral bonus - ${address.slice(0, 4)}...${address.slice(-4)}`;
+    return row.reason;
+  };
+
   // Re-fetch when toggling between buyer/seller
   useEffect(() => {
     if (walletAddress) {
@@ -138,7 +230,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold text-black mb-1 truncate">Dashboard</h1>
-            <p className="text-sm md:text-base text-muted-text">Welcome back! Here's your overview</p>
+            <p className="text-sm md:text-base text-muted-text">Welcome back! Here&apos;s your overview</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
@@ -248,6 +340,106 @@ export default function DashboardPage() {
               />
             </div>
 
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Users className="w-5 h-5 text-primary-blue" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-black">Referrals</h3>
+                  <p className="text-sm text-muted-text">Share your link and track your referrals</p>
+                </div>
+              </div>
+
+              {!walletAddress && (
+                <div className="rounded-lg border border-border-gray bg-white p-4 text-sm text-muted-text">
+                  Connect your wallet to view your referral details.
+                </div>
+              )}
+
+              {walletAddress && (
+                <div className="space-y-3">
+                  {referralError && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                      {referralError}
+                    </div>
+                  )}
+              <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-border-gray bg-white p-4">
+                      <div className="text-xs text-muted-text">Your referral code</div>
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    {referralLoading ? (
+                      <span className="text-sm text-muted-text">Loading...</span>
+                    ) : (
+                      renderReferralBlocks(referralSummary?.referralCode)
+                    )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCopy(referralSummary?.referralCode || "", "code")}
+                          disabled={referralLoading || !referralSummary?.referralCode}
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          {copied === "code" ? "Copied" : "Copy"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-border-gray bg-white p-4">
+                      <div className="text-xs text-muted-text">Total referrals</div>
+                      <div className="mt-1 text-2xl font-bold text-black">
+                        {referralLoading ? "—" : referralSummary?.totalReferrals ?? 0}
+                      </div>
+                    </div>
+                  </div>
+
+              <div className="rounded-lg border border-border-gray bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-muted-text">Referral points</div>
+                    <div className="mt-1 text-xl font-bold text-black">
+                      {referralLoading ? "—" : referralSummary?.referralPointsTotal ?? 0}
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-text">
+                    Last 10 referral awards
+                  </div>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {(referralSummary?.referralPointsHistory || []).length === 0 ? (
+                    <div className="text-sm text-muted-text">No referral points yet</div>
+                  ) : (
+                    (referralSummary?.referralPointsHistory || []).map((row, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm">
+                        <span className="text-black">{formatReferralReason(row)}</span>
+                        <span className="font-semibold text-green-700">+{row.points}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+                  <div className="rounded-lg border border-border-gray bg-white p-4">
+                    <div className="text-xs text-muted-text">Referral link</div>
+                    <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="text-sm text-black break-all">{referralLink || "—"}</div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCopy(referralLink, "link")}
+                        disabled={referralLoading || !referralLink}
+                      >
+                        <Link2 className="w-4 h-4 mr-2" />
+                        {copied === "link" ? "Copied" : "Copy link"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+
             {/* Earnings & Withdraw Card (Seller Only) */}
             {!isBuyer && (
               <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
@@ -323,5 +515,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-

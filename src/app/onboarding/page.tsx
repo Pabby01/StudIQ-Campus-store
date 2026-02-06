@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@civic/auth-web3/react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -10,6 +10,7 @@ import Card from "@/components/ui/Card";
 import { useToast } from "@/hooks/useToast";
 import { Loader2, CheckCircle, User } from "lucide-react";
 import { updateProfileSchema } from "@/lib/validators";
+import CivicAuthButton from "@/components/CivicAuthButton";
 
 // Type guard to check if user has a Solana wallet
 function hasWallet(user: any): user is { solana: { address: string; wallet: any } } {
@@ -18,12 +19,15 @@ function hasWallet(user: any): user is { solana: { address: string; wallet: any 
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
-  const { user, isLoading } = useUser();
+  const userContext = useUser();
+  const { user, isLoading } = userContext;
   const [loading, setLoading] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [referralCodeValue, setReferralCodeValue] = useState("");
 
   // Avoid hydration issues
   useEffect(() => {
@@ -45,6 +49,48 @@ export default function OnboardingPage() {
     }
   }, [user, isLoading]);
 
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref && !referralCodeValue) {
+      setReferralCodeValue(ref.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
+    }
+  }, [searchParams, referralCodeValue]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ref = searchParams.get("ref");
+    if (ref) {
+      const cleaned = ref.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+      if (cleaned) {
+        sessionStorage.setItem("referralCode", cleaned);
+        if (!referralCodeValue) {
+          setReferralCodeValue(cleaned);
+        }
+      }
+    } else if (!referralCodeValue) {
+      const stored = sessionStorage.getItem("referralCode");
+      if (stored) {
+        setReferralCodeValue(stored);
+      }
+    }
+  }, [searchParams, referralCodeValue]);
+
+  const token = (userContext as any).idToken || (userContext as any).token || null;
+  const userAny = user as any;
+  const civicUserId = userAny?.id || userAny?.sub || null;
+
+  useEffect(() => {
+    if (!mounted || isLoading || !user || !token) return;
+    if (typeof document !== "undefined" && document.cookie.includes("sid=")) return;
+    const addressToUse = walletAddress || (civicUserId ? `civic_${civicUserId}` : null);
+    if (!addressToUse) return;
+    fetch("/api/auth/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, address: addressToUse }),
+    }).catch(() => {});
+  }, [mounted, isLoading, user, token, walletAddress, civicUserId]);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrors({});
@@ -52,9 +98,14 @@ export default function OnboardingPage() {
     const formData = new FormData(e.currentTarget);
 
     const userEmail = user && "email" in user ? (user.email as string) : (formData.get("email") as string);
-    const civicUserId = user && "sub" in user ? (user.sub as string) : null;
-    const address = walletAddress || `civic_${civicUserId || Date.now()}`;
+    const civicUserId = userAny?.id || (user && "sub" in user ? (user.sub as string) : null);
+    const address = walletAddress || (civicUserId ? `civic_${civicUserId}` : null);
+    if (!address) {
+      toast.error("Missing account", "Please sign in again and retry");
+      return;
+    }
 
+    const referralCode = String(formData.get("referralCode") || "").trim();
     const profileData = {
       address,
       email: userEmail,
@@ -65,6 +116,7 @@ export default function OnboardingPage() {
       level: (formData.get("level") as string) || "",
       phone: (formData.get("phone") as string) || "",
       verified_email: true,
+      ...(referralCode ? { referralCode } : {}),
     };
 
     const result = updateProfileSchema.safeParse(profileData);
@@ -99,6 +151,7 @@ export default function OnboardingPage() {
         const error = await res.json();
         toast.error("Failed to save profile", error.error || "Please try again");
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast.error("Error", "Failed to save profile");
     } finally {
@@ -120,14 +173,24 @@ export default function OnboardingPage() {
 
   // Redirect to home if not authenticated
   if (!user) {
-    if (typeof window !== 'undefined') {
-      router.push("/");
-    }
-    return null;
+    return (
+      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
+        <Card className="max-w-md w-full p-8 text-center space-y-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary-blue to-accent-blue rounded-full flex items-center justify-center mx-auto">
+            <User className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-black">Sign in to continue</h1>
+          <p className="text-muted-text">Create your account to finish onboarding.</p>
+          <div className="flex justify-center">
+            <CivicAuthButton />
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   // Get user email for pre-filling
-  const userEmail = 'email' in user ? (user.email as string) : '';
+  const userEmail = "email" in user ? (user.email as string) : "";
 
   return (
     <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
@@ -204,6 +267,15 @@ export default function OnboardingPage() {
             placeholder="Your phone number"
             required
             error={errors.phone}
+          />
+          <Input
+            label="Referral Code (optional)"
+            name="referralCode"
+            placeholder="Enter referral code"
+            error={errors.referralCode}
+            value={referralCodeValue}
+            maxLength={6}
+            onChange={(e) => setReferralCodeValue(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase())}
           />
 
           <Button
