@@ -10,7 +10,7 @@ type ReferralSummary = {
   referralCode: string;
   totalReferrals: number;
   referralPointsTotal?: number;
-  referralPointsHistory?: { points: number; reason: string; created_at: string }[];
+  referralPointsHistory?: { points: number; reason: string; created_at: string; referredAddress?: string | null; referredName?: string | null }[];
 };
 
 export default function ProfilePage() {
@@ -91,6 +91,13 @@ export default function ProfilePage() {
         ))}
       </div>
     );
+  };
+  const formatReferralReason = (row: { reason: string; referredAddress?: string | null; referredName?: string | null }) => {
+    const name = row.referredName?.trim();
+    const address = row.referredAddress || row.reason?.replace("Referral bonus - ", "");
+    if (name) return `Referral bonus - ${name}`;
+    if (address) return `Referral bonus - ${address.slice(0, 4)}...${address.slice(-4)}`;
+    return row.reason;
   };
 
   const isReady = isAuthenticated && !isCreatingWallet && walletAddress;
@@ -190,7 +197,7 @@ export default function ProfilePage() {
                     ) : (
                       (summary?.referralPointsHistory || []).map((row, idx) => (
                         <div key={idx} className="flex items-center justify-between text-sm">
-                          <span className="text-black">{row.reason}</span>
+                          <span className="text-black">{formatReferralReason(row)}</span>
                           <span className="font-semibold text-green-700">+{row.points}</span>
                         </div>
                       ))

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -40,6 +42,12 @@ export default function ProductReviews({ productId, onReviewAdded }: { productId
         } finally {
             setLoading(false);
         }
+    };
+    const formatReviewerName = (review: Review) => {
+        const name = review.reviewer_name?.trim();
+        if (name) return name;
+        const address = review.reviewer_address;
+        return `${address.slice(0, 4)}...${address.slice(-4)}`;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -161,7 +169,7 @@ export default function ProductReviews({ productId, onReviewAdded }: { productId
                                     <User className="w-4 h-4 text-primary-blue" />
                                 </div>
                                 <span className="font-medium text-black">
-                                    {review.reviewer_address.slice(0, 4)}...{review.reviewer_address.slice(-4)}
+                                    {formatReviewerName(review)}
                                 </span>
                             </div>
                             <span className="text-sm text-muted-text">

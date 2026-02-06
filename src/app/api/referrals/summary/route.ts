@@ -64,7 +64,7 @@ export async function GET(req: Request) {
 
   const { data: referredProfiles } = await supabase
     .from("profiles")
-    .select("address")
+    .select("address, name")
     .or(`referred_by.eq.${referralCode},referred_by.eq.${address}`);
 
   const { data: existingReferralRows } = await supabase
@@ -129,6 +129,33 @@ export async function GET(req: Request) {
     .order("created_at", { ascending: false })
     .limit(10);
 
+  const referredAddresses = (referralPointsRows || [])
+    .map((row) => row.reason?.replace("Referral bonus - ", "") || "")
+    .filter(Boolean);
+
+  const { data: referredProfilesByAddress } = referredAddresses.length
+    ? await supabase
+        .from("profiles")
+        .select("address, name")
+        .in("address", referredAddresses)
+    : { data: [] };
+
+  const referredNameMap = new Map(
+    (referredProfilesByAddress || [])
+      .filter((profile) => profile.address)
+      .map((profile) => [profile.address, profile.name || null])
+  );
+
+  const referralPointsHistory = (referralPointsRows || []).map((row) => {
+    const referredAddress = row.reason?.replace("Referral bonus - ", "") || null;
+    const referredName = referredAddress ? referredNameMap.get(referredAddress) || null : null;
+    return {
+      ...row,
+      referredAddress,
+      referredName,
+    };
+  });
+
   const referralPointsTotal = (referralPointsRows || []).reduce(
     (sum, row) => sum + (row.points || 0),
     0
@@ -139,7 +166,7 @@ export async function GET(req: Request) {
     referralCode,
     totalReferrals: count ?? 0,
     referralPointsTotal,
-    referralPointsHistory: referralPointsRows || [],
+    referralPointsHistory,
   };
 
   if (!debug) {

@@ -10,10 +10,13 @@ const HIGH_MAX_REQUESTS = process.env.NODE_ENV === "production" ? 600 : 2000;
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
 function getRateLimitKey(req: NextRequest, bucket: string): string {
-    // Use IP address or wallet address for rate limiting
+    const sessionId = req.cookies.get("sid")?.value;
     const forwarded = req.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0] : "unknown";
-    return `${bucket}:${ip}`;
+    const realIp = req.headers.get("x-real-ip");
+    const ip = forwarded ? forwarded.split(",")[0].trim() : realIp || "";
+    const userAgent = req.headers.get("user-agent") || "";
+    const identity = sessionId ? `sid:${sessionId}` : ip ? `ip:${ip}` : userAgent ? `ua:${userAgent}` : "unknown";
+    return `${bucket}:${identity}`;
 }
 
 function checkRateLimit(key: string, maxRequests: number): { allowed: boolean; remaining: number } {
