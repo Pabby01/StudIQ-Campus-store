@@ -158,7 +158,7 @@ export default function middleware(request: NextRequest) {
         "font-src 'self' https://fonts.gstatic.com; " +
         "media-src 'self' data: blob:; " +
         "frame-src 'self' https://connect.solflare.com https://phantom.app https://*.civic.com https://auth.metakeep.xyz https://*.metakeep.xyz; " +
-        "connect-src 'self' https://studiq.fun https://www.studiq.fun https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.helius-rpc.com wss://*.helius-rpc.com https://mainnet.helius-rpc.com wss://mainnet.helius-rpc.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com https://*.civic.com https://*.metakeep.xyz https://sepolia-preconf.base.org https://mainnet.base.org https://price.jup.ag https://api.jup.ag https://*.paj.cash;"
+        "connect-src 'self' https://studiq.fun https://www.studiq.fun https://store.studiq.fun https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.helius-rpc.com wss://*.helius-rpc.com https://mainnet.helius-rpc.com wss://mainnet.helius-rpc.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com https://*.civic.com https://*.metakeep.xyz https://sepolia-preconf.base.org https://mainnet.base.org https://price.jup.ag https://api.jup.ag https://*.paj.cash;"
     );
 
     return response;

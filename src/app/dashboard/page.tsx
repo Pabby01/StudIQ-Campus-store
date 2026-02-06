@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import DashboardCard from "@/components/DashboardCard";
-import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet } from "lucide-react";
+import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet, Users, Copy, Link2 } from "lucide-react";
 import ShareStoreButton from "@/components/ShareStoreButton";
 import RevenueChart from "@/components/charts/RevenueChart";
 import OrdersChart from "@/components/charts/OrdersChart";
@@ -34,6 +34,11 @@ type AnalyticsData = {
   points: number[];
 };
 
+type ReferralSummary = {
+  referralCode: string;
+  totalReferrals: number;
+};
+
 export default function DashboardPage() {
   const { walletAddress, user, email, isLoading: authLoading } = useCivicWallet();
   const [isBuyer, setIsBuyer] = useState(true);
@@ -41,6 +46,11 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [referralSummary, setReferralSummary] = useState<ReferralSummary | null>(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [referralError, setReferralError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [baseUrl, setBaseUrl] = useState("");
 
   // Use walletAddress if available, otherwise use email as identifier
   const identifier = walletAddress || (email ? `email:${email}` : null);
@@ -55,6 +65,12 @@ export default function DashboardPage() {
       setLoading(false);
     }
   }, [identifier, authLoading, user]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setBaseUrl(window.location.origin);
+    }
+  }, []);
 
   const fetchDashboardData = async (silent = false) => {
     if (!identifier) return;
@@ -106,6 +122,51 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!walletAddress) {
+      setReferralSummary(null);
+      return;
+    }
+
+    const loadReferralSummary = async () => {
+      setReferralLoading(true);
+      try {
+        const res = await fetch("/api/referrals/summary", { cache: "no-store" });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error(payload.error || "Failed to load referrals");
+        }
+        const data = await res.json();
+        setReferralSummary({
+          referralCode: data.referralCode,
+          totalReferrals: data.totalReferrals,
+        });
+        setReferralError(null);
+      } catch (err) {
+        setReferralError(err instanceof Error ? err.message : "Failed to load referrals");
+      } finally {
+        setReferralLoading(false);
+      }
+    };
+
+    loadReferralSummary();
+  }, [walletAddress]);
+
+  const referralLink = referralSummary?.referralCode && baseUrl
+    ? `${baseUrl}/onboarding?ref=${encodeURIComponent(referralSummary.referralCode)}`
+    : "";
+
+  const handleCopy = async (value: string, type: "code" | "link") => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(type);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {
+      setReferralError("Unable to copy to clipboard");
     }
   };
 
@@ -248,6 +309,78 @@ export default function DashboardPage() {
               />
             </div>
 
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Users className="w-5 h-5 text-primary-blue" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-black">Referrals</h3>
+                  <p className="text-sm text-muted-text">Share your link and track your referrals</p>
+                </div>
+              </div>
+
+              {!walletAddress && (
+                <div className="rounded-lg border border-border-gray bg-white p-4 text-sm text-muted-text">
+                  Connect your wallet to view your referral details.
+                </div>
+              )}
+
+              {walletAddress && (
+                <div className="space-y-3">
+                  {referralError && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                      {referralError}
+                    </div>
+                  )}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-border-gray bg-white p-4">
+                      <div className="text-xs text-muted-text">Your referral code</div>
+                      <div className="mt-1 flex items-center justify-between gap-3">
+                        <div className="text-base font-semibold text-black">
+                          {referralLoading ? "Loading..." : referralSummary?.referralCode || "—"}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCopy(referralSummary?.referralCode || "", "code")}
+                          disabled={referralLoading || !referralSummary?.referralCode}
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          {copied === "code" ? "Copied" : "Copy"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-border-gray bg-white p-4">
+                      <div className="text-xs text-muted-text">Total referrals</div>
+                      <div className="mt-1 text-2xl font-bold text-black">
+                        {referralLoading ? "—" : referralSummary?.totalReferrals ?? 0}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border-gray bg-white p-4">
+                    <div className="text-xs text-muted-text">Referral link</div>
+                    <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="text-sm text-black break-all">{referralLink || "—"}</div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCopy(referralLink, "link")}
+                        disabled={referralLoading || !referralLink}
+                      >
+                        <Link2 className="w-4 h-4 mr-2" />
+                        {copied === "link" ? "Copied" : "Copy link"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+
             {/* Earnings & Withdraw Card (Seller Only) */}
             {!isBuyer && (
               <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
@@ -323,5 +456,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-

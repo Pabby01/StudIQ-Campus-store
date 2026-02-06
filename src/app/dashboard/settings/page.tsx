@@ -5,7 +5,7 @@ import { useCivicWallet } from "@/hooks/useCivicWallet";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PremiumBadge from "@/components/PremiumBadge";
-import { Settings, Crown, TrendingUp, CreditCard, AlertCircle, Check, Bell } from "lucide-react";
+import { Settings, Crown, TrendingUp, CreditCard, AlertCircle, Check, Bell, Users, Copy, Link2 } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 type SubscriptionData = {
@@ -20,6 +20,11 @@ type SubscriptionData = {
   expiresAt?: string;
   autoRenew?: boolean;
   isFreeTier?: boolean;
+};
+
+type ReferralSummary = {
+  referralCode: string;
+  totalReferrals: number;
 };
 
 function NotificationsCard({ walletAddress }: { walletAddress: string }) {
@@ -80,6 +85,11 @@ function SettingsContent() {
   const [billingHistory, setBillingHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null);
+  const [referralSummary, setReferralSummary] = useState<ReferralSummary | null>(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [referralError, setReferralError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [baseUrl, setBaseUrl] = useState("");
 
   // Use wallet address or email as identifier
   const identifier = walletAddress || (email ? `email:${email}` : null);
@@ -101,6 +111,12 @@ function SettingsContent() {
       setUpgradeTarget(target);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setBaseUrl(window.location.origin);
+    }
+  }, []);
 
   const fetchSubscription = async () => {
     if (!identifier) return;
@@ -152,6 +168,50 @@ function SettingsContent() {
     }
   };
 
+  useEffect(() => {
+    if (!walletAddress) {
+      setReferralSummary(null);
+      return;
+    }
+
+    const loadReferralSummary = async () => {
+      setReferralLoading(true);
+      try {
+        const res = await fetch("/api/referrals/summary", { cache: "no-store" });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error(payload.error || "Failed to load referrals");
+        }
+        const data = await res.json();
+        setReferralSummary({
+          referralCode: data.referralCode,
+          totalReferrals: data.totalReferrals,
+        });
+        setReferralError(null);
+      } catch (err) {
+        setReferralError(err instanceof Error ? err.message : "Failed to load referrals");
+      } finally {
+        setReferralLoading(false);
+      }
+    };
+
+    loadReferralSummary();
+  }, [walletAddress]);
+
+  const referralLink = referralSummary?.referralCode && baseUrl
+    ? `${baseUrl}/onboarding?ref=${encodeURIComponent(referralSummary.referralCode)}`
+    : "";
+
+  const handleCopy = async (value: string, type: "code" | "link") => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(type);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {
+      setReferralError("Unable to copy to clipboard");
+    }
+  };
   const handleUpgrade = (planName: string) => {
     router.push(`/pricing`);
   };
@@ -293,6 +353,78 @@ function SettingsContent() {
 
         {/* Notifications */}
         <NotificationsCard walletAddress={walletAddress || ''} />
+
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Users className="w-5 h-5 text-primary-blue" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-black">Referrals</h3>
+              <p className="text-sm text-muted-text">Share your link and track your referrals</p>
+            </div>
+          </div>
+
+          {!walletAddress && (
+            <div className="rounded-lg border border-border-gray bg-white p-4 text-sm text-muted-text">
+              Connect your wallet to view your referral details.
+            </div>
+          )}
+
+          {walletAddress && (
+            <div className="space-y-3">
+              {referralError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {referralError}
+                </div>
+              )}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-border-gray bg-white p-4">
+                  <div className="text-xs text-muted-text">Your referral code</div>
+                  <div className="mt-1 flex items-center justify-between gap-3">
+                    <div className="text-base font-semibold text-black">
+                      {referralLoading ? "Loading..." : referralSummary?.referralCode || "—"}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCopy(referralSummary?.referralCode || "", "code")}
+                      disabled={referralLoading || !referralSummary?.referralCode}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      {copied === "code" ? "Copied" : "Copy"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border-gray bg-white p-4">
+                  <div className="text-xs text-muted-text">Total referrals</div>
+                  <div className="mt-1 text-2xl font-bold text-black">
+                    {referralLoading ? "—" : referralSummary?.totalReferrals ?? 0}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-border-gray bg-white p-4">
+                <div className="text-xs text-muted-text">Referral link</div>
+                <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-sm text-black break-all">{referralLink || "—"}</div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy(referralLink, "link")}
+                    disabled={referralLoading || !referralLink}
+                  >
+                    <Link2 className="w-4 h-4 mr-2" />
+                    {copied === "link" ? "Copied" : "Copy link"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </Card>
 
         {/* Store Management */}
         <Card className="p-6">
