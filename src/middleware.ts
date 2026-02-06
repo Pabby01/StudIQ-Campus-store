@@ -3,19 +3,20 @@ import type { NextRequest } from "next/server";
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const MAX_REQUESTS = 60; // 60 requests per minute
+const DEFAULT_MAX_REQUESTS = process.env.NODE_ENV === "production" ? 120 : 1000;
+const HIGH_MAX_REQUESTS = process.env.NODE_ENV === "production" ? 600 : 2000;
 
 // In-memory rate limit store (use Redis in production)
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
-function getRateLimitKey(req: NextRequest): string {
+function getRateLimitKey(req: NextRequest, bucket: string): string {
     // Use IP address or wallet address for rate limiting
     const forwarded = req.headers.get("x-forwarded-for");
     const ip = forwarded ? forwarded.split(",")[0] : "unknown";
-    return ip;
+    return `${bucket}:${ip}`;
 }
 
-function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
+function checkRateLimit(key: string, maxRequests: number): { allowed: boolean; remaining: number } {
     const now = Date.now();
     const record = rateLimitStore.get(key);
 
@@ -25,15 +26,15 @@ function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
             count: 1,
             resetAt: now + RATE_LIMIT_WINDOW,
         });
-        return { allowed: true, remaining: MAX_REQUESTS - 1 };
+        return { allowed: true, remaining: maxRequests - 1 };
     }
 
-    if (record.count >= MAX_REQUESTS) {
+    if (record.count >= maxRequests) {
         return { allowed: false, remaining: 0 };
     }
 
     record.count++;
-    return { allowed: true, remaining: MAX_REQUESTS - record.count };
+    return { allowed: true, remaining: maxRequests - record.count };
 }
 
 // Clean up old entries periodically
@@ -48,11 +49,26 @@ setInterval(() => {
 
 export default function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
+    const method = request.method.toUpperCase();
+
+    const isReadHeavy =
+        method === "GET" &&
+        (pathname.startsWith("/api/dashboard/") ||
+            pathname.startsWith("/api/referrals/") ||
+            pathname.startsWith("/api/price/") ||
+            pathname.startsWith("/api/profile/check"));
+
+    const isAuthFlow =
+        pathname.startsWith("/api/auth/verify") ||
+        pathname.startsWith("/api/profile/update-wallet");
+
+    const maxRequests = isReadHeavy || isAuthFlow ? HIGH_MAX_REQUESTS : DEFAULT_MAX_REQUESTS;
+    const bucket = isReadHeavy ? "read" : isAuthFlow ? "auth" : "default";
 
     // Handle CORS for API sync routes
     if (pathname.startsWith('/api/sync/')) {
-        const key = getRateLimitKey(request);
-        const { allowed, remaining } = checkRateLimit(key);
+        const key = getRateLimitKey(request, "sync");
+        const { allowed, remaining } = checkRateLimit(key, maxRequests);
 
         if (!allowed) {
             return NextResponse.json(
@@ -64,7 +80,7 @@ export default function middleware(request: NextRequest) {
                 {
                     status: 429,
                     headers: {
-                        "X-RateLimit-Limit": MAX_REQUESTS.toString(),
+                        "X-RateLimit-Limit": maxRequests.toString(),
                         "X-RateLimit-Remaining": "0",
                         "Retry-After": "60",
                     },
@@ -99,15 +115,15 @@ export default function middleware(request: NextRequest) {
             });
         }
 
-        response.headers.set("X-RateLimit-Limit", MAX_REQUESTS.toString());
+        response.headers.set("X-RateLimit-Limit", maxRequests.toString());
         response.headers.set("X-RateLimit-Remaining", remaining.toString());
         return response;
     }
 
     // Apply rate limiting to other API routes
     if (pathname.startsWith("/api/")) {
-        const key = getRateLimitKey(request);
-        const { allowed, remaining } = checkRateLimit(key);
+        const key = getRateLimitKey(request, bucket);
+        const { allowed, remaining } = checkRateLimit(key, maxRequests);
 
         if (!allowed) {
             return NextResponse.json(
@@ -119,7 +135,7 @@ export default function middleware(request: NextRequest) {
                 {
                     status: 429,
                     headers: {
-                        "X-RateLimit-Limit": MAX_REQUESTS.toString(),
+                        "X-RateLimit-Limit": maxRequests.toString(),
                         "X-RateLimit-Remaining": "0",
                         "Retry-After": "60",
                     },
@@ -128,7 +144,7 @@ export default function middleware(request: NextRequest) {
         }
 
         const response = NextResponse.next();
-        response.headers.set("X-RateLimit-Limit", MAX_REQUESTS.toString());
+        response.headers.set("X-RateLimit-Limit", maxRequests.toString());
         response.headers.set("X-RateLimit-Remaining", remaining.toString());
         return response;
     }
