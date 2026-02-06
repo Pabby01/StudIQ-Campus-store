@@ -23,6 +23,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const referralCode = parsed.data.referralCode?.trim();
+
     // Verify session matches the address in the request
     if (sessionAddress !== parsed.data.address) {
       return Response.json({ ok: false, error: "Forbidden: You can only update your own profile" }, { status: 403 });
@@ -70,6 +72,8 @@ export async function POST(req: Request) {
         campus: parsed.data.campus,
         level: parsed.data.level || existing?.level || null,
         phone: parsed.data.phone || existing?.phone || null,
+        referral_code: existing?.referral_code ?? parsed.data.address,
+        referred_by: existing?.referred_by ?? referralCode ?? null,
         last_login: new Date().toISOString(),
       }, { onConflict: 'address' })
       .select()
@@ -115,6 +119,40 @@ export async function POST(req: Request) {
         }
       } catch (e) {
         console.error("[Profile Update] Points award failed:", e);
+      }
+    }
+
+    if (isNewProfile && referralCode) {
+      try {
+        const { data: referrer } = await supabase
+          .from("profiles")
+          .select("address")
+          .or(`referral_code.eq.${referralCode},address.eq.${referralCode}`)
+          .maybeSingle();
+
+        if (referrer?.address && referrer.address !== data.address) {
+          const referralReason = `Referral bonus - ${data.address}`;
+          const { data: existingReferral } = await supabase
+            .from("points_log")
+            .select("id")
+            .eq("address", referrer.address)
+            .eq("reason", referralReason)
+            .maybeSingle();
+
+          if (!existingReferral) {
+            const { error: referralError } = await supabase.from("points_log").insert({
+              address: referrer.address,
+              points: POINTS.REFERRAL,
+              reason: referralReason,
+            });
+
+            if (referralError) {
+              console.error("[Profile Update] Referral points insert error:", referralError);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("[Profile Update] Referral award failed:", e);
       }
     }
 

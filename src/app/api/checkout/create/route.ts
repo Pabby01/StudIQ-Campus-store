@@ -156,7 +156,7 @@ export async function POST(req: Request) {
     const storeId = prods[0].store_id;
     const { data: store } = await supabase
       .from("stores")
-      .select("owner_address")
+      .select("owner_address, delivery_fee, delivery_enabled, pickup_enabled")
       .eq("id", storeId)
       .single();
 
@@ -173,6 +173,18 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    if (parsed.data.deliveryMethod === "shipping" && store.delivery_enabled === false) {
+      return Response.json(
+        { ok: false, error: "Store does not offer shipping" },
+        { status: 400 }
+      );
+    }
+    if (parsed.data.deliveryMethod === "pickup" && store.pickup_enabled === false) {
+      return Response.json(
+        { ok: false, error: "Store does not offer pickup" },
+        { status: 400 }
+      );
+    }
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -183,13 +195,15 @@ export async function POST(req: Request) {
     const feePercent = profile?.seller_tier === "premium" ? 3 : 10;
 
     // Step 5: Calculate totals
-    const amount = items.reduce((sum, i) => {
+    const subtotal = items.reduce((sum, i) => {
       const p = prods.find((pp) => pp.id === i.productId)!;
       return sum + Number(p.price) * i.qty;
     }, 0);
+    const deliveryFee = parsed.data.deliveryMethod === "shipping" ? Number(store.delivery_fee ?? 0) : 0;
+    const amount = subtotal + deliveryFee;
 
-    const feeAmount = amount * (feePercent / 100); // Use totalAmount
-    const vendorEarnings = amount - feeAmount; // Use totalAmount
+    const feeAmount = subtotal * (feePercent / 100);
+    const vendorEarnings = subtotal - feeAmount + deliveryFee;
 
     // Platform wallet receives all payments
     const platformWallet = SOLANA_CONFIG.platformWallet;

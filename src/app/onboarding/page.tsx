@@ -55,6 +55,7 @@ export default function OnboardingPage() {
     const civicUserId = user && "sub" in user ? (user.sub as string) : null;
     const address = walletAddress || `civic_${civicUserId || Date.now()}`;
 
+    const referralCode = String(formData.get("referralCode") || "").trim();
     const profileData = {
       address,
       email: userEmail,
@@ -65,6 +66,7 @@ export default function OnboardingPage() {
       level: (formData.get("level") as string) || "",
       phone: (formData.get("phone") as string) || "",
       verified_email: true,
+      ...(referralCode ? { referralCode } : {}),
     };
 
     const result = updateProfileSchema.safeParse(profileData);
@@ -204,6 +206,12 @@ export default function OnboardingPage() {
             placeholder="Your phone number"
             required
             error={errors.phone}
+          />
+          <Input
+            label="Referral Code (optional)"
+            name="referralCode"
+            placeholder="Enter a referral code"
+            error={errors.referralCode}
           />
 
           <Button

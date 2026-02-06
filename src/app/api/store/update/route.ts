@@ -31,6 +31,10 @@ export async function POST(req: Request) {
     lon: parsed.data.lon,
     geohash,
     banner_url: parsed.data.bannerUrl ?? null,
+    delivery_enabled: parsed.data.deliveryEnabled ?? true,
+    pickup_enabled: parsed.data.pickupEnabled ?? true,
+    delivery_fee: parsed.data.deliveryFee ?? 0,
+    delivery_notes: parsed.data.deliveryNotes ?? null,
   }).eq("id", parsed.data.id).eq("owner_address", address);
 
   if (error) {

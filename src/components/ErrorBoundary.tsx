@@ -25,11 +25,18 @@ export default class ErrorBoundary extends Component<Props, State> {
     }
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        // Log to monitoring service (Sentry, etc.)
         console.error("Error caught by boundary:", error, errorInfo);
-
-        // TODO: Send to Sentry
-        // Sentry.captureException(error, { contexts: { react: { componentStack: errorInfo.componentStack } } });
+        void fetch("/api/monitoring/error", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                message: error.message,
+                stack: error.stack,
+                componentStack: errorInfo.componentStack,
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+            }),
+        });
     }
 
     render() {

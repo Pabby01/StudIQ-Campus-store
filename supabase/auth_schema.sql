@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS profiles (
     campus TEXT,
     level TEXT,
     phone TEXT,
+    referral_code TEXT,
+    referred_by TEXT,
     tier TEXT DEFAULT 'basic',
     points INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

@@ -23,7 +23,11 @@ export default function EditStorePage() {
         name: "",
         description: "",
         category: "",
-        banner_url: ""
+        banner_url: "",
+        delivery_enabled: true,
+        pickup_enabled: true,
+        delivery_fee: "",
+        delivery_notes: ""
     });
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -58,7 +62,11 @@ export default function EditStorePage() {
                 name: data.store.name || "",
                 description: data.store.description || "",
                 category: data.store.category || "",
-                banner_url: data.store.banner_url || ""
+                banner_url: data.store.banner_url || "",
+                delivery_enabled: data.store.delivery_enabled ?? true,
+                pickup_enabled: data.store.pickup_enabled ?? true,
+                delivery_fee: data.store.delivery_fee != null ? String(data.store.delivery_fee) : "",
+                delivery_notes: data.store.delivery_notes || ""
             });
         } catch (error) {
             console.error("Failed to fetch store:", error);
@@ -69,9 +77,10 @@ export default function EditStorePage() {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const target = e.target as HTMLInputElement;
         setFormData(prev => ({
             ...prev,
-            [e.target.name]: e.target.value
+            [e.target.name]: target.type === "checkbox" ? target.checked : target.value
         }));
     };
 
@@ -89,6 +98,10 @@ export default function EditStorePage() {
         if (!formData.name.trim()) newErrors.name = "Store name is required";
         if (!formData.description.trim()) newErrors.description = "Description is required";
         if (!formData.category.trim()) newErrors.category = "Category is required";
+        if (!formData.delivery_enabled && !formData.pickup_enabled) newErrors.deliveryMethods = "Select at least one delivery method";
+        if (formData.delivery_fee && (Number.isNaN(Number(formData.delivery_fee)) || Number(formData.delivery_fee) < 0)) {
+            newErrors.deliveryFee = "Delivery fee must be a valid number";
+        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -108,7 +121,11 @@ export default function EditStorePage() {
                     // Keep existing lat/lon
                     lat: store.lat,
                     lon: store.lon,
-                    bannerUrl: formData.banner_url
+                    bannerUrl: formData.banner_url,
+                    deliveryEnabled: formData.delivery_enabled,
+                    pickupEnabled: formData.pickup_enabled,
+                    deliveryFee: formData.delivery_fee ? Number(formData.delivery_fee) : undefined,
+                    deliveryNotes: formData.delivery_notes || undefined
                 })
             });
 
@@ -261,6 +278,70 @@ export default function EditStorePage() {
                                     />
                                 </div>
                             )}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Delivery Options
+                            </label>
+                            <div className="flex flex-col gap-3">
+                                <label className="flex items-center gap-2 text-sm text-gray-700">
+                                    <input
+                                        type="checkbox"
+                                        name="delivery_enabled"
+                                        checked={formData.delivery_enabled}
+                                        onChange={handleChange}
+                                        className="h-4 w-4"
+                                    />
+                                    Offer shipping
+                                </label>
+                                <label className="flex items-center gap-2 text-sm text-gray-700">
+                                    <input
+                                        type="checkbox"
+                                        name="pickup_enabled"
+                                        checked={formData.pickup_enabled}
+                                        onChange={handleChange}
+                                        className="h-4 w-4"
+                                    />
+                                    Offer pickup
+                                </label>
+                            </div>
+                            {errors.deliveryMethods && (
+                                <p className="mt-1 text-sm text-red-600">{errors.deliveryMethods}</p>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Delivery Fee (optional)
+                            </label>
+                            <input
+                                type="number"
+                                name="delivery_fee"
+                                value={formData.delivery_fee}
+                                onChange={handleChange}
+                                min="0"
+                                step="0.01"
+                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${errors.deliveryFee
+                                    ? "border-red-500 focus:ring-red-500"
+                                    : "border-gray-300 focus:ring-primary-blue"
+                                    }`}
+                                placeholder="0.00"
+                            />
+                            {errors.deliveryFee && (
+                                <p className="mt-1 text-sm text-red-600">{errors.deliveryFee}</p>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Delivery Notes (optional)
+                            </label>
+                            <textarea
+                                name="delivery_notes"
+                                value={formData.delivery_notes}
+                                onChange={handleChange}
+                                rows={3}
+                                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent resize-none overflow-y-auto max-h-32 border-gray-300 focus:ring-primary-blue"
+                                placeholder="e.g., Deliver only on weekdays between 9am-6pm"
+                            />
                         </div>
 
                         <div className="flex gap-3 pt-4">

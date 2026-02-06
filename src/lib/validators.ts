@@ -21,6 +21,7 @@ export const updateProfileSchema = z.object({
   campus: z.string().min(2),
   level: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
+  referralCode: z.string().min(4).max(64).optional(),
 });
 
 export const createStoreSchema = z.object({
@@ -30,6 +31,10 @@ export const createStoreSchema = z.object({
   lat: z.number(),
   lon: z.number(),
   bannerUrl: z.string().url().optional(),
+  deliveryEnabled: z.boolean().optional(),
+  pickupEnabled: z.boolean().optional(),
+  deliveryFee: z.number().nonnegative().optional(),
+  deliveryNotes: z.string().max(500).optional(),
 });
 
 export const updateStoreSchema = createStoreSchema.extend({ id: z.string().min(1) });
@@ -58,10 +63,16 @@ export const checkoutCreateSchema = z.object({
   ).min(1),
   currency: z.enum(["SOL", "USDC"]),
   deliveryMethod: z.enum(["shipping", "pickup"]),
-  deliveryDetails: z.object({ name: z.string(), address: z.string(), city: z.string(), zip: z.string() }),
+  deliveryDetails: z.object({
+    name: z.string(),
+    address: z.string(),
+    city: z.string(),
+    zip: z.string(),
+    fee: z.number().nonnegative().optional(),
+    notes: z.string().optional(),
+  }),
   paymentMethod: z.enum(["solana", "pod"]).optional(),
   buyerEmail: z.string().email(),
 });
 
 export const awardPointsSchema = z.object({ address: z.string().min(32), points: z.number().int().positive(), reason: z.string().min(2) });
-
