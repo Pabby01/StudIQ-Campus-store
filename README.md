@@ -172,6 +172,11 @@ Current test coverage:
 
 ## 📝 Recent Updates
 
+- **v1.6 - Referrals, Reviews, and Stability**
+  - Shows referred user names in referral history when available, with shortened address fallback.
+  - Shows reviewer names in product reviews when available, with shortened address fallback.
+  - Improves API rate-limit keys to avoid cross-user 429 collisions.
+  - Adds React DevTools for local debugging.
 - **v1.5 - Wallet History & Paj Receipts**
   - Fixed SOL/USDC balances to use the configured Helius RPC and correct token amounts.
   - Upgraded transaction history with colored deposit/withdraw arrows, Paj Cash labels, expandable details, and clearer error states.
