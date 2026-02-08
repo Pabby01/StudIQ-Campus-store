@@ -25,13 +25,13 @@ function SearchPageContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("created_at");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(100);
+  const [limit, setLimit] = useState(64);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 640px)");
     const handleChange = () => {
-      setLimit(mediaQuery.matches ? 50 : 100);
+      setLimit(mediaQuery.matches ? 9 : 64);
     };
     handleChange();
     mediaQuery.addEventListener("change", handleChange);
@@ -111,7 +111,7 @@ function SearchPageContent() {
 
         {/* Results */}
         {loading && page === 1 ? (
-          <div className="grid gap-3 grid-cols-5 lg:grid-cols-10">
+          <div className="grid gap-3 grid-cols-3 lg:grid-cols-8">
             {[...Array(8)].map((_, i) => (
               <div
                 key={i}
@@ -138,7 +138,7 @@ function SearchPageContent() {
           </div>
         ) : (
           <>
-            <div className="grid gap-3 grid-cols-5 lg:grid-cols-10">
+            <div className="grid gap-3 grid-cols-3 lg:grid-cols-8">
               {products.map((product) => (
                 <ProductCard key={product.id} p={product} />
               ))}
