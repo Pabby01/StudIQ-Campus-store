@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 import { verifyTransaction, verifySplTransferTransaction } from "@/lib/solana";
 import { getPlatformFee, calculateFees, recordPlatformFee } from "@/lib/platformFees";
+import { triggerNotification } from "@/lib/notifications";
 import { POINTS } from "@/lib/constants";
 import { SOLANA_CONFIG } from "@/lib/solana-config";
 
@@ -280,6 +281,30 @@ export async function POST(req: Request) {
             }
         } catch (e) {
             console.error("Email sending failed in verify:", e);
+        }
+
+        try {
+            if (order.buyer_address) {
+                await triggerNotification({
+                    user_id: order.buyer_address,
+                    title: 'Order Placed! 🛍️',
+                    message: `Your order #${order.id.slice(0, 8)} has been placed successfully.`,
+                    type: 'success',
+                    url: '/dashboard/purchases'
+                });
+            }
+
+            if (sellerAddress) {
+                await triggerNotification({
+                    user_id: sellerAddress,
+                    title: 'New Order Received! 💰',
+                    message: `You have a new order #${order.id.slice(0, 8)} for ${order.currency} ${order.amount}.`,
+                    type: 'success',
+                    url: '/dashboard/sales'
+                });
+            }
+        } catch (notifyError) {
+            console.error('[Checkout] In-App Notification error:', notifyError);
         }
 
         return NextResponse.json({

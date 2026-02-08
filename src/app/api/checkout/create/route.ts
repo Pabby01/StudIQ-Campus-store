@@ -358,32 +358,30 @@ export async function POST(req: Request) {
       }
     }
 
-    // Step 9: Create In-App Notifications (New)
-    try {
-      // 1. Notify Buyer
-      if (buyerAddress) {
-        await triggerNotification({
-          user_id: buyerAddress,
-          title: 'Order Placed! 🛍️',
-          message: `Your order #${newOrder.id.slice(0, 8)} has been placed successfully.`,
-          type: 'success',
-          url: '/dashboard/purchases'
-        });
-      }
+    if (parsed.data.paymentMethod !== 'solana') {
+      try {
+        if (buyerAddress) {
+          await triggerNotification({
+            user_id: buyerAddress,
+            title: 'Order Placed! 🛍️',
+            message: `Your order #${newOrder.id.slice(0, 8)} has been placed successfully.`,
+            type: 'success',
+            url: '/dashboard/purchases'
+          });
+        }
 
-      // 2. Notify Seller
-      if (store?.owner_address) {
-        await triggerNotification({
-          user_id: store.owner_address,
-          title: 'New Order Received! 💰',
-          message: `You have a new order #${newOrder.id.slice(0, 8)} for ${parsed.data.currency} ${amount}.`,
-          type: 'success',
-          url: '/dashboard/sales'
-        });
+        if (store?.owner_address) {
+          await triggerNotification({
+            user_id: store.owner_address,
+            title: 'New Order Received! 💰',
+            message: `You have a new order #${newOrder.id.slice(0, 8)} for ${parsed.data.currency} ${amount}.`,
+            type: 'success',
+            url: '/dashboard/sales'
+          });
+        }
+      } catch (notifyError) {
+        console.error('[Checkout] In-App Notification error:', notifyError);
       }
-
-    } catch (notifyError) {
-      console.error('[Checkout] In-App Notification error:', notifyError);
     }
 
     return Response.json({
