@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
-import { verifyTransaction } from "@/lib/solana";
+import { verifyTransaction, verifySplTransferTransaction } from "@/lib/solana";
 import { getPlatformFee, calculateFees, recordPlatformFee } from "@/lib/platformFees";
 import { POINTS } from "@/lib/constants";
 import { SOLANA_CONFIG } from "@/lib/solana-config";
@@ -77,13 +78,22 @@ export async function POST(req: Request) {
         // Use tighter tolerance for native SOL (0.1%) and slightly more for USD conversions (2%)
         const tolerance = order.currency === "SOL" ? 0.001 : 0.02;
 
-        const verification = await verifyTransaction(
-            txSignature,
-            order.buyer_address,                   // FROM buyer
-            platformWallet,                         // TO platform wallet
-            expectedSolAmount,
-            tolerance
-        );
+        const verification = order.currency === "SOL"
+            ? await verifyTransaction(
+                txSignature,
+                order.buyer_address,
+                platformWallet,
+                expectedSolAmount,
+                tolerance
+            )
+            : await verifySplTransferTransaction(
+                txSignature,
+                order.buyer_address,
+                platformWallet,
+                SOLANA_CONFIG.usdcMint,
+                order.amount,
+                tolerance
+            );
 
         if (!verification.valid) {
             // Mark order as failed

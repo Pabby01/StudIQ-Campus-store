@@ -192,6 +192,85 @@ export interface VerifiedTransactionInfo {
     };
 }
 
+export async function verifySplTransferTransaction(
+    signature: string,
+    expectedFrom: string,
+    expectedTo: string,
+    mint: string,
+    expectedAmount: number,
+    tolerancePercent: number = 0.01
+): Promise<VerifiedTransactionInfo> {
+    try {
+        const transaction = await rpc.getTransaction(
+            signature as Signature,
+            { maxSupportedTransactionVersion: 0, commitment: 'confirmed', encoding: 'jsonParsed' }
+        ).send() as unknown as VerifiedTransactionInfo["transaction"];
+
+        if (!transaction) {
+            return { valid: false, error: "Transaction not found" };
+        }
+
+        if (transaction.meta?.err) {
+            return { valid: false, error: "Transaction failed or has errors" };
+        }
+
+        type TokenBalance = {
+            mint?: string;
+            owner?: string;
+            uiTokenAmount?: {
+                uiAmount?: number | null;
+                amount?: string;
+                decimals?: number;
+            };
+        };
+
+        const meta = transaction.meta as {
+            preTokenBalances?: TokenBalance[];
+            postTokenBalances?: TokenBalance[];
+        } | undefined;
+
+        const preTokenBalances = meta?.preTokenBalances || [];
+        const postTokenBalances = meta?.postTokenBalances || [];
+
+        const getUiAmount = (entry: TokenBalance) => {
+            const ui = entry.uiTokenAmount;
+            if (!ui) return 0;
+            if (typeof ui.uiAmount === "number") return ui.uiAmount;
+            const amount = Number(ui.amount || 0);
+            const decimals = Number(ui.decimals || 0);
+            return amount / Math.pow(10, decimals);
+        };
+
+        const sumByOwner = (balances: TokenBalance[], owner: string) =>
+            balances
+                .filter((b) => b.mint === mint && b.owner === owner)
+                .reduce((sum, b) => sum + getUiAmount(b), 0);
+
+        const preFrom = sumByOwner(preTokenBalances, expectedFrom);
+        const postFrom = sumByOwner(postTokenBalances, expectedFrom);
+        const preTo = sumByOwner(preTokenBalances, expectedTo);
+        const postTo = sumByOwner(postTokenBalances, expectedTo);
+
+        const sent = preFrom - postFrom;
+        const received = postTo - preTo;
+
+        const tolerance = expectedAmount * tolerancePercent;
+        if (Math.abs(received - expectedAmount) > tolerance && Math.abs(sent - expectedAmount) > tolerance) {
+            return {
+                valid: false,
+                error: `Amount mismatch. Expected: ${expectedAmount} ${mint}, Got: ${received}`,
+            };
+        }
+
+        return { valid: true, transaction };
+    } catch (error) {
+        return {
+            valid: false,
+            error: error instanceof Error ? error.message : "Verification failed",
+        };
+    }
+}
+
 export async function verifyTransaction(
     signature: string,
     expectedFrom: string,

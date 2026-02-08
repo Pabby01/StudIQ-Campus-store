@@ -119,6 +119,7 @@ export default function CartPage() {
   const formatNgn = (value: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
 
   async function checkout() {
+    if (checkoutStatus !== "idle") return;
     setFieldErrors({});
 
     // Determine final payment method: if pickup, force POD/POP logic
@@ -184,6 +185,7 @@ export default function CartPage() {
     }
 
     try {
+      setCheckoutStatus("creating");
 
       const createRes = await fetch("/api/checkout/create", {
         method: "POST",
