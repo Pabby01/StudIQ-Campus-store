@@ -210,14 +210,14 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         )}
 
         {/* Image */}
-        <div className="relative w-full pt-[100%] bg-gray-100 overflow-hidden">
+        <div className="relative w-full pt-[60%] bg-gray-100 overflow-hidden">
           {p.image_url ? (
             <Image
               src={p.image_url}
               alt={p.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
-              className="object-cover group-hover:scale-110 transition-transform duration-300"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">
@@ -227,7 +227,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         </div>
 
         {/* Product Details */}
-        <div className="p-2 flex-1 flex flex-col">
+        <div className="p-1.5 flex-1 flex flex-col">
           {/* Premium Badge + Category */}
           <div className="flex items-center justify-between mb-0.5">
             {p.category && (
@@ -243,27 +243,27 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           {p.stores?.name && (
             <Link
               href={`/store/${p.store_id}`}
-              className="text-[10px] text-primary-blue mb-1 hover:underline block w-fit"
+              className="text-[9px] text-primary-blue mb-1 hover:underline block w-fit"
               onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
             >
               For {p.stores.name}
             </Link>
           )}
-          <h3 className="font-medium text-black text-[10px] sm:text-xs line-clamp-2 mb-1 min-h-[28px] leading-tight group-hover:text-primary-blue transition-colors">
+          <p className="font-medium text-black text-[4px] sm:text-[4px] line-clamp-2 mb-0.5 min-h-[14px] leading-tight group-hover:text-primary-blue transition-colors">
             {p.name}
-          </h3>
-          <div className="flex items-center gap-0.5 mb-1">
-            <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
-            <span className="text-[10px] font-medium text-black">
+          </p>
+          <div className="flex items-center gap-0.5 mb-0.5">
+            <Star className="w-2 h-2 fill-yellow-400 text-yellow-400" />
+            <span className="text-[9px] font-medium text-black">
               {p.rating?.toFixed?.(1) ?? "0.0"}
             </span>
-            <span className="text-[9px] text-muted-text">({p.reviews_count || 0})</span>
+            <span className="text-[8px] text-muted-text">({p.reviews_count || 0})</span>
           </div>
 
           {/* Pricing */}
           <div className="space-y-0.5 mt-auto">
             <div className="flex items-baseline gap-1 flex-wrap">
-              <span className="text-sm sm:text-base font-bold text-black">
+              <span className="text-[11px] sm:text-sm font-bold text-black">
                 {formatPrice(Number(displayPrice))}
               </span>
               {hasDiscount && (
@@ -273,17 +273,17 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               )}
             </div>
             {(ngnEquivalent || otherCurrency) && (
-              <div className="flex flex-wrap items-center gap-1 text-[9px]">
-                <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+              <div className="flex flex-wrap items-center gap-1 text-[8px]">
+                <span className="px-1 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                   FX
                 </span>
                 {otherCurrency && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                  <span className="px-1 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                     ≈ {otherCurrency}
                   </span>
                 )}
                 {ngnEquivalent && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="px-1 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     ≈ {formatNgn(ngnEquivalent)}
                   </span>
                 )}
@@ -291,7 +291,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             )}
 
             {hasDiscount && (
-              <div className="text-[9px] text-green-600 font-medium">
+              <div className="text-[8px] text-green-600 font-medium">
                 Save {formatPrice(originalPrice! - p.price)}
               </div>
             )}
@@ -299,7 +299,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
 
           {/* Stock Count - Show for sellers */}
           {isOwnProduct && p.inventory !== undefined && (
-            <div className="mt-1 text-[9px] text-muted-text">
+            <div className="mt-1 text-[8px] text-muted-text">
               Stock: {p.inventory}
             </div>
           )}
@@ -310,7 +310,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full text-[10px] py-1 h-7 cursor-not-allowed opacity-60"
+                className="w-full text-[9px] py-0.5 h-6 cursor-not-allowed opacity-60"
                 disabled
               >
                 Sold Out
@@ -321,7 +321,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-[10px] py-1 h-7"
+                    className="flex-1 text-[9px] py-0.5 h-6"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -335,7 +335,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   <Button
                     variant="danger"
                     size="sm"
-                    className="flex-1 text-[10px] py-1 h-7"
+                    className="flex-1 text-[9px] py-0.5 h-6"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -350,7 +350,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full text-[10px] py-1 h-7"
+                className="w-full text-[9px] py-0.5 h-6"
                 onClick={handleAddToCart}
               >
                 Add to cart
