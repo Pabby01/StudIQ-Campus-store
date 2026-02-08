@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
@@ -23,17 +24,27 @@ function SearchPageContent() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("created_at");
-  const [hasMore, setHasMore] = useState(false);
-  const [offset, setOffset] = useState(0);
-  const limit = 24;
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(100);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    fetchProducts(true);
-  }, [selectedCategory, searchQuery, sortBy]);
+    const mediaQuery = window.matchMedia("(max-width: 640px)");
+    const handleChange = () => {
+      setLimit(mediaQuery.matches ? 50 : 100);
+    };
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
-  const fetchProducts = async (reset = false) => {
+  useEffect(() => {
+    fetchProducts();
+  }, [selectedCategory, searchQuery, sortBy, page, limit]);
+
+  const fetchProducts = async () => {
     setLoading(true);
-    const currentOffset = reset ? 0 : offset;
+    const currentOffset = (page - 1) * limit;
 
     try {
       const params = new URLSearchParams({
@@ -49,9 +60,8 @@ function SearchPageContent() {
       const data = await res.json();
 
       if (data.ok) {
-        setProducts(reset ? data.products : [...products, ...data.products]);
-        setHasMore(data.hasMore);
-        setOffset(reset ? limit : currentOffset + limit);
+        setProducts(data.products);
+        setTotal(data.total || 0);
       }
     } finally {
       setLoading(false);
@@ -60,16 +70,12 @@ function SearchPageContent() {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setOffset(0);
+    setPage(1);
   };
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
-    setOffset(0);
-  };
-
-  const loadMore = () => {
-    fetchProducts(false);
+    setPage(1);
   };
 
   return (
@@ -90,7 +96,10 @@ function SearchPageContent() {
 
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            onChange={(e) => {
+              setSortBy(e.target.value);
+              setPage(1);
+            }}
             className="px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
           >
             <option value="created_at">Newest First</option>
@@ -101,8 +110,8 @@ function SearchPageContent() {
         </div>
 
         {/* Results */}
-        {loading && offset === 0 ? (
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        {loading && page === 1 ? (
+          <div className="grid gap-3 grid-cols-5 lg:grid-cols-10">
             {[...Array(8)].map((_, i) => (
               <div
                 key={i}
@@ -129,28 +138,41 @@ function SearchPageContent() {
           </div>
         ) : (
           <>
-            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="grid gap-3 grid-cols-5 lg:grid-cols-10">
               {products.map((product) => (
                 <ProductCard key={product.id} p={product} />
               ))}
             </div>
 
-            {/* Load More */}
-            {hasMore && (
-              <div className="mt-8 text-center">
+            {total > limit && (
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={loadMore}
-                  disabled={loading}
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  disabled={loading || page === 1}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    "Load More"
-                  )}
+                  Prev
+                </Button>
+                {Array.from({ length: Math.ceil(total / limit) }, (_, i) => i + 1).map(
+                  (pageNumber) => (
+                    <Button
+                      key={pageNumber}
+                      variant={pageNumber === page ? "primary" : "outline"}
+                      onClick={() => setPage(pageNumber)}
+                      disabled={loading}
+                    >
+                      {pageNumber}
+                    </Button>
+                  )
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setPage((prev) => Math.min(Math.ceil(total / limit), prev + 1))
+                  }
+                  disabled={loading || page === Math.ceil(total / limit)}
+                >
+                  Next
                 </Button>
               </div>
             )}
