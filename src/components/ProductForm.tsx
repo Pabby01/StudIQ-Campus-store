@@ -380,6 +380,13 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
           suffix="₦"
         />
 
+        <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-xs text-yellow-800">
+            Pricing Disclaimer: Do not inflate product prices to gain competitive advantage.
+            Our marketplace promotes fair pricing. Inflated pricing may reduce visibility and customer trust.
+          </p>
+        </div>
+
         {/* Original Price (Optional) */}
         <div>
           <Input
