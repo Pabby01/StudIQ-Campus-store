@@ -4,6 +4,7 @@ export type CartItem = Readonly<{
   id: string;
   name: string;
   price: number;
+  priceNgn?: number;
   qty: number;
   storeId: string;
   imageUrl?: string;

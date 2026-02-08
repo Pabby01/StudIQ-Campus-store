@@ -9,14 +9,24 @@ import PremiumBadge from "@/components/PremiumBadge";
 import { useCart } from "@/store/cart";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useToast } from "@/hooks/useToast";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
+const NGN_CACHE_MS = 30000;
+let cachedNgnPerUsd: number | null = null;
+let cachedNgnAt = 0;
+let ngnInFlight: Promise<number | null> | null = null;
+let cachedSolUsd: number | null = null;
+let cachedSolAt = 0;
+let solInFlight: Promise<number | null> | null = null;
 
 type Product = Readonly<{
   id: string;
   name: string;
   price: number;
   currency?: "SOL" | "USDC";
+  price_ngn?: number | null;
+  priceNgn?: number | null;
   image_url?: string | null;
   rating?: number | null;
   category?: string;
@@ -39,6 +49,8 @@ interface ProductCardProps {
 export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
+  const [ngnPerUsd, setNgnPerUsd] = useState<number | null>(cachedNgnPerUsd);
+  const [solUsd, setSolUsd] = useState<number | null>(cachedSolUsd);
 
   const originalPrice = p.original_price || p.originalPrice;
   const hasDiscount = originalPrice && originalPrice > p.price;
@@ -71,10 +83,11 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
     addToCart({
       id: p.id,
       name: p.name,
-      price: p.price,
+      price: displayPrice,
       storeId: p.store_id || "",
       imageUrl: p.image_url || undefined,
       currency: p.currency || "SOL",
+      priceNgn: baseNgn || undefined,
     });
 
     toast.success("Added to cart", p.name);
@@ -82,6 +95,17 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
 
   const [isWishlisted, setIsWishlisted] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const loadRates = async () => {
+      const [ngnRate, solRate] = await Promise.all([getNgnPerUsd(), getSolUsd()]);
+      if (ngnRate) setNgnPerUsd(ngnRate);
+      if (solRate) setSolUsd(solRate);
+    };
+    loadRates();
+    const interval = setInterval(loadRates, NGN_CACHE_MS);
+    return () => clearInterval(interval);
+  }, []);
 
   const openDetails = () => {
     router.push(`/product/${p.id}`);
@@ -129,6 +153,30 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
       ? `SOL ${price.toFixed(2)}`
       : `$${price.toFixed(2)}`;
   };
+  const formatNgn = (value: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
+  const baseNgn = p.price_ngn ?? p.priceNgn ?? null;
+  const livePrice =
+    baseNgn && ngnPerUsd
+      ? p.currency === "USDC"
+        ? baseNgn / ngnPerUsd
+        : p.currency === "SOL" && solUsd
+          ? baseNgn / (solUsd * ngnPerUsd)
+          : null
+      : null;
+  const displayPrice = livePrice ?? p.price;
+  const ngnEquivalent = baseNgn ?? (p.currency === "USDC"
+    ? ngnPerUsd
+      ? displayPrice * ngnPerUsd
+      : null
+    : p.currency === "SOL" && solUsd && ngnPerUsd
+      ? displayPrice * solUsd * ngnPerUsd
+      : null);
+  const otherCurrency =
+    p.currency === "SOL" && solUsd
+      ? `$${(displayPrice * solUsd).toFixed(2)}`
+      : p.currency === "USDC" && solUsd
+        ? `SOL ${(displayPrice / solUsd).toFixed(4)}`
+        : null;
 
   return (
     <div className="h-full">
@@ -162,14 +210,14 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         )}
 
         {/* Image */}
-        <div className="relative w-full pt-[100%] bg-gray-100 overflow-hidden">
+        <div className="relative w-full pt-[60%] bg-gray-100 overflow-hidden">
           {p.image_url ? (
             <Image
               src={p.image_url}
               alt={p.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
-              className="object-cover group-hover:scale-110 transition-transform duration-300"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">
@@ -179,7 +227,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         </div>
 
         {/* Product Details */}
-        <div className="p-2 flex-1 flex flex-col">
+        <div className="p-1.5 flex-1 flex flex-col">
           {/* Premium Badge + Category */}
           <div className="flex items-center justify-between mb-0.5">
             {p.category && (
@@ -195,28 +243,28 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           {p.stores?.name && (
             <Link
               href={`/store/${p.store_id}`}
-              className="text-[10px] text-primary-blue mb-1 hover:underline block w-fit"
+              className="text-[9px] text-primary-blue mb-1 hover:underline block w-fit"
               onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
             >
               For {p.stores.name}
             </Link>
           )}
-          <h3 className="font-medium text-black text-[10px] sm:text-xs line-clamp-2 mb-1 min-h-[28px] leading-tight group-hover:text-primary-blue transition-colors">
+          <p className="font-medium text-black text-[4px] sm:text-[4px] line-clamp-2 mb-0.5 min-h-[14px] leading-tight group-hover:text-primary-blue transition-colors">
             {p.name}
-          </h3>
-          <div className="flex items-center gap-0.5 mb-1">
-            <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
-            <span className="text-[10px] font-medium text-black">
+          </p>
+          <div className="flex items-center gap-0.5 mb-0.5">
+            <Star className="w-2 h-2 fill-yellow-400 text-yellow-400" />
+            <span className="text-[9px] font-medium text-black">
               {p.rating?.toFixed?.(1) ?? "0.0"}
             </span>
-            <span className="text-[9px] text-muted-text">({p.reviews_count || 0})</span>
+            <span className="text-[8px] text-muted-text">({p.reviews_count || 0})</span>
           </div>
 
           {/* Pricing */}
           <div className="space-y-0.5 mt-auto">
             <div className="flex items-baseline gap-1 flex-wrap">
-              <span className="text-sm sm:text-base font-bold text-black">
-                {formatPrice(Number(p.price))}
+              <span className="text-[11px] sm:text-sm font-bold text-black">
+                {formatPrice(Number(displayPrice))}
               </span>
               {hasDiscount && (
                 <span className="text-[9px] sm:text-[10px] text-muted-text line-through">
@@ -224,9 +272,26 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                 </span>
               )}
             </div>
+            {(ngnEquivalent || otherCurrency) && (
+              <div className="flex flex-wrap items-center gap-1 text-[8px]">
+                <span className="px-1 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  FX
+                </span>
+                {otherCurrency && (
+                  <span className="px-1 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                    ≈ {otherCurrency}
+                  </span>
+                )}
+                {ngnEquivalent && (
+                  <span className="px-1 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    ≈ {formatNgn(ngnEquivalent)}
+                  </span>
+                )}
+              </div>
+            )}
 
             {hasDiscount && (
-              <div className="text-[9px] text-green-600 font-medium">
+              <div className="text-[8px] text-green-600 font-medium">
                 Save {formatPrice(originalPrice! - p.price)}
               </div>
             )}
@@ -234,7 +299,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
 
           {/* Stock Count - Show for sellers */}
           {isOwnProduct && p.inventory !== undefined && (
-            <div className="mt-1 text-[9px] text-muted-text">
+            <div className="mt-1 text-[8px] text-muted-text">
               Stock: {p.inventory}
             </div>
           )}
@@ -245,7 +310,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full text-[10px] py-1 h-7 cursor-not-allowed opacity-60"
+                className="w-full text-[9px] py-0.5 h-6 cursor-not-allowed opacity-60"
                 disabled
               >
                 Sold Out
@@ -256,7 +321,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-[10px] py-1 h-7"
+                    className="flex-1 text-[9px] py-0.5 h-6"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -270,7 +335,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   <Button
                     variant="danger"
                     size="sm"
-                    className="flex-1 text-[10px] py-1 h-7"
+                    className="flex-1 text-[9px] py-0.5 h-6"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -285,7 +350,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full text-[10px] py-1 h-7"
+                className="w-full text-[9px] py-0.5 h-6"
                 onClick={handleAddToCart}
               >
                 Add to cart
@@ -296,4 +361,58 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
       </div>
     </div>
   );
+}
+
+function extractTokenValue(tokenValue: unknown): number | null {
+  if (typeof tokenValue === "number") return tokenValue;
+  if (!tokenValue || typeof tokenValue !== "object") return null;
+  const value = tokenValue as Record<string, unknown>;
+  const direct =
+    (typeof value.amount === "number" && value.amount) ||
+    (typeof value.value === "number" && value.value) ||
+    (typeof value.ngn === "number" && value.ngn) ||
+    (typeof value.rate === "number" && value.rate);
+  return typeof direct === "number" ? direct : null;
+}
+
+async function getNgnPerUsd() {
+  const now = Date.now();
+  if (cachedNgnPerUsd && now - cachedNgnAt < NGN_CACHE_MS) return cachedNgnPerUsd;
+  if (ngnInFlight) return ngnInFlight;
+  const usdcMint = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+  ngnInFlight = fetch(`/api/ramp/rates?amount=1&mint=${encodeURIComponent(usdcMint)}`)
+    .then((res) => res.json())
+    .then((data) => {
+      const value = extractTokenValue(data?.tokenValue);
+      if (value) {
+        cachedNgnPerUsd = value;
+        cachedNgnAt = Date.now();
+      }
+      return value;
+    })
+    .finally(() => {
+      ngnInFlight = null;
+    });
+  return ngnInFlight;
+}
+
+async function getSolUsd() {
+  const now = Date.now();
+  if (cachedSolUsd && now - cachedSolAt < NGN_CACHE_MS) return cachedSolUsd;
+  if (solInFlight) return solInFlight;
+  solInFlight = fetch("/api/price/sol")
+    .then((res) => res.json())
+    .then((data) => {
+      const value = Number(data?.price);
+      if (value && !Number.isNaN(value)) {
+        cachedSolUsd = value;
+        cachedSolAt = Date.now();
+        return value;
+      }
+      return null;
+    })
+    .finally(() => {
+      solInFlight = null;
+    });
+  return solInFlight;
 }

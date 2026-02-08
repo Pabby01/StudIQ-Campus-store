@@ -3,6 +3,16 @@ import { checkoutCreateSchema } from "@/lib/validators";
 import { triggerNotification } from "@/lib/notifications";
 import { getSessionWallet } from "@/lib/session";
 import { SOLANA_CONFIG } from "@/lib/solana-config";
+import { getTokenValue, Currency } from "paj_ramp";
+import { PAJ_CONFIG } from "@/lib/paj";
+
+const DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+const MAINNET_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+
+const mapMintForPaj = (mint: string) => {
+  if (mint === DEVNET_USDC_MINT) return MAINNET_USDC_MINT;
+  return mint;
+};
 
 export async function POST(req: Request) {
   try {
@@ -70,7 +80,7 @@ export async function POST(req: Request) {
     // Step 1: Fetch product details
     const { data: prods, error: prodsError } = await supabase
       .from("products")
-      .select("id, name, image_url, price, store_id, inventory")
+      .select("id, name, image_url, price, price_ngn, currency, store_id, inventory")
       .in(
         "id",
         items.map((i) => i.productId)
@@ -194,10 +204,16 @@ export async function POST(req: Request) {
 
     const feePercent = profile?.seller_tier === "premium" ? 3 : 10;
 
+    const needsNgnRate = prods.some((p) => p.price_ngn);
+    const needsSolRate = prods.some((p) => p.price_ngn && p.currency === "SOL");
+    const ngnPerUsd = needsNgnRate ? await getNgnPerUsd() : null;
+    const solUsd = needsSolRate ? await getSolUsd(req) : null;
+
     // Step 5: Calculate totals
     const subtotal = items.reduce((sum, i) => {
       const p = prods.find((pp) => pp.id === i.productId)!;
-      return sum + Number(p.price) * i.qty;
+      const unitPrice = getLiveUnitPrice(p, ngnPerUsd, solUsd);
+      return sum + unitPrice * i.qty;
     }, 0);
     const deliveryFee = parsed.data.deliveryMethod === "shipping" ? Number(store.delivery_fee ?? 0) : 0;
     const amount = subtotal + deliveryFee;
@@ -247,11 +263,12 @@ export async function POST(req: Request) {
     // Step 7: Create order items
     const itemsRows = items.map((i) => {
       const p = prods.find((pp) => pp.id === i.productId)!;
+      const unitPrice = getLiveUnitPrice(p, ngnPerUsd, solUsd);
       return {
         order_id: newOrder.id, // Use newOrder.id
         product_id: i.productId,
         qty: i.qty,
-        price: Number(p.price),
+        price: unitPrice,
       };
     });
 
@@ -293,10 +310,11 @@ export async function POST(req: Request) {
           buyerEmail: parsed.data.buyerEmail,
           products: items.map(i => {
             const product = prods.find(p => p.id === i.productId)!;
+            const unitPrice = getLiveUnitPrice(product, ngnPerUsd, solUsd);
             return {
               name: product.name,
               imageUrl: product.image_url,
-              price: product.price,
+              price: unitPrice,
               qty: i.qty,
             };
           }),
@@ -382,4 +400,59 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+function extractTokenValue(tokenValue: unknown): number | null {
+  if (typeof tokenValue === "number") return tokenValue;
+  if (!tokenValue || typeof tokenValue !== "object") return null;
+  const value = tokenValue as Record<string, unknown>;
+  const direct =
+    (typeof value.amount === "number" && value.amount) ||
+    (typeof value.value === "number" && value.value) ||
+    (typeof value.ngn === "number" && value.ngn) ||
+    (typeof value.rate === "number" && value.rate);
+  return typeof direct === "number" ? direct : null;
+}
+
+async function getNgnPerUsd() {
+  try {
+    const usdcMint = process.env.NEXT_PUBLIC_USDC_MINT || DEVNET_USDC_MINT;
+    const mappedMint = mapMintForPaj(usdcMint);
+    const tokenValue = await getTokenValue({
+      amount: 1,
+      mint: mappedMint,
+      currency: Currency.NGN
+    }, PAJ_CONFIG.apiKey);
+    return extractTokenValue(tokenValue);
+  } catch {
+    return null;
+  }
+}
+
+async function getSolUsd(req: Request) {
+  try {
+    const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+    const proto = req.headers.get("x-forwarded-proto") ?? "https";
+    const origin = req.headers.get("origin") ?? (host ? `${proto}://${host}` : null);
+    if (!origin) return null;
+    const res = await fetch(`${origin}/api/price/sol`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const value = Number(data?.price);
+    return value && !Number.isNaN(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function getLiveUnitPrice(
+  product: { price: number; price_ngn?: number | null; currency?: "SOL" | "USDC" | "USD" },
+  ngnPerUsd: number | null,
+  solUsd: number | null
+) {
+  if (product.price_ngn && ngnPerUsd) {
+    if (product.currency === "USDC") return product.price_ngn / ngnPerUsd;
+    if (product.currency === "SOL" && solUsd) return product.price_ngn / (solUsd * ngnPerUsd);
+  }
+  return Number(product.price);
 }

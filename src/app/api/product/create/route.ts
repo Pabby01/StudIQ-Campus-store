@@ -44,6 +44,7 @@ export async function POST(req: Request) {
     description: parsed.data.description,
     category: parsed.data.category,
     price: parsed.data.price,
+    price_ngn: parsed.data.priceNgn ?? null,
     inventory: parsed.data.inventory,
     currency: parsed.data.currency,
     image_url: parsed.data.imageUrl ?? null,

@@ -13,12 +13,21 @@ import { useToast } from "@/hooks/useToast";
 import ProductReviews from "@/components/ProductReviews";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 
+const NGN_CACHE_MS = 30000;
+let cachedNgnPerUsd: number | null = null;
+let cachedNgnAt = 0;
+let ngnInFlight: Promise<number | null> | null = null;
+let cachedSolUsd: number | null = null;
+let cachedSolAt = 0;
+let solInFlight: Promise<number | null> | null = null;
+
 type Product = {
   id: string;
   name: string;
   description: string;
   price: number;
   currency?: "SOL" | "USDC";
+  price_ngn?: number | null;
   image_url?: string | null;
   images?: string[];
   is_pod_enabled?: boolean;
@@ -41,6 +50,8 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [ngnPerUsd, setNgnPerUsd] = useState<number | null>(cachedNgnPerUsd);
+  const [solUsd, setSolUsd] = useState<number | null>(cachedSolUsd);
 
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
@@ -49,6 +60,17 @@ export default function ProductDetailPage() {
   useEffect(() => {
     fetchProduct();
   }, [productId]);
+
+  useEffect(() => {
+    const loadRates = async () => {
+      const [ngnRate, solRate] = await Promise.all([getNgnPerUsd(), getSolUsd()]);
+      if (ngnRate) setNgnPerUsd(ngnRate);
+      if (solRate) setSolUsd(solRate);
+    };
+    loadRates();
+    const interval = setInterval(loadRates, NGN_CACHE_MS);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchProduct = async () => {
     try {
@@ -74,6 +96,7 @@ export default function ProductDetailPage() {
       id: product.id,
       name: product.name,
       price: product.price,
+      priceNgn: product.price_ngn ?? undefined,
       storeId: product.store_id,
       imageUrl: product.image_url || undefined,
       isPodEnabled: product.is_pod_enabled,
@@ -123,6 +146,8 @@ export default function ProductDetailPage() {
 
   const inStock = (product.inventory || 0) > 0;
   const isOwner = walletAddress && product.stores?.owner_address === walletAddress;
+  const displayPrice = getDisplayPrice(product, solUsd, ngnPerUsd);
+  const ngnEquivalent = getNgnEquivalent(product, solUsd, ngnPerUsd);
 
   // Combine image_url and images array for the gallery
   const galleryImages = [
@@ -212,7 +237,7 @@ export default function ProductDetailPage() {
             {/* Price */}
             <div className="flex items-baseline gap-3">
               <span className="text-4xl font-bold text-primary-blue">
-                {product.currency === "USDC" ? "USDC" : "SOL"} {product.price.toFixed(2)}
+                {product.currency === "USDC" ? "USDC" : "SOL"} {displayPrice.toFixed(2)}
               </span>
               {product.original_price && product.original_price > product.price && (
                 <span className="text-xl text-muted-text line-through">
@@ -225,6 +250,9 @@ export default function ProductDetailPage() {
                 </div>
               )}
             </div>
+            {ngnEquivalent && (
+              <p className="text-sm text-muted-text">≈ ₦{ngnEquivalent.toFixed(2)}</p>
+            )}
 
             {/* Stock Status */}
             <div>
@@ -336,4 +364,74 @@ export default function ProductDetailPage() {
       </div>
     </div>
   );
+}
+
+function extractTokenValue(tokenValue: unknown): number | null {
+  if (typeof tokenValue === "number") return tokenValue;
+  if (!tokenValue || typeof tokenValue !== "object") return null;
+  const value = tokenValue as Record<string, unknown>;
+  const direct =
+    (typeof value.amount === "number" && value.amount) ||
+    (typeof value.value === "number" && value.value) ||
+    (typeof value.ngn === "number" && value.ngn) ||
+    (typeof value.rate === "number" && value.rate);
+  return typeof direct === "number" ? direct : null;
+}
+
+async function getNgnPerUsd() {
+  const now = Date.now();
+  if (cachedNgnPerUsd && now - cachedNgnAt < NGN_CACHE_MS) return cachedNgnPerUsd;
+  if (ngnInFlight) return ngnInFlight;
+  const usdcMint = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+  ngnInFlight = fetch(`/api/ramp/rates?amount=1&mint=${encodeURIComponent(usdcMint)}`)
+    .then((res) => res.json())
+    .then((data) => {
+      const value = extractTokenValue(data?.tokenValue);
+      if (value) {
+        cachedNgnPerUsd = value;
+        cachedNgnAt = Date.now();
+      }
+      return value;
+    })
+    .finally(() => {
+      ngnInFlight = null;
+    });
+  return ngnInFlight;
+}
+
+async function getSolUsd() {
+  const now = Date.now();
+  if (cachedSolUsd && now - cachedSolAt < NGN_CACHE_MS) return cachedSolUsd;
+  if (solInFlight) return solInFlight;
+  solInFlight = fetch("/api/price/sol")
+    .then((res) => res.json())
+    .then((data) => {
+      const value = Number(data?.price);
+      if (value && !Number.isNaN(value)) {
+        cachedSolUsd = value;
+        cachedSolAt = Date.now();
+        return value;
+      }
+      return null;
+    })
+    .finally(() => {
+      solInFlight = null;
+    });
+  return solInFlight;
+}
+
+function getDisplayPrice(product: { price: number; price_ngn?: number | null; currency?: "SOL" | "USDC" }, solUsd: number | null, ngnPerUsd: number | null) {
+  if (product.price_ngn && ngnPerUsd) {
+    if (product.currency === "USDC") return product.price_ngn / ngnPerUsd;
+    if (product.currency === "SOL" && solUsd) return product.price_ngn / (solUsd * ngnPerUsd);
+  }
+  return product.price;
+}
+
+function getNgnEquivalent(product: { price: number; price_ngn?: number | null; currency?: "SOL" | "USDC" }, solUsd: number | null, ngnPerUsd: number | null) {
+  if (product.price_ngn) return product.price_ngn;
+  if (!ngnPerUsd || !product.currency) return null;
+  if (product.currency === "USDC") return product.price * ngnPerUsd;
+  if (product.currency === "SOL" && solUsd) return product.price * solUsd * ngnPerUsd;
+  return null;
 }

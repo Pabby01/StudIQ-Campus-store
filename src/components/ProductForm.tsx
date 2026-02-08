@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -26,10 +26,69 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
   const [images, setImages] = useState<string[]>(initial?.images || (initial?.imageUrl ? [initial.imageUrl] : []));
   const [category, setCategory] = useState(initial?.category || "");
   const [currency, setCurrency] = useState(initial?.currency || "SOL");
+  const [priceInput, setPriceInput] = useState(initial?.price?.toString() || "");
+  const [ngnInput, setNgnInput] = useState(
+    initial?.price_ngn?.toString() || initial?.priceNgn?.toString() || ""
+  );
+  const [ngnPerUsd, setNgnPerUsd] = useState<number | null>(null);
+  const [solUsd, setSolUsd] = useState<number | null>(null);
+  const [ratesLoading, setRatesLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const router = useRouter();
   const toast = useToast();
   const { walletAddress, isAuthenticated } = useCivicWallet();
+
+  useEffect(() => {
+    const loadRates = async () => {
+      try {
+        setRatesLoading(true);
+        const usdcMint = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+        const [ngnRes, solRes] = await Promise.all([
+          fetch(`/api/ramp/rates?amount=1&mint=${encodeURIComponent(usdcMint)}`),
+          fetch("/api/price/sol"),
+        ]);
+        const ngnData = await ngnRes.json();
+        const solData = await solRes.json();
+        const ngnValue = extractTokenValue(ngnData?.tokenValue);
+        const solValue = Number(solData?.price);
+        if (ngnValue) setNgnPerUsd(ngnValue);
+        if (solValue && !Number.isNaN(solValue)) setSolUsd(solValue);
+      } finally {
+        setRatesLoading(false);
+      }
+    };
+    loadRates();
+    const interval = setInterval(loadRates, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (isInitialized) return;
+    if (!priceInput || ngnInput) return;
+    const price = Number(priceInput);
+    if (!price || Number.isNaN(price)) return;
+    const ngnValue = convertToNgn(price, currency, ngnPerUsd, solUsd);
+    if (ngnValue) {
+      setNgnInput(formatNgnInput(ngnValue));
+      setIsInitialized(true);
+    }
+  }, [priceInput, ngnInput, currency, ngnPerUsd, solUsd, isInitialized]);
+
+  useEffect(() => {
+    const priceValue = Number(priceInput);
+    if (!priceInput || Number.isNaN(priceValue)) {
+      setNgnInput("");
+      return;
+    }
+    const nextNgn = convertToNgn(priceValue, currency, ngnPerUsd, solUsd);
+    if (nextNgn) {
+      const formatted = formatNgnInput(nextNgn);
+      if (formatted !== ngnInput) {
+        setNgnInput(formatted);
+      }
+    }
+  }, [ngnPerUsd, solUsd, currency, priceInput, ngnInput]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,7 +104,7 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
     const name = String(formData.get("name") || "").trim();
     const description = String(formData.get("description") || "").trim();
     const categoryValue = String(formData.get("category") || "").trim();
-    const priceValue = String(formData.get("price") || "").trim();
+    const priceValue = String(priceInput || formData.get("price") || "").trim();
     const currencyValue = String(formData.get("currency") || "").trim();
     const inventoryValue = String(formData.get("inventory") || "").trim();
 
@@ -71,6 +130,7 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
       description,
       category: categoryValue,
       price: Number(priceValue),
+      priceNgn: ngnInput ? Number(ngnInput) : null,
       currency: currencyValue,
       inventory: Number(inventoryValue),
       imageUrl: images[0], // Main image
@@ -93,6 +153,7 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
             userAddress: walletAddress,
             // Map keys if needed by update API (it expects image_url, etc)
             image_url: images[0],
+            price_ngn: ngnInput ? Number(ngnInput) : undefined,
           }),
         });
       } else {
@@ -235,9 +296,27 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
               type="number"
               step="0.01"
               placeholder="0.00"
-              defaultValue={initial?.price}
+              value={priceInput}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                setPriceInput(nextValue);
+                const nextPrice = Number(nextValue);
+                if (!nextValue || Number.isNaN(nextPrice)) {
+                  setNgnInput("");
+                  return;
+                }
+                const ngnValue = convertToNgn(nextPrice, currency, ngnPerUsd, solUsd);
+                if (ngnValue) {
+                  setNgnInput(formatNgnInput(ngnValue));
+                }
+              }}
               error={errors.price}
               required
+              description={
+                ratesLoading
+                  ? "Fetching live rates..."
+                  : getPriceEquivalents(priceInput, currency, ngnPerUsd, solUsd)
+              }
             />
           </div>
           <div>
@@ -247,7 +326,24 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
             <select
               name="currency"
               value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
+              onChange={(e) => {
+                const nextCurrency = e.target.value;
+                setCurrency(nextCurrency);
+                const ngnValue = Number(ngnInput);
+                if (ngnInput && !Number.isNaN(ngnValue)) {
+                  const converted = convertFromNgn(ngnValue, nextCurrency, ngnPerUsd, solUsd);
+                  if (converted) {
+                    setPriceInput(formatPriceInput(converted, nextCurrency));
+                  }
+                  return;
+                }
+                const priceValue = Number(priceInput);
+                if (!priceInput || Number.isNaN(priceValue)) return;
+                const nextNgn = convertToNgn(priceValue, nextCurrency, ngnPerUsd, solUsd);
+                if (nextNgn) {
+                  setNgnInput(formatNgnInput(nextNgn));
+                }
+              }}
               required
               className={`w-full px-4 py-2 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 ${errors.currency
                 ? "border-red-500 focus:ring-red-500"
@@ -266,6 +362,30 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
         {errors.currency && (
           <p className="mt-1 text-sm text-red-600">{errors.currency}</p>
         )}
+
+        <Input
+          name="price_ngn"
+          label="Price (NGN)"
+          type="number"
+          step="1"
+          placeholder="0"
+          value={ngnInput}
+          disabled
+          readOnly
+          description={
+            ratesLoading
+              ? "Fetching live rates..."
+              : getRateLine(ngnPerUsd, solUsd)
+          }
+          suffix="₦"
+        />
+
+        <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-xs text-yellow-800">
+            Pricing Disclaimer: Do not inflate product prices to gain competitive advantage.
+            Our marketplace promotes fair pricing. Inflated pricing may reduce visibility and customer trust.
+          </p>
+        </div>
 
         {/* Original Price (Optional) */}
         <div>
@@ -302,4 +422,75 @@ export default function ProductForm({ storeId, productId, initial, onSuccess }: 
       </form>
     </Card>
   );
+}
+
+function extractTokenValue(tokenValue: unknown): number | null {
+  if (typeof tokenValue === "number") return tokenValue;
+  if (!tokenValue || typeof tokenValue !== "object") return null;
+  const value = tokenValue as Record<string, unknown>;
+  const direct =
+    (typeof value.amount === "number" && value.amount) ||
+    (typeof value.value === "number" && value.value) ||
+    (typeof value.ngn === "number" && value.ngn) ||
+    (typeof value.rate === "number" && value.rate);
+  return typeof direct === "number" ? direct : null;
+}
+
+function convertToNgn(price: number, currency: string, ngnPerUsd: number | null, solUsd: number | null) {
+  if (!ngnPerUsd) return null;
+  if (currency === "USDC") return price * ngnPerUsd;
+  if (currency === "SOL" && solUsd) return price * solUsd * ngnPerUsd;
+  return null;
+}
+
+function convertFromNgn(ngn: number, currency: string, ngnPerUsd: number | null, solUsd: number | null) {
+  if (!ngnPerUsd) return null;
+  if (currency === "USDC") return ngn / ngnPerUsd;
+  if (currency === "SOL" && solUsd) return ngn / (solUsd * ngnPerUsd);
+  return null;
+}
+
+function formatPriceInput(price: number, currency: string) {
+  const decimals = currency === "SOL" ? 4 : 2;
+  return price.toFixed(decimals);
+}
+
+function formatNgnInput(value: number) {
+  return value.toFixed(0);
+}
+
+function getPriceEquivalents(
+  priceInput: string,
+  currency: string,
+  ngnPerUsd: number | null,
+  solUsd: number | null
+) {
+  const amount = Number(priceInput);
+  if (!priceInput || Number.isNaN(amount)) return "";
+  const parts: string[] = [];
+  if (currency === "SOL" && solUsd) {
+    const usdc = amount * solUsd;
+    parts.push(`USDC $${usdc.toFixed(2)}`);
+  }
+  if (currency === "USDC" && solUsd) {
+    const sol = amount / solUsd;
+    parts.push(`SOL ${sol.toFixed(4)}`);
+  }
+  if (ngnPerUsd) {
+    const usdValue = currency === "SOL" && solUsd ? amount * solUsd : amount;
+    const ngn = usdValue * ngnPerUsd;
+    parts.push(`NGN ₦${ngn.toFixed(0)}`);
+  }
+  return parts.length > 0 ? `Equivalent: ${parts.join(" • ")}` : "";
+}
+
+function getRateLine(ngnPerUsd: number | null, solUsd: number | null) {
+  if (!ngnPerUsd) return "";
+  const parts: string[] = [];
+  parts.push(`1 USDC = ₦${ngnPerUsd.toFixed(0)}`);
+  if (solUsd) {
+    const ngnPerSol = solUsd * ngnPerUsd;
+    parts.push(`1 SOL = $${solUsd.toFixed(2)} ≈ ₦${ngnPerSol.toFixed(0)}`);
+  }
+  return parts.join(" • ");
 }

@@ -20,6 +20,7 @@ export async function PUT(req: Request) {
             name,
             description,
             price,
+            price_ngn,
             currency,
             category,
             image_url,
@@ -54,6 +55,7 @@ export async function PUT(req: Request) {
         if (name !== undefined) updates.name = name;
         if (description !== undefined) updates.description = description;
         if (price !== undefined) updates.price = price;
+        if (price_ngn !== undefined) updates.price_ngn = price_ngn;
         if (currency !== undefined) updates.currency = currency;
         if (category !== undefined) updates.category = category;
         if (image_url !== undefined) updates.image_url = image_url;
