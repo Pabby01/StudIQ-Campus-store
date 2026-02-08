@@ -118,6 +118,9 @@ export default function AdminPage() {
     const [stats, setStats] = useState<Stats | null>(null);
     const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [usersTotal, setUsersTotal] = useState(0);
+    const [usersPage, setUsersPage] = useState(1);
+    const [usersLoading, setUsersLoading] = useState(false);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
     const [subscriptionStats, setSubscriptionStats] = useState<any>(null);
@@ -165,6 +168,7 @@ export default function AdminPage() {
     };
 
     const address = walletAddress;
+    const usersLimit = 20;
 
     useEffect(() => {
         if (isVerified && address) {
@@ -173,6 +177,24 @@ export default function AdminPage() {
             setLoading(false);
         }
     }, [address, isVerified]);
+
+    const fetchUsers = async (page = 1) => {
+        if (!address) return;
+        setUsersLoading(true);
+        try {
+            const usersRes = await fetch(
+                `/api/admin/users?admin=${address}&sort=revenue&limit=${usersLimit}&page=${page}`
+            );
+            if (usersRes.ok) {
+                const data = await usersRes.json();
+                setUsers(data.users);
+                setUsersTotal(data.total || 0);
+                setUsersPage(page);
+            }
+        } finally {
+            setUsersLoading(false);
+        }
+    };
 
     const fetchAllData = async () => {
         if (!address) return;
@@ -197,12 +219,7 @@ export default function AdminPage() {
                 setWithdrawals(data.withdrawals);
             }
 
-            // Fetch users
-            const usersRes = await fetch(`/api/admin/users?admin=${address}&sort=revenue&limit=20`);
-            if (usersRes.ok) {
-                const data = await usersRes.json();
-                setUsers(data.users);
-            }
+            await fetchUsers(1);
 
             // Fetch transactions
             const transactionsRes = await fetch(`/api/admin/transactions?admin=${address}&range=30&limit=50`);
@@ -338,6 +355,10 @@ export default function AdminPage() {
             </div>
         );
     }
+
+    const usersTotalPages = Math.max(1, Math.ceil(usersTotal / usersLimit));
+    const usersFrom = usersTotal === 0 ? 0 : (usersPage - 1) * usersLimit + 1;
+    const usersTo = Math.min(usersPage * usersLimit, usersTotal);
 
     return (
         <div className="min-h-screen bg-soft-gray-bg px-4 py-8">
@@ -808,7 +829,37 @@ export default function AdminPage() {
                 {/* Users Tab */}
                 {activeTab === "users" && (
                     <Card className="p-6">
-                        <h3 className="text-lg font-bold text-black mb-4">Top Users</h3>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-black">Top Users</h3>
+                                <p className="text-sm text-muted-text">
+                                    {usersTotal === 0
+                                        ? "No users found"
+                                        : `Showing ${usersFrom}-${usersTo} of ${usersTotal}`}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => fetchUsers(Math.max(1, usersPage - 1))}
+                                    disabled={usersPage <= 1 || usersLoading}
+                                >
+                                    Previous
+                                </Button>
+                                <span className="text-sm text-muted-text">
+                                    Page {usersPage} of {usersTotalPages}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => fetchUsers(Math.min(usersTotalPages, usersPage + 1))}
+                                    disabled={usersPage >= usersTotalPages || usersLoading}
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-soft-gray-bg">
