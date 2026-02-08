@@ -273,9 +273,20 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               )}
             </div>
             {(ngnEquivalent || otherCurrency) && (
-              <div className="text-[9px] text-muted-text">
-                {otherCurrency && <>≈ {otherCurrency} </>}
-                {ngnEquivalent && <>• ≈ {formatNgn(ngnEquivalent)}</>}
+              <div className="flex flex-wrap items-center gap-1 text-[9px]">
+                <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+                  FX
+                </span>
+                {otherCurrency && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                    ≈ {otherCurrency}
+                  </span>
+                )}
+                {ngnEquivalent && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    ≈ {formatNgn(ngnEquivalent)}
+                  </span>
+                )}
               </div>
             )}
 
