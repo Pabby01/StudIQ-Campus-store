@@ -21,7 +21,6 @@ import AuthModal from "@/components/AuthModal";
 
 export default function CartPage() {
   const items = useCart((s) => s.items);
-  const total = useCart((s) => s.total());
   const remove = useCart((s) => s.remove);
   const clear = useCart((s) => s.clear);
   const updateQty = useCart((s) => s.updateQty);
@@ -47,6 +46,7 @@ export default function CartPage() {
   });
 
   const [paymentCurrency, setPaymentCurrency] = useState<"SOL" | "USDC">("SOL");
+  const [ngnPerUsd, setNgnPerUsd] = useState<number | null>(null);
 
   const solPrice = useCart((s) => s.solPrice);
   const fetchSolPrice = useCart((s) => s.fetchSolPrice);
@@ -56,7 +56,11 @@ export default function CartPage() {
   const deliveryEnabled = store?.delivery_enabled ?? true;
   const pickupEnabled = store?.pickup_enabled ?? true;
   const deliveryFee = deliveryMethod === "shipping" ? Number(store?.delivery_fee ?? 0) : 0;
-  const orderTotal = total + deliveryFee;
+  const derivedSubtotal = items.reduce((sum, item) => {
+    const displayPrice = getDisplayPrice(item, solPrice, ngnPerUsd);
+    return sum + displayPrice * item.qty;
+  }, 0);
+  const orderTotal = derivedSubtotal + deliveryFee;
   const deliveryUnavailable = !deliveryEnabled && !pickupEnabled;
 
   // Set default payment currency based on items
@@ -69,6 +73,17 @@ export default function CartPage() {
   // Ensure price is fetched if missing or stale (Store handles caching)
   useEffect(() => {
     fetchSolPrice();
+  }, []);
+
+  useEffect(() => {
+    const loadNgnRate = async () => {
+      const usdcMint = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+      const res = await fetch(`/api/ramp/rates?amount=1&mint=${encodeURIComponent(usdcMint)}`);
+      const data = await res.json();
+      const ngnValue = extractTokenValue(data?.tokenValue);
+      if (ngnValue) setNgnPerUsd(ngnValue);
+    };
+    loadNgnRate();
   }, []);
 
   // Pre-fill email when Civic user loads
@@ -95,6 +110,12 @@ export default function CartPage() {
     paymentCurrency,
     solPrice
   );
+  const cartCurrency = items[0]?.currency;
+  const ngnSubtotal = toNgn(derivedSubtotal, cartCurrency, solPrice, ngnPerUsd);
+  const ngnDelivery = toNgn(deliveryFee, cartCurrency, solPrice, ngnPerUsd);
+  const ngnOrderTotal = toNgn(orderTotal, cartCurrency, solPrice, ngnPerUsd);
+  const ngnFinalTotal = toNgn(finalAmount, finalCurrency, solPrice, ngnPerUsd);
+  const formatNgn = (value: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
 
   async function checkout() {
     setFieldErrors({});
@@ -383,12 +404,22 @@ export default function CartPage() {
                       )}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-black mb-1">{item.name}</h3>
-                        <p className="text-lg font-bold text-primary-blue mb-3">
+                        <p className="text-lg font-bold text-primary-blue">
                           {item.currency === "SOL"
-                            ? `${item.price.toFixed(2)} SOL`
-                            : `$${item.price.toFixed(2)}`
+                            ? `${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)} SOL`
+                            : `$${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)}`
                           }
                         </p>
+                        {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
+                          <p className="text-xs text-muted-text mb-3">
+                            {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd) && (
+                              <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)} </>
+                            )}
+                            {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
+                              <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)!)} </>
+                            )}
+                          </p>
+                        )}
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2 bg-soft-gray-bg rounded-lg p-1">
                             <button
@@ -419,10 +450,20 @@ export default function CartPage() {
                       <div className="text-right">
                         <p className="font-semibold text-black">
                           {item.currency === "SOL"
-                            ? `${(item.price * item.qty).toFixed(2)} SOL`
-                            : `$${(item.price * item.qty).toFixed(2)}`
+                            ? `${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)} SOL`
+                            : `$${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)}`
                           }
                         </p>
+                        {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
+                          <p className="text-xs text-muted-text">
+                            {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty) && (
+                              <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty)} </>
+                            )}
+                            {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
+                              <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)! * item.qty)} </>
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -601,12 +642,19 @@ export default function CartPage() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-text">Subtotal</span>
-                    <span className="font-medium text-black">
-                      {items[0]?.currency === "SOL"
-                        ? `${total.toFixed(2)} SOL`
-                        : `$${total.toFixed(2)}`
-                      }
-                    </span>
+                    <div className="text-right">
+                      <span className="font-medium text-black block">
+                        {items[0]?.currency === "SOL"
+                        ? `${derivedSubtotal.toFixed(2)} SOL`
+                        : `$${derivedSubtotal.toFixed(2)}`
+                        }
+                      </span>
+                      {ngnSubtotal && (
+                        <span className="text-xs text-muted-text block">
+                          ≈ {formatNgn(ngnSubtotal)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-text">Platform Fee</span>
@@ -617,12 +665,19 @@ export default function CartPage() {
                   {deliveryMethod === "shipping" && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-text">Shipping</span>
-                      <span className="font-medium text-black">
-                        {items[0]?.currency === "SOL"
-                          ? `${deliveryFee.toFixed(2)} SOL`
-                          : `$${deliveryFee.toFixed(2)}`
-                        }
-                      </span>
+                      <div className="text-right">
+                        <span className="font-medium text-black block">
+                          {items[0]?.currency === "SOL"
+                            ? `${deliveryFee.toFixed(2)} SOL`
+                            : `$${deliveryFee.toFixed(2)}`
+                          }
+                        </span>
+                        {ngnDelivery && (
+                          <span className="text-xs text-muted-text block">
+                            ≈ {formatNgn(ngnDelivery)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                   <div className="border-t border-border-gray pt-3">
@@ -637,9 +692,19 @@ export default function CartPage() {
                             : `$${finalAmount.toFixed(2)}`
                           }
                         </span>
+                        {ngnFinalTotal && (
+                          <span className="text-xs text-muted-text block">
+                            ≈ {formatNgn(ngnFinalTotal)}
+                          </span>
+                        )}
                         {finalCurrency !== items[0]?.currency && (
                           <span className="text-xs text-muted-text">
                             (Original: {items[0]?.currency === "SOL" ? `${orderTotal.toFixed(2)} SOL` : `$${orderTotal.toFixed(2)}`})
+                          </span>
+                        )}
+                        {finalCurrency !== items[0]?.currency && ngnOrderTotal && (
+                          <span className="text-xs text-muted-text block">
+                            (Original ≈ {formatNgn(ngnOrderTotal)})
                           </span>
                         )}
                       </div>
@@ -724,5 +789,53 @@ function calculatePayment(
   }
 
   return { finalAmount: orderTotal, finalCurrency: payCurrency, exchangeRate: null, isRateReady: true };
+}
+
+function extractTokenValue(tokenValue: unknown): number | null {
+  if (typeof tokenValue === "number") return tokenValue;
+  if (!tokenValue || typeof tokenValue !== "object") return null;
+  const value = tokenValue as Record<string, unknown>;
+  const direct =
+    (typeof value.amount === "number" && value.amount) ||
+    (typeof value.value === "number" && value.value) ||
+    (typeof value.ngn === "number" && value.ngn) ||
+    (typeof value.rate === "number" && value.rate);
+  return typeof direct === "number" ? direct : null;
+}
+
+function toNgn(amount: number, currency: string | undefined, solUsd: number | null, ngnPerUsd: number | null) {
+  if (!ngnPerUsd || !currency) return null;
+  if (currency === "USDC") return amount * ngnPerUsd;
+  if (currency === "SOL" && solUsd) return amount * solUsd * ngnPerUsd;
+  return null;
+}
+
+function getDisplayPrice(item: { price: number; priceNgn?: number; currency?: "SOL" | "USDC" | "USD" }, solUsd: number | null, ngnPerUsd: number | null) {
+  if (item.priceNgn && ngnPerUsd) {
+    if (item.currency === "USDC") return item.priceNgn / ngnPerUsd;
+    if (item.currency === "SOL" && solUsd) return item.priceNgn / (solUsd * ngnPerUsd);
+  }
+  return item.price;
+}
+
+function getNgnEquivalent(item: { price: number; priceNgn?: number; currency?: "SOL" | "USDC" | "USD" }, solUsd: number | null, ngnPerUsd: number | null) {
+  if (item.priceNgn) return item.priceNgn;
+  return toNgn(item.price, item.currency, solUsd, ngnPerUsd);
+}
+
+function getOtherCurrencyEquivalent(
+  item: { price: number; priceNgn?: number; currency?: "SOL" | "USDC" | "USD" },
+  solUsd: number | null,
+  ngnPerUsd: number | null,
+  quantity = 1
+) {
+  const displayPrice = getDisplayPrice(item, solUsd, ngnPerUsd);
+  if (item.currency === "SOL" && solUsd) {
+    return `$${(displayPrice * solUsd * quantity).toFixed(2)}`;
+  }
+  if (item.currency === "USDC" && solUsd) {
+    return `SOL ${(displayPrice / solUsd * quantity).toFixed(4)}`;
+  }
+  return null;
 }
 

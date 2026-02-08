@@ -22,10 +22,11 @@ export async function POST(req: Request) {
 
   const supabase = getSupabaseServerClient();
 
-  const { error } = await supabase.from("products").update({
+  await supabase.from("products").update({
     name: parsed.data.name,
     category: parsed.data.category,
     price: parsed.data.price,
+    price_ngn: parsed.data.priceNgn ?? null,
     inventory: parsed.data.inventory,
     image_url: parsed.data.imageUrl ?? null,
   }).eq("id", parsed.data.id);

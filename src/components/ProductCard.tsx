@@ -9,14 +9,24 @@ import PremiumBadge from "@/components/PremiumBadge";
 import { useCart } from "@/store/cart";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useToast } from "@/hooks/useToast";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
+const NGN_CACHE_MS = 30000;
+let cachedNgnPerUsd: number | null = null;
+let cachedNgnAt = 0;
+let ngnInFlight: Promise<number | null> | null = null;
+let cachedSolUsd: number | null = null;
+let cachedSolAt = 0;
+let solInFlight: Promise<number | null> | null = null;
 
 type Product = Readonly<{
   id: string;
   name: string;
   price: number;
   currency?: "SOL" | "USDC";
+  price_ngn?: number | null;
+  priceNgn?: number | null;
   image_url?: string | null;
   rating?: number | null;
   category?: string;
@@ -39,6 +49,8 @@ interface ProductCardProps {
 export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
+  const [ngnPerUsd, setNgnPerUsd] = useState<number | null>(cachedNgnPerUsd);
+  const [solUsd, setSolUsd] = useState<number | null>(cachedSolUsd);
 
   const originalPrice = p.original_price || p.originalPrice;
   const hasDiscount = originalPrice && originalPrice > p.price;
@@ -71,10 +83,11 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
     addToCart({
       id: p.id,
       name: p.name,
-      price: p.price,
+      price: displayPrice,
       storeId: p.store_id || "",
       imageUrl: p.image_url || undefined,
       currency: p.currency || "SOL",
+      priceNgn: baseNgn || undefined,
     });
 
     toast.success("Added to cart", p.name);
@@ -82,6 +95,17 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
 
   const [isWishlisted, setIsWishlisted] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const loadRates = async () => {
+      const [ngnRate, solRate] = await Promise.all([getNgnPerUsd(), getSolUsd()]);
+      if (ngnRate) setNgnPerUsd(ngnRate);
+      if (solRate) setSolUsd(solRate);
+    };
+    loadRates();
+    const interval = setInterval(loadRates, NGN_CACHE_MS);
+    return () => clearInterval(interval);
+  }, []);
 
   const openDetails = () => {
     router.push(`/product/${p.id}`);
@@ -129,6 +153,30 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
       ? `SOL ${price.toFixed(2)}`
       : `$${price.toFixed(2)}`;
   };
+  const formatNgn = (value: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
+  const baseNgn = p.price_ngn ?? p.priceNgn ?? null;
+  const livePrice =
+    baseNgn && ngnPerUsd
+      ? p.currency === "USDC"
+        ? baseNgn / ngnPerUsd
+        : p.currency === "SOL" && solUsd
+          ? baseNgn / (solUsd * ngnPerUsd)
+          : null
+      : null;
+  const displayPrice = livePrice ?? p.price;
+  const ngnEquivalent = baseNgn ?? (p.currency === "USDC"
+    ? ngnPerUsd
+      ? displayPrice * ngnPerUsd
+      : null
+    : p.currency === "SOL" && solUsd && ngnPerUsd
+      ? displayPrice * solUsd * ngnPerUsd
+      : null);
+  const otherCurrency =
+    p.currency === "SOL" && solUsd
+      ? `$${(displayPrice * solUsd).toFixed(2)}`
+      : p.currency === "USDC" && solUsd
+        ? `SOL ${(displayPrice / solUsd).toFixed(4)}`
+        : null;
 
   return (
     <div className="h-full">
@@ -216,7 +264,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           <div className="space-y-0.5 mt-auto">
             <div className="flex items-baseline gap-1 flex-wrap">
               <span className="text-sm sm:text-base font-bold text-black">
-                {formatPrice(Number(p.price))}
+                {formatPrice(Number(displayPrice))}
               </span>
               {hasDiscount && (
                 <span className="text-[9px] sm:text-[10px] text-muted-text line-through">
@@ -224,6 +272,12 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                 </span>
               )}
             </div>
+            {(ngnEquivalent || otherCurrency) && (
+              <div className="text-[9px] text-muted-text">
+                {otherCurrency && <>≈ {otherCurrency} </>}
+                {ngnEquivalent && <>• ≈ {formatNgn(ngnEquivalent)}</>}
+              </div>
+            )}
 
             {hasDiscount && (
               <div className="text-[9px] text-green-600 font-medium">
@@ -296,4 +350,58 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
       </div>
     </div>
   );
+}
+
+function extractTokenValue(tokenValue: unknown): number | null {
+  if (typeof tokenValue === "number") return tokenValue;
+  if (!tokenValue || typeof tokenValue !== "object") return null;
+  const value = tokenValue as Record<string, unknown>;
+  const direct =
+    (typeof value.amount === "number" && value.amount) ||
+    (typeof value.value === "number" && value.value) ||
+    (typeof value.ngn === "number" && value.ngn) ||
+    (typeof value.rate === "number" && value.rate);
+  return typeof direct === "number" ? direct : null;
+}
+
+async function getNgnPerUsd() {
+  const now = Date.now();
+  if (cachedNgnPerUsd && now - cachedNgnAt < NGN_CACHE_MS) return cachedNgnPerUsd;
+  if (ngnInFlight) return ngnInFlight;
+  const usdcMint = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+  ngnInFlight = fetch(`/api/ramp/rates?amount=1&mint=${encodeURIComponent(usdcMint)}`)
+    .then((res) => res.json())
+    .then((data) => {
+      const value = extractTokenValue(data?.tokenValue);
+      if (value) {
+        cachedNgnPerUsd = value;
+        cachedNgnAt = Date.now();
+      }
+      return value;
+    })
+    .finally(() => {
+      ngnInFlight = null;
+    });
+  return ngnInFlight;
+}
+
+async function getSolUsd() {
+  const now = Date.now();
+  if (cachedSolUsd && now - cachedSolAt < NGN_CACHE_MS) return cachedSolUsd;
+  if (solInFlight) return solInFlight;
+  solInFlight = fetch("/api/price/sol")
+    .then((res) => res.json())
+    .then((data) => {
+      const value = Number(data?.price);
+      if (value && !Number.isNaN(value)) {
+        cachedSolUsd = value;
+        cachedSolAt = Date.now();
+        return value;
+      }
+      return null;
+    })
+    .finally(() => {
+      solInFlight = null;
+    });
+  return solInFlight;
 }
