@@ -7,6 +7,7 @@
 import { useCart } from "@/store/cart";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { createTransferTransaction, waitForConfirmation, broadcastTransaction } from "@/lib/solana";
+import { SOLANA_CONFIG } from "@/lib/solana-config";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -236,20 +237,16 @@ export default function CartPage() {
 
       // Use the calculated amounts
       const transferAmount = finalAmount;
-      let mint: string | undefined = undefined;
-
-      if (finalCurrency === "USDC") {
-        mint = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; // Fallback to devnet
-      } else {
-        mint = undefined; // SOL
-      }
-
+      const mint = finalCurrency === "USDC" ? SOLANA_CONFIG.usdcMint : undefined;
+      const decimals = finalCurrency === "USDC" ? 6 : 9;
 
       const transaction = await createTransferTransaction(
         walletAddress,
         orderData.payTo,
         transferAmount,
-        mint
+        mint,
+        SOLANA_CONFIG.network,
+        decimals
       );
       // ... same as before
 
@@ -346,8 +343,8 @@ export default function CartPage() {
 
         {/* Status Messages */}
         {(checkoutStatus !== "idle" || error) && (
-          <Card className="mb-6 p-4">
-            <div className="flex items-center gap-3">
+          <Card className="mb-6 p-4 max-w-full overflow-hidden">
+            <div className="flex items-start gap-3">
               {checkoutStatus === "success" ? (
                 <CheckCircle className="w-6 h-6 text-green-600" />
               ) : checkoutStatus === "error" ? (
@@ -355,9 +352,9 @@ export default function CartPage() {
               ) : (
                 <Loader2 className="w-6 h-6 text-primary-blue animate-spin" />
               )}
-              <div>
+              <div className="min-w-0 flex-1">
                 <p
-                  className={`font-medium ${checkoutStatus === "success"
+                  className={`font-medium break-words leading-snug ${checkoutStatus === "success"
                     ? "text-green-900"
                     : checkoutStatus === "error"
                       ? "text-red-900"
@@ -367,7 +364,7 @@ export default function CartPage() {
                   {getStatusMessage()}
                 </p>
                 {orderId && (
-                  <p className="text-xs text-muted-text mt-1">Order ID: {orderId}</p>
+                  <p className="text-xs text-muted-text mt-1 break-words">Order ID: {orderId}</p>
                 )}
               </div>
             </div>

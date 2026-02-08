@@ -18,7 +18,8 @@ import {
 } from '@solana/kit';
 import { getTransferSolInstruction } from '@solana-program/system';
 import { getTransferInstruction } from '@solana-program/token';
-import { VersionedTransaction } from '@solana/web3.js';
+import { Connection, PublicKey, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
+import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress as getSplAssociatedTokenAddress, createTransferInstruction as createSplTransferInstruction } from '@solana/spl-token';
 import { SOLANA_CONFIG } from './solana-config';
 
 const SOLANA_RPC_URL = SOLANA_CONFIG.rpcUrl;
@@ -56,11 +57,11 @@ export async function createTransferTransaction(
     to: string,
     amount: number,
     mint?: string, // Optional mint address for SPL tokens
-    cluster: 'devnet' | 'mainnet' = 'devnet',
+    cluster: 'devnet' | 'mainnet' = SOLANA_CONFIG.network,
     decimals: number = 9 // Default to 9 for SOL
 ) {
     if (mint && mint !== "SOL") {
-        return createSplTransferTransaction(from, to, amount, mint, decimals);
+        return createSplTransferTransaction(from, to, amount, mint, decimals, cluster);
     }
 
     console.log("Creating SOL transaction:", { from, to, amount });
@@ -107,25 +108,6 @@ export async function createTransferTransaction(
 }
 
 export const USDC_MINT = SOLANA_CONFIG.usdcMint;
-const TOKEN_PROGRAM_ID = address("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-const ASSOCIATED_TOKEN_PROGRAM_ID = address("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
-
-async function getAssociatedTokenAddress(mint: string, owner: string) {
-    const mintAddress = address(mint);
-    const ownerAddress = address(owner);
-
-    // Derive ATA: pda([owner, token_program, mint], associated_token_program)
-    const { 0: ata } = await getProgramDerivedAddress({
-        programAddress: ASSOCIATED_TOKEN_PROGRAM_ID,
-        seeds: [
-            getAddressEncoder().encode(ownerAddress),
-            getAddressEncoder().encode(TOKEN_PROGRAM_ID),
-            getAddressEncoder().encode(mintAddress),
-        ],
-    });
-
-    return ata;
-}
 
 /**
  * Create a SPL Token transfer transaction
@@ -135,52 +117,53 @@ export async function createSplTransferTransaction(
     to: string,
     amount: number,
     mint: string,
-    decimals: number = 6 // Default to 6 for USDC if not provided
+    decimals: number = 6,
+    cluster: 'devnet' | 'mainnet' = SOLANA_CONFIG.network
 ) {
-    console.log("Creating SPL transaction:", { from, to, amount, mint, decimals });
+    console.log("Creating SPL transaction:", { from, to, amount, mint, decimals, cluster });
 
-    const fromAddress = address(from);
-    // const toAddress = address(to); // Used for ATA derivation
-    const mintAddress = address(mint);
+    const connection = new Connection(getClusterUrl(cluster), { commitment: "confirmed" });
+    const fromAddress = new PublicKey(from);
+    const toAddress = new PublicKey(to);
+    const mintAddress = new PublicKey(mint);
 
-    // Calculate Amount
     const amountBigInt = BigInt(Math.floor(amount * Math.pow(10, decimals)));
 
-    // Get latest blockhash
-    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+    const fromAta = await getSplAssociatedTokenAddress(mintAddress, fromAddress);
+    const toAta = await getSplAssociatedTokenAddress(mintAddress, toAddress);
 
-    // Get ATAs
-    const fromAta = await getAssociatedTokenAddress(mint, from);
-    const toAta = await getAssociatedTokenAddress(mint, to);
+    const [fromInfo, toInfo] = await Promise.all([
+        connection.getAccountInfo(fromAta),
+        connection.getAccountInfo(toAta),
+    ]);
 
-    console.log("ATAs:", { fromAta, toAta });
+    if (!fromInfo) {
+        throw new Error("Sender does not have a USDC account");
+    }
 
-    // Create a transaction message
-    const transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (m) => setTransactionMessageFeePayer(fromAddress, m),
-        (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
-        (m) =>
-            appendTransactionMessageInstruction(
-                getTransferInstruction({
-                    source: fromAta,
-                    destination: toAta,
-                    amount: amountBigInt,
-                    authority: fromAddress as Parameters<typeof getTransferInstruction>[0]["authority"],
-                }) as ReturnType<typeof getTransferInstruction>,
-                m
+    const instructions = [];
+
+    if (!toInfo) {
+        instructions.push(
+            createAssociatedTokenAccountInstruction(
+                fromAddress,
+                toAta,
+                toAddress,
+                mintAddress
             )
-    );
+        );
+    }
 
-    // Compile the transaction
-    const compiledTx = compileTransaction(transactionMessage);
+    instructions.push(createSplTransferInstruction(fromAta, toAta, fromAddress, amountBigInt));
 
-    // Convert compiled transaction to VersionedTransaction for wallet compatibility
-    const base64Tx = getBase64EncodedWireTransaction(compiledTx) as string;
-    const txBuffer = Buffer.from(base64Tx, 'base64');
-    const versionedTx = VersionedTransaction.deserialize(txBuffer);
+    const { blockhash } = await connection.getLatestBlockhash();
+    const message = new TransactionMessage({
+        payerKey: fromAddress,
+        recentBlockhash: blockhash,
+        instructions,
+    }).compileToV0Message();
 
-    return versionedTx;
+    return new VersionedTransaction(message);
 }
 
 /**

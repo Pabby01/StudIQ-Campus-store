@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import ProductCard from "@/components/ProductCard";
 import SearchBar from "@/components/SearchBar";
 import CategoryFilter from "@/components/CategoryFilter";
@@ -21,12 +21,15 @@ type Product = Readonly<{
 function SearchPageContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("created_at");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(64);
   const [total, setTotal] = useState(0);
+  const cacheRef = useRef(new Map<string, { products: Product[]; total: number }>());
+  const inflightRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 640px)");
@@ -43,7 +46,6 @@ function SearchPageContent() {
   }, [selectedCategory, searchQuery, sortBy, page, limit]);
 
   const fetchProducts = async () => {
-    setLoading(true);
     const currentOffset = (page - 1) * limit;
 
     try {
@@ -56,15 +58,66 @@ function SearchPageContent() {
       if (searchQuery) params.set("q", searchQuery);
       if (selectedCategory) params.set("category", selectedCategory);
 
-      const res = await fetch(`/api/product/search?${params}`);
+      const cacheKey = params.toString();
+      const cached = cacheRef.current.get(cacheKey);
+      const isInitial = page === 1 && products.length === 0 && !cached;
+
+      setLoading(isInitial);
+      setPageLoading(!isInitial);
+
+      if (cached) {
+        setProducts(cached.products);
+        setTotal(cached.total);
+      }
+
+      if (inflightRef.current) {
+        inflightRef.current.abort();
+      }
+      const controller = new AbortController();
+      inflightRef.current = controller;
+
+      const res = await fetch(`/api/product/search?${params}`, { signal: controller.signal });
       const data = await res.json();
 
       if (data.ok) {
         setProducts(data.products);
         setTotal(data.total || 0);
+        cacheRef.current.set(cacheKey, { products: data.products || [], total: data.total || 0 });
+
+        const hasMore = (data.total || 0) > currentOffset + limit;
+        if (hasMore) {
+          const nextOffset = currentOffset + limit;
+          const nextParams = new URLSearchParams({
+            limit: limit.toString(),
+            offset: nextOffset.toString(),
+            sortBy,
+          });
+          if (searchQuery) nextParams.set("q", searchQuery);
+          if (selectedCategory) nextParams.set("category", selectedCategory);
+          const nextKey = nextParams.toString();
+
+          if (!cacheRef.current.has(nextKey)) {
+            fetch(`/api/product/search?${nextParams}`)
+              .then((nextRes) => nextRes.json())
+              .then((nextData) => {
+                if (nextData?.ok) {
+                  cacheRef.current.set(nextKey, {
+                    products: nextData.products || [],
+                    total: nextData.total || 0,
+                  });
+                }
+              })
+              .catch(() => {});
+          }
+        }
+      }
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        throw error;
       }
     } finally {
       setLoading(false);
+      setPageLoading(false);
     }
   };
 
@@ -149,7 +202,7 @@ function SearchPageContent() {
                 <Button
                   variant="outline"
                   onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  disabled={loading || page === 1}
+                  disabled={loading || pageLoading || page === 1}
                 >
                   Prev
                 </Button>
@@ -159,7 +212,7 @@ function SearchPageContent() {
                       key={pageNumber}
                       variant={pageNumber === page ? "primary" : "outline"}
                       onClick={() => setPage(pageNumber)}
-                      disabled={loading}
+                      disabled={loading || pageLoading}
                     >
                       {pageNumber}
                     </Button>
@@ -170,10 +223,13 @@ function SearchPageContent() {
                   onClick={() =>
                     setPage((prev) => Math.min(Math.ceil(total / limit), prev + 1))
                   }
-                  disabled={loading || page === Math.ceil(total / limit)}
+                  disabled={loading || pageLoading || page === Math.ceil(total / limit)}
                 >
                   Next
                 </Button>
+                {pageLoading && (
+                  <Loader2 className="w-4 h-4 text-primary-blue animate-spin" />
+                )}
               </div>
             )}
           </>
