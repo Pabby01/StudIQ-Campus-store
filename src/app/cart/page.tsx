@@ -148,7 +148,15 @@ export default function CartPage() {
     paymentMethod: finalPaymentMethod,
     buyerEmail: deliveryDetails.email,
   };
-  const isFormValid = checkoutCreateSchema.safeParse(validationPayload).success;
+  const trimmedEmail = deliveryDetails.email.trim();
+  const trimmedName = deliveryDetails.name.trim();
+  const trimmedAddress = deliveryDetails.address.trim();
+  const trimmedCity = deliveryDetails.city.trim();
+  const trimmedZip = deliveryDetails.zip.trim();
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+  const isNameValid = trimmedName.length >= 2;
+  const isShippingValid = deliveryMethod === "pickup" || (trimmedAddress.length >= 3 && trimmedCity.length >= 2 && trimmedZip.length >= 3);
+  const isFormValid = items.length > 0 && isEmailValid && isNameValid && isShippingValid;
 
   async function checkout() {
     if (checkoutStatus !== "idle") return;
@@ -168,20 +176,6 @@ export default function CartPage() {
     if (finalPaymentMethod === "solana" && !walletAddress) {
       setError("Wallet not ready for crypto payment. Please wait or use Pay on Delivery.");
       return;
-    }
-
-    if (finalPaymentMethod === "solana") {
-      if (balanceLoading) {
-        setError("Wallet balance is loading. Please wait a moment.");
-        return;
-      }
-      const requiredAmount = finalAmount;
-      const currentBalance = finalCurrency === "SOL" ? walletSolBalance : walletUsdcBalance;
-      if (requiredAmount > 0 && currentBalance < requiredAmount) {
-        setError(`Insufficient ${finalCurrency} balance. Available: ${formatTokenAmount(currentBalance, finalCurrency)}.`);
-        setShowInsufficientModal(true);
-        return;
-      }
     }
 
     const validation = checkoutCreateSchema.safeParse(validationPayload);
@@ -208,6 +202,20 @@ export default function CartPage() {
       setFieldErrors(newFieldErrors);
       setError("Please fix the highlighted fields");
       return;
+    }
+
+    if (finalPaymentMethod === "solana") {
+      if (balanceLoading) {
+        setError("Wallet balance is loading. Please wait a moment.");
+        return;
+      }
+      const requiredAmount = finalAmount;
+      const currentBalance = finalCurrency === "SOL" ? walletSolBalance : walletUsdcBalance;
+      if (requiredAmount > 0 && currentBalance < requiredAmount) {
+        setError(`Insufficient ${finalCurrency} balance. Available: ${formatTokenAmount(currentBalance, finalCurrency)}.`);
+        setShowInsufficientModal(true);
+        return;
+      }
     }
 
     try {
