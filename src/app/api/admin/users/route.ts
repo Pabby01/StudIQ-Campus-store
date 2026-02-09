@@ -12,7 +12,8 @@ export async function GET(req: Request) {
 
         const { searchParams } = new URL(req.url);
         const sort = searchParams.get("sort") || "joined";
-        const limit = parseInt(searchParams.get("limit") || "50");
+        const limit = Math.max(1, parseInt(searchParams.get("limit") || "20"));
+        const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
 
         const supabase = getSupabaseServerClient();
 
@@ -35,10 +36,14 @@ export async function GET(req: Request) {
             solPriceUsd = 100;
         }
 
-        const { data: profiles } = await supabase
+        const rangeFrom = (page - 1) * limit;
+        const rangeTo = rangeFrom + limit - 1;
+
+        const { data: profiles, count: totalUsers } = await supabase
             .from("profiles")
-            .select("*")
-            .limit(limit);
+            .select("*", { count: "exact" })
+            .order("created_at", { ascending: false })
+            .range(rangeFrom, rangeTo);
 
         const enrichedUsers = await Promise.all(
             (profiles || []).map(async (profile) => {
@@ -130,6 +135,9 @@ export async function GET(req: Request) {
         return Response.json({
             ok: true,
             users: enrichedUsers,
+            total: totalUsers || 0,
+            page,
+            limit,
         });
     } catch (error: any) {
         console.error("[Admin Users] Error:", error);
