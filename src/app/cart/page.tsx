@@ -165,6 +165,22 @@ export default function CartPage() {
     // Determine final payment method: if pickup, force POD/POP logic
     if (items.length === 0) {
       setError("Your cart is empty");
+      setCheckoutStatus("error");
+      return;
+    }
+
+    if (!isFormValid) {
+      const newFieldErrors: { [key: string]: string } = {};
+      if (!isEmailValid) newFieldErrors.email = "Valid email is required";
+      if (!isNameValid) newFieldErrors.name = "Recipient name is required";
+      if (deliveryMethod === "shipping") {
+        if (trimmedAddress.length < 3) newFieldErrors.address = "Street address is required";
+        if (trimmedCity.length < 2) newFieldErrors.city = "City is required";
+        if (trimmedZip.length < 3) newFieldErrors.zip = "Zip code is required";
+      }
+      setFieldErrors(newFieldErrors);
+      setError("All fields must be filled before checkout.");
+      setCheckoutStatus("error");
       return;
     }
 
@@ -175,6 +191,7 @@ export default function CartPage() {
 
     if (finalPaymentMethod === "solana" && !walletAddress) {
       setError("Wallet not ready for crypto payment. Please wait or use Pay on Delivery.");
+      setCheckoutStatus("error");
       return;
     }
 
@@ -201,12 +218,14 @@ export default function CartPage() {
 
       setFieldErrors(newFieldErrors);
       setError("Please fix the highlighted fields");
+      setCheckoutStatus("error");
       return;
     }
 
     if (finalPaymentMethod === "solana") {
       if (balanceLoading) {
         setError("Wallet balance is loading. Please wait a moment.");
+        setCheckoutStatus("error");
         return;
       }
       const requiredAmount = finalAmount;
@@ -214,6 +233,7 @@ export default function CartPage() {
       if (requiredAmount > 0 && currentBalance < requiredAmount) {
         setError(`Insufficient ${finalCurrency} balance. Available: ${formatTokenAmount(currentBalance, finalCurrency)}.`);
         setShowInsufficientModal(true);
+        setCheckoutStatus("error");
         return;
       }
     }
@@ -785,8 +805,7 @@ export default function CartPage() {
                     disabled={
                       (checkoutStatus !== "idle" && checkoutStatus !== "error") ||
                       (!isRateReady && paymentMethod === 'solana') ||
-                      deliveryUnavailable ||
-                      !isFormValid
+                      deliveryUnavailable
                     }
                   >
                     {!isRateReady && paymentMethod === 'solana' ? "Fetching Rates..." : getButtonText()}
