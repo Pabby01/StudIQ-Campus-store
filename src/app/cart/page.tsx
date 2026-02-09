@@ -130,14 +130,31 @@ export default function CartPage() {
   const availableBalance = finalCurrency === "SOL" ? walletSolBalance : walletUsdcBalance;
   const showBalanceSection = paymentMethod === "solana" && deliveryMethod === "shipping";
   const hasInsufficientBalance = showBalanceSection && isRateReady && finalAmount > 0 && !balanceLoading && availableBalance < finalAmount;
+  const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
+  const validationPayload = {
+    buyer: walletAddress || "",
+    storeId: items[0]?.storeId || "",
+    items: items.map((i) => ({ productId: i.id, qty: i.qty })),
+    currency: (items[0]?.currency || "SOL") as "SOL" | "USDC",
+    deliveryMethod,
+    deliveryDetails: {
+      ...deliveryDetails,
+      address: deliveryMethod === "pickup" ? "pickup" : deliveryDetails.address,
+      city: deliveryMethod === "pickup" ? "pickup" : deliveryDetails.city,
+      zip: deliveryMethod === "pickup" ? "00000" : deliveryDetails.zip,
+      fee: deliveryFee,
+      notes: store?.delivery_notes || undefined,
+    },
+    paymentMethod: finalPaymentMethod,
+    buyerEmail: deliveryDetails.email,
+  };
+  const isFormValid = checkoutCreateSchema.safeParse(validationPayload).success;
 
   async function checkout() {
     if (checkoutStatus !== "idle") return;
     setFieldErrors({});
 
     // Determine final payment method: if pickup, force POD/POP logic
-    const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
-
     if (items.length === 0) {
       setError("Your cart is empty");
       return;
@@ -167,25 +184,7 @@ export default function CartPage() {
       }
     }
 
-    const payload = {
-      buyer: walletAddress || "",
-      storeId: items[0]?.storeId || "",
-      items: items.map((i) => ({ productId: i.id, qty: i.qty })),
-      currency: (items[0]?.currency || "SOL") as "SOL" | "USDC",
-      deliveryMethod,
-      deliveryDetails: {
-        ...deliveryDetails,
-        address: deliveryMethod === "pickup" ? "pickup" : deliveryDetails.address,
-        city: deliveryMethod === "pickup" ? "pickup" : deliveryDetails.city,
-        zip: deliveryMethod === "pickup" ? "00000" : deliveryDetails.zip,
-        fee: deliveryFee,
-        notes: store?.delivery_notes || undefined,
-      },
-      paymentMethod: finalPaymentMethod,
-      buyerEmail: deliveryDetails.email,
-    };
-
-    const validation = checkoutCreateSchema.safeParse(payload);
+    const validation = checkoutCreateSchema.safeParse(validationPayload);
 
     if (!validation.success) {
       const flattened = validation.error.flatten();
@@ -217,7 +216,7 @@ export default function CartPage() {
       const createRes = await fetch("/api/checkout/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(validationPayload),
       });
 
       if (!createRes.ok) {
@@ -778,7 +777,8 @@ export default function CartPage() {
                     disabled={
                       (checkoutStatus !== "idle" && checkoutStatus !== "error") ||
                       (!isRateReady && paymentMethod === 'solana') ||
-                      deliveryUnavailable
+                      deliveryUnavailable ||
+                      !isFormValid
                     }
                   >
                     {!isRateReady && paymentMethod === 'solana' ? "Fetching Rates..." : getButtonText()}
