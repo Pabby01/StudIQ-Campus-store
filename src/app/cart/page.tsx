@@ -15,10 +15,14 @@ import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck
 import { useState, useEffect } from "react";
 import { checkoutCreateSchema } from "@/lib/validators";
 import { useStore } from "@/hooks/useStore";
+import { useTokenBalances } from "@/hooks/useTokenBalances";
 
 type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifying" | "success" | "error";
 
 import AuthModal from "@/components/AuthModal";
+import Dialog from "@/components/ui/Dialog";
+import ReceiveModal from "@/components/wallet/ReceiveModal";
+import RampModal from "@/components/ramp/RampModal";
 
 export default function CartPage() {
   const items = useCart((s) => s.items);
@@ -29,6 +33,9 @@ export default function CartPage() {
   // Use Civic wallet hook for unified access
   const { walletAddress, email, wallet, isAuthenticated, user, signTransaction } = useCivicWallet();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showInsufficientModal, setShowInsufficientModal] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [showRampModal, setShowRampModal] = useState(false);
 
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +58,7 @@ export default function CartPage() {
 
   const solPrice = useCart((s) => s.solPrice);
   const fetchSolPrice = useCart((s) => s.fetchSolPrice);
+  const { tokens, loading: balanceLoading, error: balanceError } = useTokenBalances(walletAddress, SOLANA_CONFIG.network);
   const storeId = items[0]?.storeId ?? null;
   const { store: storeResponse } = useStore(storeId);
   const store = storeResponse?.store;
@@ -117,6 +125,11 @@ export default function CartPage() {
   const ngnOrderTotal = toNgn(orderTotal, cartCurrency, solPrice, ngnPerUsd);
   const ngnFinalTotal = toNgn(finalAmount, finalCurrency, solPrice, ngnPerUsd);
   const formatNgn = (value: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
+  const walletSolBalance = tokens.find((t) => t.symbol === "SOL")?.balance ?? 0;
+  const walletUsdcBalance = tokens.find((t) => t.symbol === "USDC")?.balance ?? 0;
+  const availableBalance = finalCurrency === "SOL" ? walletSolBalance : walletUsdcBalance;
+  const showBalanceSection = paymentMethod === "solana" && deliveryMethod === "shipping";
+  const hasInsufficientBalance = showBalanceSection && isRateReady && finalAmount > 0 && !balanceLoading && availableBalance < finalAmount;
 
   async function checkout() {
     if (checkoutStatus !== "idle") return;
@@ -138,6 +151,20 @@ export default function CartPage() {
     if (finalPaymentMethod === "solana" && !walletAddress) {
       setError("Wallet not ready for crypto payment. Please wait or use Pay on Delivery.");
       return;
+    }
+
+    if (finalPaymentMethod === "solana") {
+      if (balanceLoading) {
+        setError("Wallet balance is loading. Please wait a moment.");
+        return;
+      }
+      const requiredAmount = finalAmount;
+      const currentBalance = finalCurrency === "SOL" ? walletSolBalance : walletUsdcBalance;
+      if (requiredAmount > 0 && currentBalance < requiredAmount) {
+        setError(`Insufficient ${finalCurrency} balance. Available: ${formatTokenAmount(currentBalance, finalCurrency)}.`);
+        setShowInsufficientModal(true);
+        return;
+      }
     }
 
     const payload = {
@@ -573,6 +600,39 @@ export default function CartPage() {
                         Exchange Rate: 1 SOL ≈ ${solPrice.toFixed(2)} USDC
                       </p>
                     )}
+                    <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50/60 p-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-text">Available balance</span>
+                        <span className="font-semibold text-gray-900">
+                          {!walletAddress && "Connect wallet to view"}
+                          {walletAddress && balanceLoading && "Loading..."}
+                          {walletAddress && !balanceLoading && formatTokenAmount(availableBalance, finalCurrency)}
+                        </span>
+                      </div>
+                      {balanceError && (
+                        <div className="mt-2 text-xs text-red-600">
+                          Balance unavailable. Please refresh or open your wallet.
+                        </div>
+                      )}
+                      {walletAddress && !balanceLoading && hasInsufficientBalance && (
+                        <div className="mt-2 text-xs text-red-600">
+                          Insufficient balance for this checkout.
+                        </div>
+                      )}
+                      {walletAddress && !balanceLoading && !hasInsufficientBalance && (
+                        <div className="mt-2 text-xs text-green-700">
+                          Balance looks good for this checkout.
+                        </div>
+                      )}
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                        <Button variant="outline" className="w-full" onClick={() => setShowRampModal(true)}>
+                          Deposit
+                        </Button>
+                        <Button variant="outline" className="w-full" onClick={() => setShowReceiveModal(true)}>
+                          Receive
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 )}
                 {/* Auto-set to POD if Pickup? Or confirm? Let's default pickup to POD usually or allow both */}
@@ -743,16 +803,65 @@ export default function CartPage() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
+      <Dialog
+        isOpen={showInsufficientModal}
+        onClose={() => setShowInsufficientModal(false)}
+        title="Insufficient balance"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Your wallet does not have enough {finalCurrency} to complete this checkout.
+          </p>
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-text">Required</span>
+              <span className="font-semibold text-gray-900">{formatTokenAmount(finalAmount, finalCurrency)}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-muted-text">Available</span>
+              <span className="font-semibold text-gray-900">{formatTokenAmount(availableBalance, finalCurrency)}</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button variant="primary" className="w-full" onClick={() => { setShowInsufficientModal(false); setShowRampModal(true); }}>
+              Deposit to Wallet
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => { setShowInsufficientModal(false); setShowReceiveModal(true); }}>
+              Receive Crypto
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => { window.location.href = "/dashboard/wallet"; }}>
+              Go to Wallet
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+      <ReceiveModal
+        isOpen={showReceiveModal}
+        onClose={() => setShowReceiveModal(false)}
+        cluster={SOLANA_CONFIG.network}
+      />
+      <RampModal
+        isOpen={showRampModal}
+        onClose={() => setShowRampModal(false)}
+        initialType="onramp"
+      />
     </div>
   );
 }
+
+type PaymentCalculation = {
+  finalAmount: number;
+  finalCurrency: "SOL" | "USDC";
+  exchangeRate: number | null;
+  isRateReady: boolean;
+};
 
 function calculatePayment(
   orderTotal: number,
   orderCurrency: string | undefined,
   payCurrency: "SOL" | "USDC",
   solToUsdcRate: number | null
-) {
+): PaymentCalculation {
   if (!orderCurrency) return { finalAmount: orderTotal, finalCurrency: payCurrency, exchangeRate: null, isRateReady: true };
 
   // Case 1: Same Currency
@@ -800,6 +909,11 @@ function extractTokenValue(tokenValue: unknown): number | null {
     (typeof value.ngn === "number" && value.ngn) ||
     (typeof value.rate === "number" && value.rate);
   return typeof direct === "number" ? direct : null;
+}
+
+function formatTokenAmount(amount: number, symbol: "SOL" | "USDC") {
+  const precision = symbol === "SOL" ? 4 : 2;
+  return `${amount.toFixed(precision)} ${symbol}`;
 }
 
 function toNgn(amount: number, currency: string | undefined, solUsd: number | null, ngnPerUsd: number | null) {
