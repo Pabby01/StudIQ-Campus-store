@@ -11,10 +11,23 @@ const mapMintForPaj = (mint: string) => {
     return mint;
 };
 
+const resolveWebhookUrl = (req: Request) => {
+    const forwardedProto = req.headers.get("x-forwarded-proto");
+    const forwardedHost = req.headers.get("x-forwarded-host");
+    const host = forwardedHost || req.headers.get("host");
+    if (forwardedProto && host) {
+        return `${forwardedProto}://${host}/api/ramp/webhook`;
+    }
+    if (host) {
+        return `https://${host}/api/ramp/webhook`;
+    }
+    return PAJ_CONFIG.webhookUrl;
+};
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        let { type, token, data } = body;
+        const { type, token, data } = body;
 
         if (!token) {
             return NextResponse.json({ error: "Session token is required" }, { status: 401 });
@@ -27,6 +40,8 @@ export async function POST(req: Request) {
 
         const supabase = getSupabaseServerClient();
 
+        const webhookURL = data?.webhookURL || resolveWebhookUrl(req);
+
         if (type === 'onramp') {
             console.log("[PAJ Ramp] Creating onramp order");
             const order = await createOnrampOrder(
@@ -36,7 +51,7 @@ export async function POST(req: Request) {
                     recipient: data.recipient,
                     mint: data.mint,
                     chain: data.chain || 'SOLANA',
-                    webhookURL: data.webhookURL || PAJ_CONFIG.webhookUrl,
+                    webhookURL,
                 },
                 token
             );
@@ -62,7 +77,7 @@ export async function POST(req: Request) {
                     currency: (data.currency || 'NGN') as Currency,
                     amount: data.amount,
                     mint: data.mint,
-                    webhookURL: data.webhookURL || PAJ_CONFIG.webhookUrl,
+                    webhookURL,
                 },
                 token
             );
@@ -82,10 +97,10 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ error: "Invalid transaction type" }, { status: 400 });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("[PAJ Ramp] Order creation failed:", error);
         return NextResponse.json({
-            error: error.message || "Order creation failed"
+            error: error instanceof Error ? error.message : "Order creation failed"
         }, { status: 500 });
     }
 }
