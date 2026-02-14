@@ -18,7 +18,7 @@ import {
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction } from "@solana/web3.js";
-import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, createTransferInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { SOLANA_CONFIG } from "@/lib/solana-config";
 import { generatePajReceipt } from "@/lib/generateReceipt";
 
@@ -287,14 +287,40 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                     // Use the wallet address from Civic hook
                     const userPublicKey = new PublicKey(walletAddress!);
 
-                    // Get User's Token Account
                     const sourceATA = await getAssociatedTokenAddress(usdcMintPubkey, userPublicKey);
-
-                    // Get Paj's Token Account (Deposit Address)
                     const destATA = await getAssociatedTokenAddress(usdcMintPubkey, destinationPubkey);
 
-                    // Create Transaction
-                    const transaction = new Transaction().add(
+                    const sourceInfo = await connection.getAccountInfo(sourceATA);
+                    if (!sourceInfo) {
+                        throw new Error("No USDC token account found. Receive USDC before withdrawing.");
+                    }
+
+                    const [destInfo, sourceBalance] = await Promise.all([
+                        connection.getAccountInfo(destATA),
+                        connection.getTokenAccountBalance(sourceATA)
+                    ]);
+
+                    const availableBalance = sourceBalance.value.uiAmount ?? 0;
+                    const requestedAmount = parseFloat(amount);
+                    if (!Number.isFinite(requestedAmount) || requestedAmount <= 0) {
+                        throw new Error("Please enter a valid amount");
+                    }
+                    if (availableBalance < requestedAmount) {
+                        throw new Error(`Insufficient USDC balance. Available: ${availableBalance.toFixed(2)} USDC`);
+                    }
+
+                    const transaction = new Transaction();
+                    if (!destInfo) {
+                        transaction.add(
+                            createAssociatedTokenAccountInstruction(
+                                userPublicKey,
+                                destATA,
+                                destinationPubkey,
+                                usdcMintPubkey
+                            )
+                        );
+                    }
+                    transaction.add(
                         createTransferInstruction(
                             sourceATA,
                             destATA,
@@ -329,8 +355,16 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                 setError(data.error);
             }
         } catch (err: any) {
+            if (err?.getLogs) {
+                try {
+                    const logs = await err.getLogs(connection);
+                    console.error("Order failed logs", logs);
+                } catch (logError) {
+                    console.error("Order failed log fetch error", logError);
+                }
+            }
             console.error("Order failed", err);
-            setError(err.message || "Failed to create order");
+            setError(err?.message || "Failed to create order");
         } finally {
             setLoading(false);
         }
