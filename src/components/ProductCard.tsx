@@ -249,7 +249,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               For {p.stores.name}
             </Link>
           )}
-          <p className="font-medium text-black text-[4px] sm:text-[4px] line-clamp-2 mb-0.5 min-h-[14px] leading-tight group-hover:text-primary-blue transition-colors">
+          <p className="font-medium text-black text-xs sm:text-sm line-clamp-2 mb-0.5 min-h-[14px] leading-tight group-hover:text-primary-blue transition-colors">
             {p.name}
           </p>
           <div className="flex items-center gap-0.5 mb-0.5">
@@ -310,7 +310,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full text-[9px] py-0.5 h-6 cursor-not-allowed opacity-60"
+                className="w-full h-8 text-xs cursor-not-allowed opacity-60"
                 disabled
               >
                 Sold Out
@@ -321,7 +321,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-[9px] py-0.5 h-6"
+                    className="flex-1 h-8 text-xs"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -335,7 +335,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   <Button
                     variant="danger"
                     size="sm"
-                    className="flex-1 text-[9px] py-0.5 h-6"
+                    className="flex-1 h-8 text-xs"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -350,7 +350,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full text-[9px] py-0.5 h-6"
+                className="w-full h-8 text-xs"
                 onClick={handleAddToCart}
               >
                 Add to cart
