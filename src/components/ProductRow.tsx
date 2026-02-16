@@ -12,6 +12,7 @@ type Product = Readonly<{
     image_url?: string | null;
     rating?: number | null;
     category?: string;
+    badge?: string;
 }>;
 
 interface ProductRowProps {
@@ -79,7 +80,8 @@ export default function ProductRow({
                 {/* Left Arrow */}
                 <button
                     onClick={() => scroll("left")}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-border-gray rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-soft-gray-bg"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-border-gray rounded-full flex items-center justify-center shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-soft-gray-bg"
+                    aria-label="Scroll left"
                 >
                     <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -90,24 +92,28 @@ export default function ProductRow({
                     className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
-                    {products.map((product) => (
+                    {products.map((product) => {
+                        const productBadge = product.badge ?? badgeText;
+                        return (
                         <div key={product.id} className="flex-shrink-0 w-[160px] sm:w-[200px] relative">
-                            {badgeText && (
+                            {productBadge && (
                                 <div
                                     className={`absolute top-3 left-3 z-10 ${badgeColor} text-white text-xs font-bold px-3 py-1 rounded`}
                                 >
-                                    {badgeText}
+                                    {productBadge}
                                 </div>
                             )}
                             <ProductCard p={product} />
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Right Arrow */}
                 <button
                     onClick={() => scroll("right")}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-border-gray rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-soft-gray-bg"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-border-gray rounded-full flex items-center justify-center shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-soft-gray-bg"
+                    aria-label="Scroll right"
                 >
                     <ChevronRight className="w-5 h-5" />
                 </button>
