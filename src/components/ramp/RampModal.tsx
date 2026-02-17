@@ -292,12 +292,14 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
 
                     const sourceInfo = await connection.getAccountInfo(sourceATA);
                     if (!sourceInfo) {
-                        throw new Error("No USDC token account found. Receive USDC before withdrawing.");
+                        const networkLabel = SOLANA_CONFIG.network === "mainnet" ? "mainnet" : "devnet";
+                        throw new Error(`No USDC token account found on ${networkLabel}. Make sure your wallet is on ${networkLabel} and has USDC.`);
                     }
 
-                    const [destInfo, sourceBalance] = await Promise.all([
+                    const [destInfo, sourceBalance, solBalance] = await Promise.all([
                         connection.getAccountInfo(destATA),
-                        connection.getTokenAccountBalance(sourceATA)
+                        connection.getTokenAccountBalance(sourceATA),
+                        connection.getBalance(userPublicKey)
                     ]);
 
                     const availableBalance = sourceBalance.value.uiAmount ?? 0;
@@ -307,6 +309,9 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                     }
                     if (availableBalance < requestedAmount) {
                         throw new Error(`Insufficient USDC balance. Available: ${availableBalance.toFixed(2)} USDC`);
+                    }
+                    if (solBalance < 5000) {
+                        throw new Error("Insufficient SOL for network fees. Add a small amount of SOL and try again.");
                     }
 
                     const transaction = new Transaction();
