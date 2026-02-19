@@ -1,9 +1,14 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { getSessionWallet } from "@/lib/session";
+import { requireAdmin } from "@/lib/admin-auth";
+import { POINTS } from "@/lib/constants";
 
 // POST /api/profile/award-missing-points - Award points to profiles that missed welcome bonus
 export async function POST(req: Request) {
     try {
+        const address = await getSessionWallet(req);
+        await requireAdmin(address);
         const supabase = getSupabaseServerClient();
 
         // Get all complete profiles
@@ -38,7 +43,7 @@ export async function POST(req: Request) {
                 // Award welcome points
                 const { error: insertError } = await supabase.from("points_log").insert({
                     address: profile.address,
-                    points: 50,
+                    points: POINTS.PROFILE_COMPLETE,
                     reason: "Welcome bonus - Profile created",
                 });
 
@@ -63,6 +68,9 @@ export async function POST(req: Request) {
         });
     } catch (error) {
         console.error("Award missing points error:", error);
+        if (error instanceof Error && error.message?.includes("Unauthorized")) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
 }

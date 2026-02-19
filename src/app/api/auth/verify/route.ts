@@ -8,20 +8,19 @@ export async function POST(req: Request) {
   try {
     const { address, nonce, signature, token } = await req.json();
 
-    console.log("Auth verify request:", { address, nonce, signatureLength: signature?.length, hasToken: !!token });
-
     let verifiedAddress = address;
+    let civicEmail: string | null = null;
 
     // Method A: Civic Token Verification
     if (token) {
-      console.log("Attempting Civic token verification...");
-      const civic = await verifyCivicToken(token);
-      if (!civic.success || !civic.email) {
+      const civicResult = await verifyCivicToken(token);
+      if (!civicResult.success || !civicResult.email) {
         return Response.json(
-          { ok: false, error: civic.error || "Invalid Civic token" },
+          { ok: false, error: civicResult.error || "Invalid Civic token" },
           { status: 401 }
         );
       }
+      civicEmail = civicResult.email;
 
       // If address was provided, use it; otherwise try to find it via email
       if (address) {
@@ -31,7 +30,7 @@ export async function POST(req: Request) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("address")
-          .eq("email", civic.email)
+          .eq("email", civicEmail)
           .maybeSingle();
 
         if (!profile) {
@@ -42,7 +41,6 @@ export async function POST(req: Request) {
         }
         verifiedAddress = profile.address;
       }
-      console.log("Civic token verified for email:", civic.email, "Address:", verifiedAddress);
     }
     // Method B: Traditional Signature Verification
     else {
@@ -135,8 +133,7 @@ export async function POST(req: Request) {
       .from("profiles")
       .upsert({
         address: addressToUse,
-        // If we have a civic email, link it if not already set
-        ...(token && (await verifyCivicToken(token)).email ? { email: (await verifyCivicToken(token)).email } : {})
+        ...(civicEmail ? { email: civicEmail } : {})
       }, { onConflict: 'address' })
       .select();
 

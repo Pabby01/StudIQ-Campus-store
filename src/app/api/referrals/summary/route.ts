@@ -64,7 +64,7 @@ export async function GET(req: Request) {
 
   const { data: referredProfiles } = await supabase
     .from("profiles")
-    .select("address, name")
+    .select("address, name, school, campus")
     .or(`referred_by.eq.${referralCode},referred_by.eq.${address}`);
 
   const { data: existingReferralRows } = await supabase
@@ -104,7 +104,11 @@ export async function GET(req: Request) {
       .filter(Boolean)
   );
 
-  const missingAwards = (referredProfiles || [])
+  const eligibleReferred = (referredProfiles || []).filter(
+    (profile) => !!profile.name && !!profile.school && !!profile.campus
+  );
+
+  const missingAwards = eligibleReferred
     .map((profile) => profile.address)
     .filter(
       (refAddress): refAddress is string =>
@@ -180,7 +184,7 @@ export async function GET(req: Request) {
       missingCount: missingAwards.length,
       awardedAddresses: Array.from(awardedAddresses),
       missingAwards,
-      referredProfiles: (referredProfiles || []).map((profile) => profile.address),
+      referredProfiles: eligibleReferred.map((profile) => profile.address),
     },
   });
 }

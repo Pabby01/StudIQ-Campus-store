@@ -172,6 +172,12 @@ Current test coverage:
 
 ## 📝 Recent Updates
 
+- **v1.7 - Security & Points Integrity**
+  - Secured product updates by enforcing session ownership checks.
+  - Deprecated the unsafe checkout confirm endpoint in favor of verified payments.
+  - Reduced Civic auth token re-verification and sensitive logging.
+  - Locked “award missing points” to admins and aligned bonus to profile completion.
+  - Prevented duplicate review rewards and restricted referral awards to complete profiles.
 - **v1.6 - Referrals, Reviews, and Stability**
   - Shows referred user names in referral history when available, with shortened address fallback.
   - Shows reviewer names in product reviews when available, with shortened address fallback.

@@ -62,6 +62,20 @@ export async function POST(req: Request) {
 
     const supabase = getSupabaseServerClient();
 
+    const { data: existingReview } = await supabase
+        .from("reviews")
+        .select("id")
+        .eq("product_id", productId)
+        .eq("reviewer_address", address)
+        .maybeSingle();
+
+    if (existingReview) {
+        return Response.json(
+            { error: "You have already reviewed this product" },
+            { status: 409 }
+        );
+    }
+
     // Verify purchase check can be added here if needed
 
     const { error } = await supabase
