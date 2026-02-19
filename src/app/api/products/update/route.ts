@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 import { verifyProductOwnership } from "@/lib/ownership";
