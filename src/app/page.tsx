@@ -89,13 +89,15 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 md:space-y-14">
         {/* Hero Carousel */}
-        <HeroCarousel />
+        <div className="glass-panel rounded-3xl p-3 sm:p-4 shadow-sm">
+          <HeroCarousel />
+        </div>
 
         {/* Promo Banners */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <PromoBanner
             title="Earn Rewards"
             subtitle="Get points on every purchase"
@@ -154,10 +156,10 @@ export default function Home() {
         />
 
         {/* New Arrivals */}
-        <section>
+        <section className="glass-panel rounded-3xl p-5 sm:p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-50 rounded-lg">
+              <div className="p-2 bg-green-50 rounded-2xl">
                 <Sparkles className="w-6 h-6 text-green-600" />
               </div>
               <div>
@@ -166,7 +168,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {products.slice(0, 4).map((product) => (
               <ProductCard key={product.id} p={product} />
             ))}
@@ -174,9 +176,9 @@ export default function Home() {
         </section>
 
         {/* Nearby Stores */}
-        <section>
+        <section className="glass-panel rounded-3xl p-5 sm:p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-primary-blue/10 rounded-lg">
+            <div className="p-2 bg-primary-blue/10 rounded-2xl">
               <Store className="w-6 h-6 text-primary-blue" />
             </div>
             <div>
@@ -192,14 +194,14 @@ export default function Home() {
         </section>
 
         {/* Bottom CTA */}
-        <div className="bg-gradient-to-r from-primary-blue to-accent-blue rounded-2xl p-8 text-center text-white">
+        <div className="bg-gradient-to-r from-primary-blue to-accent-blue rounded-3xl p-8 text-center text-white shadow-lg">
           <h2 className="text-3xl font-bold mb-3">Start Selling on Campus</h2>
           <p className="text-lg opacity-90 mb-6">
             Join hundreds of student entrepreneurs earning with StudIQ
           </p>
           <button
             onClick={() => (window.location.href = "/dashboard/store")}
-            className="px-8 py-3 bg-white text-primary-blue font-semibold rounded-lg hover:bg-gray-100 transition-colors"
+            className="px-8 py-3 bg-white text-primary-blue font-semibold rounded-full hover:bg-gray-100 transition-colors"
           >
             Create Your Store
           </button>

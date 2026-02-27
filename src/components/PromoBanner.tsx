@@ -23,7 +23,7 @@ export default function PromoBanner({
     return (
         <Link href={ctaLink}>
             <div
-                className={`relative ${bgColor} ${textColor} rounded-xl overflow-hidden h-[280px] group hover:shadow-lg transition-shadow`}
+                className={`relative ${bgColor} ${textColor} rounded-3xl overflow-hidden h-[280px] group hover-lift`}
             >
                 {image && (
                     <div className="absolute inset-0 opacity-20">

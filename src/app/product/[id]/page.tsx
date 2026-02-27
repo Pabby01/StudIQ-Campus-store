@@ -123,7 +123,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
+      <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary-blue animate-spin" />
       </div>
     );
@@ -131,8 +131,8 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center">
+        <div className="text-center glass-panel rounded-3xl p-8">
           <Package className="w-16 h-16 text-muted-text mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-black mb-2">Product not found</h2>
           <p className="text-muted-text mb-6">This product may have been removed</p>
@@ -159,13 +159,13 @@ export default function ProductDetailPage() {
   const uniqueImages = Array.from(new Set(galleryImages));
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid md:grid-cols-2 gap-8">
           {/* Product Images Gallery */}
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl overflow-hidden border border-border-gray relative group">
-              <div className="aspect-square bg-white flex items-center justify-center">
+            <div className="glass-panel rounded-3xl overflow-hidden border border-white/60 relative group">
+              <div className="aspect-square bg-white/70 flex items-center justify-center">
                 {uniqueImages.length > 0 ? (
                   <img
                     src={uniqueImages[selectedImageIndex]}
@@ -181,13 +181,13 @@ export default function ProductDetailPage() {
                 <>
                   <button
                     onClick={() => setSelectedImageIndex((prev) => (prev === 0 ? uniqueImages.length - 1 : prev - 1))}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 glass-pill rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <ChevronLeft className="w-5 h-5 text-black" />
                   </button>
                   <button
                     onClick={() => setSelectedImageIndex((prev) => (prev === uniqueImages.length - 1 ? 0 : prev + 1))}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 glass-pill rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <ChevronRight className="w-5 h-5 text-black" />
                   </button>
@@ -202,7 +202,7 @@ export default function ProductDetailPage() {
                   <button
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}
-                    className={`relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx ? 'border-primary-blue opacity-100 ring-2 ring-primary-blue/20' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                    className={`relative w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden border-2 transition-all ${selectedImageIndex === idx ? 'border-primary-blue opacity-100 ring-2 ring-primary-blue/20' : 'border-transparent opacity-70 hover:opacity-100'}`}
                   >
                     <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
                   </button>
@@ -212,7 +212,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6">
+          <div className="space-y-6 glass-panel rounded-3xl p-6">
             {/* Category Badge */}
             {product.category && (
               <Badge variant="blue">{product.category}</Badge>
@@ -235,7 +235,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Price */}
-            <div className="flex items-baseline gap-3">
+            <div className="flex items-baseline gap-3 flex-wrap">
               <span className="text-4xl font-bold text-primary-blue">
                 {product.currency === "USDC" ? "USDC" : "SOL"} {displayPrice.toFixed(2)}
               </span>
@@ -275,7 +275,7 @@ export default function ProductDetailPage() {
 
             {/* Store Info */}
             {product.stores && (
-              <div className="p-4 bg-soft-gray-bg rounded-lg">
+              <div className="p-4 glass-pill rounded-2xl">
                 <p className="text-sm text-muted-text mb-1">Sold by</p>
                 <p className="font-semibold text-black">{product.stores.name}</p>
               </div>
@@ -284,7 +284,7 @@ export default function ProductDetailPage() {
             {/* Actions: Edit/Delete for Owner, Add to Cart for Buyer */}
             {isOwner ? (
               <div className="space-y-4">
-                <div className="p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100">
+                <div className="p-4 bg-blue-50 text-blue-800 rounded-2xl border border-blue-100">
                   <p className="font-medium flex items-center gap-2">
                     <Edit className="w-4 h-4" />
                     You are the owner of this product
@@ -322,7 +322,7 @@ export default function ProductDetailPage() {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-10 h-10 bg-soft-gray-bg rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                        className="w-10 h-10 glass-pill rounded-full flex items-center justify-center hover:bg-white/80 transition-colors"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
@@ -333,7 +333,7 @@ export default function ProductDetailPage() {
                         onClick={() =>
                           setQuantity(Math.min(product.inventory || 1, quantity + 1))
                         }
-                        className="w-10 h-10 bg-soft-gray-bg rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                        className="w-10 h-10 glass-pill rounded-full flex items-center justify-center hover:bg-white/80 transition-colors"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -358,7 +358,7 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Reviews Section */}
-        <div className="border-t border-border-gray mt-12 pt-8">
+        <div className="border-t border-white/50 mt-12 pt-8">
           <ProductReviews productId={product.id} onReviewAdded={fetchProduct} />
         </div>
       </div>

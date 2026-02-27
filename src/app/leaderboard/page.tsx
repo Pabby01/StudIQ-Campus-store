@@ -70,10 +70,10 @@ export default function LeaderboardPage() {
     };
 
     return (
-        <div className="min-h-screen bg-soft-gray-bg py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-soft-gray-bg mesh-bg py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="text-center mb-12">
+                <div className="text-center mb-12 glass-panel rounded-3xl p-6">
                     <div className="flex items-center justify-center gap-3 mb-4">
                         <Trophy className="w-12 h-12 text-yellow-500" />
                         <h1 className="text-4xl font-bold text-black">Leaderboard</h1>
@@ -87,27 +87,27 @@ export default function LeaderboardPage() {
                 <div className="flex justify-center gap-4 mb-8">
                     <button
                         onClick={() => setRange("all")}
-                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${range === "all"
+                        className={`px-6 py-2 rounded-full font-medium transition-colors ${range === "all"
                             ? "bg-primary-blue text-white"
-                            : "bg-white text-muted-text border border-border-gray hover:bg-gray-50"
+                            : "glass-pill text-muted-text hover:bg-white/90"
                             }`}
                     >
                         All Time
                     </button>
                     <button
                         onClick={() => setRange("month")}
-                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${range === "month"
+                        className={`px-6 py-2 rounded-full font-medium transition-colors ${range === "month"
                             ? "bg-primary-blue text-white"
-                            : "bg-white text-muted-text border border-border-gray hover:bg-gray-50"
+                            : "glass-pill text-muted-text hover:bg-white/90"
                             }`}
                     >
                         This Month
                     </button>
                     <button
                         onClick={() => setRange("week")}
-                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${range === "week"
+                        className={`px-6 py-2 rounded-full font-medium transition-colors ${range === "week"
                             ? "bg-primary-blue text-white"
-                            : "bg-white text-muted-text border border-border-gray hover:bg-gray-50"
+                            : "glass-pill text-muted-text hover:bg-white/90"
                             }`}
                     >
                         This Week
@@ -116,10 +116,10 @@ export default function LeaderboardPage() {
 
                 {/* User's Rank Card */}
                 {userRank && address && (
-                    <Card className="p-6 mb-8 bg-gradient-to-r from-blue-50 to-purple-50">
+                    <Card className="p-6 mb-8 bg-gradient-to-r from-blue-50/80 to-purple-50/80 border-white/60">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-white rounded-full">
+                                <div className="p-3 glass-pill rounded-full">
                                     <TrendingUp className="w-6 h-6 text-primary-blue" />
                                 </div>
                                 <div>
@@ -139,7 +139,7 @@ export default function LeaderboardPage() {
                 )}
 
                 {/* Leaderboard Table */}
-                <Card className="overflow-hidden">
+                <Card className="overflow-hidden glass-panel border-white/60">
                     {loading ? (
                         <div className="flex items-center justify-center py-24">
                             <Loader2 className="w-8 h-8 text-primary-blue animate-spin" />
@@ -152,7 +152,7 @@ export default function LeaderboardPage() {
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50 border-b border-border-gray">
+                                <thead className="bg-white/70 border-b border-white/60">
                                     <tr>
                                         <th className="px-6 py-4 text-left text-sm font-semibold text-black">Rank</th>
                                         <th className="px-6 py-4 text-left text-sm font-semibold text-black">User</th>
@@ -160,11 +160,11 @@ export default function LeaderboardPage() {
                                         <th className="px-6 py-4 text-right text-sm font-semibold text-black">Badge</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-border-gray">
+                                <tbody className="divide-y divide-white/60">
                                     {leaderboard.map((entry) => (
                                         <tr
                                             key={entry.address}
-                                            className={`hover:bg-gray-50 transition-colors ${entry.address === address ? "bg-blue-50" : ""
+                                            className={`hover:bg-white/70 transition-colors ${entry.address === address ? "bg-blue-50/70" : ""
                                                 }`}
                                         >
                                             <td className="px-6 py-4">
@@ -197,7 +197,7 @@ export default function LeaderboardPage() {
                 </Card>
 
                 {/* Badge Legend */}
-                <Card className="p-6 mt-8">
+                <Card className="p-6 mt-8 glass-panel border-white/60">
                     <h3 className="text-lg font-semibold text-black mb-4">Badge Tiers</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                         {[

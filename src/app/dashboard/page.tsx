@@ -224,10 +224,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg px-4 py-4 md:px-6 md:py-6 lg:px-8 lg:py-8 w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-4 md:px-6 md:py-6 lg:px-8 lg:py-8 w-full max-w-full overflow-x-hidden">
       <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 w-full">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between glass-panel rounded-3xl p-5 sm:p-6">
           <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold text-black mb-1 truncate">Dashboard</h1>
             <p className="text-sm md:text-base text-muted-text">Welcome back! Here&apos;s your overview</p>
@@ -235,12 +235,12 @@ export default function DashboardPage() {
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
             {/* View Toggle */}
-            <div className="bg-white rounded-lg border border-border-gray p-1 flex gap-1">
+            <div className="glass-pill rounded-2xl p-1 flex gap-1">
               <button
                 onClick={() => setIsBuyer(true)}
                 className={`flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-md text-sm font-medium transition-colors ${isBuyer
                   ? 'bg-primary-blue text-white'
-                  : 'text-muted-text hover:bg-gray-50'
+                  : 'text-muted-text hover:bg-white/70'
                   }`}
               >
                 Buyer
@@ -249,7 +249,7 @@ export default function DashboardPage() {
                 onClick={() => setIsBuyer(false)}
                 className={`flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-md text-sm font-medium transition-colors ${!isBuyer
                   ? 'bg-primary-blue text-white'
-                  : 'text-muted-text hover:bg-gray-50'
+                  : 'text-muted-text hover:bg-white/70'
                   }`}
               >
                 Seller

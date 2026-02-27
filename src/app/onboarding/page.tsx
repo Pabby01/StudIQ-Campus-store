@@ -162,8 +162,8 @@ export default function OnboardingPage() {
   // Show loading while mounting
   if (!mounted || isLoading) {
     return (
-      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
-        <Card className="max-w-md w-full p-8 text-center">
+      <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center">
+        <Card className="max-w-md w-full p-8 text-center glass-panel border-white/60">
           <Loader2 className="w-12 h-12 animate-spin text-primary-blue mx-auto mb-4" />
           <p className="text-muted-text">Loading...</p>
         </Card>
@@ -174,8 +174,8 @@ export default function OnboardingPage() {
   // Redirect to home if not authenticated
   if (!user) {
     return (
-      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
-        <Card className="max-w-md w-full p-8 text-center space-y-4">
+      <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center">
+        <Card className="max-w-md w-full p-8 text-center space-y-4 glass-panel border-white/60">
           <div className="w-16 h-16 bg-gradient-to-br from-primary-blue to-accent-blue rounded-full flex items-center justify-center mx-auto">
             <User className="w-8 h-8 text-white" />
           </div>
@@ -193,8 +193,8 @@ export default function OnboardingPage() {
   const userEmail = "email" in user ? (user.email as string) : "";
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
-      <Card className="max-w-lg w-full p-8">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center p-4">
+      <Card className="max-w-lg w-full p-8 glass-panel border-white/60">
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-gradient-to-br from-primary-blue to-accent-blue rounded-full flex items-center justify-center mx-auto mb-6">
             <User className="w-10 h-10 text-white" />
@@ -206,7 +206,7 @@ export default function OnboardingPage() {
             Welcome! Let&apos;s set up your StudIQ account.
           </p>
           {walletAddress && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-2xl">
               <div className="flex items-center justify-center gap-2 text-green-700">
                 <CheckCircle className="w-4 h-4" />
                 <span className="text-sm font-medium">Wallet ready!</span>

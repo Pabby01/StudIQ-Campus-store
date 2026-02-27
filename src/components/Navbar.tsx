@@ -30,7 +30,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-border-gray">
+    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-white/40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -56,7 +56,7 @@ export default function Navbar() {
                   <a
                     key={item.label}
                     href={item.href}
-                    className="group flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all"
+                    className="group flex flex-col items-center gap-1 p-2 rounded-2xl hover:bg-white/70 transition-all"
                   >
                     <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
                     <span className="text-xs font-medium text-muted-text group-hover:text-primary-blue opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute translate-y-8">
@@ -67,7 +67,7 @@ export default function Navbar() {
                   <Link
                     key={item.label}
                     href={item.href}
-                    className="group flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all"
+                    className="group flex flex-col items-center gap-1 p-2 rounded-2xl hover:bg-white/70 transition-all"
                   >
                     <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
                     <span className="text-xs font-medium text-muted-text group-hover:text-primary-blue opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute translate-y-8">
@@ -86,7 +86,7 @@ export default function Navbar() {
               <input
                 type="text"
                 placeholder="Search products, stores..."
-                className="w-full pl-10 pr-4 py-2 bg-soft-gray-bg border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all"
+                className="w-full pl-10 pr-4 py-2.5 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     const query = e.currentTarget.value;
@@ -104,7 +104,7 @@ export default function Navbar() {
               <>
                 <Link
                   href="/dashboard"
-                  className="group hidden sm:flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all"
+                  className="group hidden sm:flex flex-col items-center gap-1 p-2 rounded-2xl hover:bg-white/70 transition-all"
                 >
                   <LayoutDashboard className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
                   <span className="text-xs font-medium text-muted-text group-hover:text-primary-blue opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute translate-y-8">
@@ -114,7 +114,7 @@ export default function Navbar() {
 
                 <Link
                   href="/dashboard/notifications"
-                  className="group flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-soft-gray-bg transition-all relative"
+                  className="group flex flex-col items-center gap-1 p-2 rounded-2xl hover:bg-white/70 transition-all relative"
                 >
                   <div className="relative">
                     <Bell className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
@@ -129,10 +129,10 @@ export default function Navbar() {
             )}
 
             {/* Cart */}
-            <Link href="/cart" className="group relative p-2 hover:bg-soft-gray-bg rounded-lg transition-all">
+            <Link href="/cart" className="group relative p-2 hover:bg-white/70 rounded-2xl transition-all">
               <ShoppingCart className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-primary-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
                   {cartCount}
                 </span>
               )}
@@ -151,7 +151,7 @@ export default function Navbar() {
           <input
             type="text"
             placeholder="Search..."
-            className="w-full pl-10 pr-4 py-2 bg-soft-gray-bg border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            className="w-full pl-10 pr-4 py-2.5 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 const query = e.currentTarget.value;

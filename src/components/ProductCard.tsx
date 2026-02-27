@@ -181,7 +181,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   return (
     <div className="h-full">
       <div
-        className="bg-white rounded-xl border border-border-gray overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative cursor-pointer"
+        className="glass-card rounded-2xl border border-white/60 overflow-hidden hover-lift h-full flex flex-col group relative cursor-pointer"
         onClick={openDetails}
       >
 
@@ -189,7 +189,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         {!isOwnProduct && (
           <button
             onClick={toggleWishlist}
-            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all shadow-sm"
+            className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full glass-pill flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
           >
             <Heart className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500 hover:text-red-500'}`} />
           </button>
@@ -197,20 +197,20 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
 
         {/* Sold Out Badge */}
         {isSoldOut && (
-          <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg z-10 shadow-lg">
+          <div className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full z-10 shadow-lg">
             SOLD OUT
           </div>
         )}
 
         {/* Discount Badge */}
         {hasDiscount && !isSoldOut && (
-          <Badge variant="green" className="absolute top-3 left-3 font-bold shadow-md">
+          <Badge variant="green" className="absolute top-3 left-3 font-bold shadow-md rounded-full">
             {discountPercent}% OFF
           </Badge>
         )}
 
         {/* Image */}
-        <div className="relative w-full pt-[60%] bg-gray-100 overflow-hidden">
+        <div className="relative w-full pt-[60%] bg-gradient-to-br from-slate-50 to-white overflow-hidden">
           {p.image_url ? (
             <Image
               src={p.image_url}
@@ -227,9 +227,9 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         </div>
 
         {/* Product Details */}
-        <div className="p-1.5 flex-1 flex flex-col">
+        <div className="p-3 flex-1 flex flex-col">
           {/* Premium Badge + Category */}
-          <div className="flex items-center justify-between mb-0.5">
+          <div className="flex items-center justify-between mb-1">
             {p.category && (
               <span className="text-[9px] text-muted-text uppercase tracking-wide truncate pr-1">
                 {p.category}
@@ -249,10 +249,10 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               For {p.stores.name}
             </Link>
           )}
-          <p className="font-medium text-black text-xs sm:text-sm line-clamp-2 mb-0.5 min-h-[14px] leading-tight group-hover:text-primary-blue transition-colors">
+          <p className="font-semibold text-black text-xs sm:text-sm line-clamp-2 mb-1 min-h-[14px] leading-tight group-hover:text-primary-blue transition-colors">
             {p.name}
           </p>
-          <div className="flex items-center gap-0.5 mb-0.5">
+          <div className="flex items-center gap-1 mb-1">
             <Star className="w-2 h-2 fill-yellow-400 text-yellow-400" />
             <span className="text-[9px] font-medium text-black">
               {p.rating?.toFixed?.(1) ?? "0.0"}
@@ -261,9 +261,9 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           </div>
 
           {/* Pricing */}
-          <div className="space-y-0.5 mt-auto">
-            <div className="flex items-baseline gap-1 flex-wrap">
-              <span className="text-[11px] sm:text-sm font-bold text-black">
+          <div className="space-y-1 mt-auto">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-[12px] sm:text-sm font-bold text-black">
                 {formatPrice(Number(displayPrice))}
               </span>
               {hasDiscount && (

@@ -56,7 +56,7 @@ export default function ProductRow({
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     {Icon && (
-                        <div className="p-2 bg-blue-50 rounded-lg">
+                        <div className="p-2 bg-blue-50 rounded-2xl">
                             <Icon className="w-6 h-6 text-primary-blue" />
                         </div>
                     )}
@@ -80,7 +80,7 @@ export default function ProductRow({
                 {/* Left Arrow */}
                 <button
                     onClick={() => scroll("left")}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-border-gray rounded-full flex items-center justify-center shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-soft-gray-bg"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass-pill rounded-full flex items-center justify-center shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-white/90"
                     aria-label="Scroll left"
                 >
                     <ChevronLeft className="w-5 h-5" />
@@ -98,7 +98,7 @@ export default function ProductRow({
                         <div key={product.id} className="flex-shrink-0 w-[160px] sm:w-[200px] relative">
                             {productBadge && (
                                 <div
-                                    className={`absolute top-3 left-3 z-10 ${badgeColor} text-white text-xs font-bold px-3 py-1 rounded`}
+                                    className={`absolute top-3 left-3 z-10 ${badgeColor} text-white text-xs font-bold px-3 py-1 rounded-full`}
                                 >
                                     {productBadge}
                                 </div>
@@ -112,7 +112,7 @@ export default function ProductRow({
                 {/* Right Arrow */}
                 <button
                     onClick={() => scroll("right")}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-border-gray rounded-full flex items-center justify-center shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-soft-gray-bg"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass-pill rounded-full flex items-center justify-center shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-white/90"
                     aria-label="Scroll right"
                 >
                     <ChevronRight className="w-5 h-5" />
