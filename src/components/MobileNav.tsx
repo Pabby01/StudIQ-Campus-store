@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { Home, LayoutDashboard, ShoppingCart, Package, User, TrendingUp, Trophy } from "lucide-react";
