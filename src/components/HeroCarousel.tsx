@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Button from "@/components/ui/Button";
 
 const slides = [
@@ -54,7 +55,7 @@ export default function HeroCarousel() {
     };
 
     return (
-        <div className="relative w-full h-[320px] md:h-[380px] overflow-hidden rounded-2xl">
+        <div className="relative w-full h-[320px] md:h-[380px] overflow-hidden rounded-3xl">
             {/* Slides */}
             <div
                 className="flex h-full transition-transform duration-500 ease-out"
@@ -67,10 +68,13 @@ export default function HeroCarousel() {
                     >
                         {/* Background Image */}
                         <div className="absolute inset-0">
-                            <img
+                            <Image
                                 src={slide.image}
                                 alt={slide.title}
-                                className="w-full h-full object-cover"
+                                fill
+                                sizes="100vw"
+                                className="object-cover"
+                                priority={slide.id === 1}
                             />
                             {/* Gradient Overlay for better text readability */}
                             <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
@@ -79,7 +83,7 @@ export default function HeroCarousel() {
                         {/* Content with Glassmorphism */}
                         <div className="relative z-10 text-left px-8 md:px-16 max-w-2xl">
                             {/* Glass Card */}
-                            <div className="backdrop-blur-md bg-white/10 rounded-2xl p-8 border border-white/20 shadow-2xl">
+                            <div className="glass-panel rounded-3xl p-8 border border-white/40 shadow-2xl">
                                 <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white drop-shadow-lg">
                                     {slide.title}
                                 </h2>
@@ -103,13 +107,13 @@ export default function HeroCarousel() {
             {/* Navigation Arrows */}
             <button
                 onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all backdrop-blur-sm"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 glass-pill rounded-full flex items-center justify-center border border-white/60 shadow-lg transition-all hover:bg-white/90"
             >
                 <ChevronLeft className="w-5 h-5 text-black" />
             </button>
             <button
                 onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all backdrop-blur-sm"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 glass-pill rounded-full flex items-center justify-center border border-white/60 shadow-lg transition-all hover:bg-white/90"
             >
                 <ChevronRight className="w-5 h-5 text-black" />
             </button>

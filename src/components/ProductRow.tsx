@@ -51,12 +51,11 @@ export default function ProductRow({
     };
 
     return (
-        <div className="space-y-4">
-            {/* Header */}
+        <section className="glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     {Icon && (
-                        <div className="p-2 bg-blue-50 rounded-2xl">
+                        <div className="p-2 bg-white/70 rounded-2xl border border-white/60">
                             <Icon className="w-6 h-6 text-primary-blue" />
                         </div>
                     )}
@@ -68,19 +67,18 @@ export default function ProductRow({
                 {viewAllLink && (
                     <Link
                         href={viewAllLink}
-                        className="text-primary-blue font-medium hover:underline text-sm"
+                        className="text-primary-blue font-medium text-xs px-3 py-1.5 rounded-full glass-pill hover:bg-white/90 transition-colors"
                     >
                         View all
                     </Link>
                 )}
             </div>
 
-            {/* Scrollable Product Row */}
             <div className="relative group">
                 {/* Left Arrow */}
                 <button
                     onClick={() => scroll("left")}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass-pill rounded-full flex items-center justify-center shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-white/90"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass-pill rounded-full flex items-center justify-center border border-white/60 shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-white/90"
                     aria-label="Scroll left"
                 >
                     <ChevronLeft className="w-5 h-5" />
@@ -112,12 +110,12 @@ export default function ProductRow({
                 {/* Right Arrow */}
                 <button
                     onClick={() => scroll("right")}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass-pill rounded-full flex items-center justify-center shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-white/90"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass-pill rounded-full flex items-center justify-center border border-white/60 shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-white/90"
                     aria-label="Scroll right"
                 >
                     <ChevronRight className="w-5 h-5" />
                 </button>
             </div>
-        </div>
+        </section>
     );
 }

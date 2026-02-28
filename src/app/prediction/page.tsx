@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { TrendingUp, TrendingDown, Clock, Users, DollarSign, Lock } from "lucide-react";
+import { TrendingUp, Clock, Users, DollarSign, Lock } from "lucide-react";
 
 // Demo prediction markets data
 const DEMO_MARKETS = [

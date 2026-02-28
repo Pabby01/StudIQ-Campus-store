@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import { Store as StoreIcon, MapPin, Star, Package } from "lucide-react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -88,7 +89,13 @@ export default function StoreDetailPage() {
       {/* Store Banner */}
       <div className="relative h-64 bg-gradient-to-br from-primary-blue to-accent-blue">
         {store.banner_url ? (
-          <img src={store.banner_url} alt={store.name} className="w-full h-full object-cover" />
+          <Image
+            src={store.banner_url}
+            alt={store.name}
+            fill
+            sizes="100vw"
+            className="object-cover"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <StoreIcon className="w-24 h-24 text-white opacity-50" />

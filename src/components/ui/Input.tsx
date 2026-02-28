@@ -1,6 +1,5 @@
 import { InputHTMLAttributes, forwardRef } from "react";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;

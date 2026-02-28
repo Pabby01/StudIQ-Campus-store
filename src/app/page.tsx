@@ -124,7 +124,9 @@ export default function Home() {
         {/* Trending Products */}
         <ProductRow
           title="Trending Now"
+          icon={TrendingUp}
           subtitle="Most popular items this week"
+          viewAllLink="/search"
           products={products.slice(0, 6)}
         />
 
@@ -136,6 +138,7 @@ export default function Home() {
           title="Flash Deals"
           icon={Zap}
           subtitle="Limited time offers"
+          viewAllLink="/search"
           products={products.slice(0, 8).map((p) => ({ ...p, badge: "SALE" }))}
         />
 
@@ -144,6 +147,7 @@ export default function Home() {
           title="Tech Essentials"
           icon={Laptop}
           subtitle="Electronics & Gadgets"
+          viewAllLink="/search"
           products={products.filter((p) => p.category === "Electronics").slice(0, 8)}
         />
 
@@ -152,6 +156,7 @@ export default function Home() {
           title="Textbooks & Study Materials"
           icon={BookOpen}
           subtitle="Academic resources"
+          viewAllLink="/search"
           products={products.filter((p) => p.category === "Books & Textbooks").slice(0, 8)}
         />
 
