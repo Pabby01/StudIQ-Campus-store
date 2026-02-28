@@ -90,9 +90,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 md:space-y-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 sm:pt-6 space-y-10 md:space-y-14">
         {/* Hero Carousel */}
-        <div className="glass-panel rounded-3xl p-3 sm:p-4 shadow-sm">
+        <div className="rounded-3xl p-1 sm:p-2">
           <HeroCarousel />
         </div>
 

@@ -42,7 +42,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-3 z-50">
+    <nav className="sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-3 sm:px-4">
         <div
           className={`glass-panel border border-white/60 shadow-lg transition-all duration-300 ${
@@ -195,28 +195,6 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-      </div>
-
-      {/* Mobile Search */}
-      <div
-        className={`lg:hidden px-4 transition-all duration-300 ${
-          isCompact ? "max-h-0 opacity-0 pb-0 overflow-hidden" : "max-h-24 opacity-100 pb-3"
-        }`}
-      >
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-text" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-10 pr-4 py-2.5 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const query = e.currentTarget.value;
-                if (query) window.location.href = `/search?q=${encodeURIComponent(query)}`;
-              }
-            }}
-          />
-        </div>
       </div>
 
       <style jsx>{`
