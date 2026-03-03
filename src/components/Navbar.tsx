@@ -45,7 +45,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-3 sm:px-4">
         <div
-          className={`glass-panel border border-white/60 shadow-lg transition-all duration-300 ${
+          className={`nav-glass border border-white/60 shadow-lg transition-all duration-300 ${
             isCompact ? "rounded-full px-4 sm:px-6 py-2" : "rounded-3xl px-4 sm:px-6 py-3"
           }`}
         >
