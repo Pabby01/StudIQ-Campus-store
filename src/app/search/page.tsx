@@ -133,11 +133,20 @@ function SearchPageContent() {
 
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 sm:pt-6">
         {/* Header */}
-        <div className="mb-6 glass-panel rounded-3xl p-5 sm:p-6">
-          <h1 className="text-3xl font-bold text-black mb-2">Search Products</h1>
-          <p className="text-sm text-muted-text mb-4">Find campus essentials, fast.</p>
+        <div className="mb-6 glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-black mb-2">Search Products</h1>
+              <p className="text-sm text-muted-text">Find campus essentials, fast.</p>
+            </div>
+            {!loading && (
+              <div className="glass-pill rounded-full px-4 py-2 text-xs font-semibold text-muted-text">
+                {total > 0 ? `${total} results` : "No results"}
+              </div>
+            )}
+          </div>
           <SearchBar onSearch={handleSearch} />
         </div>
 
@@ -154,7 +163,7 @@ function SearchPageContent() {
               setSortBy(e.target.value);
               setPage(1);
             }}
-            className="px-4 py-2.5 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            className="px-4 py-2.5 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue border border-white/60"
           >
             <option value="created_at">Newest First</option>
             <option value="price">Price: Low to High</option>
@@ -165,7 +174,7 @@ function SearchPageContent() {
 
         {/* Results */}
         {loading && page === 1 ? (
-          <div className="grid gap-4 grid-cols-3 lg:grid-cols-8">
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-8">
             {[...Array(8)].map((_, i) => (
               <div
                 key={i}
@@ -192,7 +201,7 @@ function SearchPageContent() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4 grid-cols-3 lg:grid-cols-8">
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-8">
               {products.map((product) => (
                 <ProductCard key={product.id} p={product} />
               ))}
