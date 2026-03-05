@@ -11,8 +11,8 @@ const features = [
     slug: "delivery",
     title: "Instant Campus Delivery",
     description: "Get essentials delivered in hours with real‑time tracking and reliable handoff.",
-    image: "https://images.unsplash.com/photo-1521335629791-ce4aec67dd47?auto=format&fit=crop&w=1400&q=80",
-    iconImage: "https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=140&q=80",
+    image: "/tech.jpg",
+    iconImage: "/tech.jpg",
     accent: "from-blue-100/80 via-white to-indigo-100/80",
     highlight: "Same‑day in major campuses",
   },
@@ -20,8 +20,8 @@ const features = [
     slug: "verified",
     title: "Verified Student Stores",
     description: "Shop trusted campus sellers with transparent ratings, reviews, and badges.",
-    image: "https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1400&q=80",
-    iconImage: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=140&q=80",
+    image: "/happy.jpg",
+    iconImage: "/happy.jpg",
     accent: "from-emerald-100/80 via-white to-teal-100/80",
     highlight: "Community‑vetted sellers",
   },
@@ -29,8 +29,8 @@ const features = [
     slug: "payments",
     title: "Secure Wallet Payments",
     description: "Pay with Solana in seconds or choose flexible pay‑on‑delivery options.",
-    image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1400&q=80",
-    iconImage: "https://images.unsplash.com/photo-1556745753-b2904692b3cd?auto=format&fit=crop&w=140&q=80",
+    image: "/carousel_bg_2.png",
+    iconImage: "/carousel_bg_2.png",
     accent: "from-purple-100/80 via-white to-pink-100/80",
     highlight: "Fast, secure, modern",
   },
@@ -38,8 +38,8 @@ const features = [
     slug: "rewards",
     title: "Rewards & Cashback",
     description: "Earn points on every order and unlock perks crafted for campus life.",
-    image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1400&q=80",
-    iconImage: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=140&q=80",
+    image: "/beat.jpg",
+    iconImage: "/beat.jpg",
     accent: "from-amber-100/80 via-white to-orange-100/80",
     highlight: "Stackable campus perks",
   },
@@ -96,10 +96,10 @@ export default function FeaturesPage() {
                     className="object-cover opacity-70"
                   />
                 </div>
-                <div className="absolute inset-x-0 bottom-0 h-1/2 backdrop-blur-md bg-white/70" />
-                <div className="relative z-10 flex flex-col gap-3">
+                <div className="absolute inset-x-0 bottom-0 h-[48%] backdrop-blur-lg bg-white/75" />
+                <div className="relative z-10 flex flex-col gap-3 pb-2">
                   <div className="flex items-center justify-between">
-                    <div className="relative w-10 h-10 rounded-2xl overflow-hidden border border-white/70 shadow-sm">
+                    <div className="relative w-10 h-10 rounded-2xl overflow-hidden border border-white/70 shadow-sm bg-white/70">
                       <Image
                         src={feature.iconImage}
                         alt={`${feature.title} icon`}

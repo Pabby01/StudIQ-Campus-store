@@ -37,8 +37,8 @@ export default function Home() {
     {
       title: "Instant Campus Delivery",
       description: "Get essentials delivered in hours with real‑time tracking.",
-      image: "https://images.unsplash.com/photo-1521335629791-ce4aec67dd47?auto=format&fit=crop&w=1200&q=80",
-      iconImage: "https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=120&q=80",
+      image: "/tech.jpg",
+      iconImage: "/tech.jpg",
       badge: "Fast",
       slug: "delivery",
       accent: "from-blue-100/80 via-white to-indigo-100/80",
@@ -46,8 +46,8 @@ export default function Home() {
     {
       title: "Verified Student Stores",
       description: "Shop trusted campus sellers with reviews and ratings.",
-      image: "https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80",
-      iconImage: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=120&q=80",
+      image: "/happy.jpg",
+      iconImage: "/happy.jpg",
       badge: "Trusted",
       slug: "verified",
       accent: "from-emerald-100/80 via-white to-teal-100/80",
@@ -55,8 +55,8 @@ export default function Home() {
     {
       title: "Secure Wallet Payments",
       description: "Pay with Solana in seconds or choose pay‑on‑delivery.",
-      image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
-      iconImage: "https://images.unsplash.com/photo-1556745753-b2904692b3cd?auto=format&fit=crop&w=120&q=80",
+      image: "/carousel_bg_2.png",
+      iconImage: "/carousel_bg_2.png",
       badge: "Secure",
       slug: "payments",
       accent: "from-purple-100/80 via-white to-pink-100/80",
@@ -64,8 +64,8 @@ export default function Home() {
     {
       title: "Rewards & Cashback",
       description: "Earn points on every order and unlock campus perks.",
-      image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
-      iconImage: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=120&q=80",
+      image: "/beat.jpg",
+      iconImage: "/beat.jpg",
       badge: "Rewards",
       slug: "rewards",
       accent: "from-amber-100/80 via-white to-orange-100/80",
@@ -170,10 +170,10 @@ export default function Home() {
                         className="object-cover opacity-70"
                       />
                     </div>
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 backdrop-blur-md bg-white/70" />
-                    <div className="relative z-10 flex h-full flex-col justify-end gap-3">
+                    <div className="absolute inset-x-0 bottom-0 h-[48%] backdrop-blur-lg bg-white/75" />
+                    <div className="relative z-10 flex h-full flex-col justify-end gap-3 pb-2">
                       <div className="flex items-center justify-between">
-                        <div className="relative w-9 h-9 rounded-2xl overflow-hidden border border-white/70 shadow-sm">
+                        <div className="relative w-9 h-9 rounded-2xl overflow-hidden border border-white/70 shadow-sm bg-white/70">
                           <Image
                             src={feature.iconImage}
                             alt={`${feature.title} icon`}
