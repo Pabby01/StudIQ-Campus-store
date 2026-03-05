@@ -201,7 +201,7 @@ export default function Home() {
         {/* Bottom CTA */}
         <div className="bg-gradient-to-r from-primary-blue to-accent-blue rounded-3xl p-8 text-center text-white shadow-lg">
           <h2 className="text-3xl font-bold mb-3">Start Selling on Campus</h2>
-          <p className="text-lg opacity-90 mb-6">
+          <p className="text-lg text-black opacity-90 mb-6">
             Join hundreds of student entrepreneurs earning with StudIQ
           </p>
           <button
