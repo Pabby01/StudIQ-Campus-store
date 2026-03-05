@@ -8,7 +8,7 @@ import FeaturedStores from "@/components/FeaturedStores";
 import StoreCard from "@/components/StoreCard";
 import ProductCard from "@/components/ProductCard";
 import { encodeGeohash } from "@/lib/geohash";
-import { Store, TrendingUp, Sparkles, Zap, Laptop, BookOpen, Rocket, ShieldCheck, Coins, BadgeCheck } from "lucide-react";
+import { Store, TrendingUp, Sparkles, Zap, Laptop, BookOpen } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -37,8 +37,8 @@ export default function Home() {
     {
       title: "Instant Campus Delivery",
       description: "Get essentials delivered in hours with real‑time tracking.",
-      icon: Rocket,
       image: "https://images.unsplash.com/photo-1521335629791-ce4aec67dd47?auto=format&fit=crop&w=1200&q=80",
+      iconImage: "https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=120&q=80",
       badge: "Fast",
       slug: "delivery",
       accent: "from-blue-100/80 via-white to-indigo-100/80",
@@ -46,8 +46,8 @@ export default function Home() {
     {
       title: "Verified Student Stores",
       description: "Shop trusted campus sellers with reviews and ratings.",
-      icon: BadgeCheck,
       image: "https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80",
+      iconImage: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=120&q=80",
       badge: "Trusted",
       slug: "verified",
       accent: "from-emerald-100/80 via-white to-teal-100/80",
@@ -55,8 +55,8 @@ export default function Home() {
     {
       title: "Secure Wallet Payments",
       description: "Pay with Solana in seconds or choose pay‑on‑delivery.",
-      icon: ShieldCheck,
       image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
+      iconImage: "https://images.unsplash.com/photo-1556745753-b2904692b3cd?auto=format&fit=crop&w=120&q=80",
       badge: "Secure",
       slug: "payments",
       accent: "from-purple-100/80 via-white to-pink-100/80",
@@ -64,8 +64,8 @@ export default function Home() {
     {
       title: "Rewards & Cashback",
       description: "Earn points on every order and unlock campus perks.",
-      icon: Coins,
       image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+      iconImage: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=120&q=80",
       badge: "Rewards",
       slug: "rewards",
       accent: "from-amber-100/80 via-white to-orange-100/80",
@@ -151,7 +151,6 @@ export default function Home() {
           </div>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {featureCards.map((feature, index) => {
-              const Icon = feature.icon;
               return (
                 <Link key={feature.slug} href={`/features#${feature.slug}`} className="block h-full">
                   <motion.div
@@ -159,7 +158,7 @@ export default function Home() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-40px" }}
                     transition={{ duration: 0.4, delay: index * 0.06 }}
-                    className="group relative h-full overflow-hidden glass-card rounded-3xl border border-white/60 p-5 hover-lift"
+                    className="group relative h-full overflow-hidden glass-card rounded-3xl border border-white/60 p-4 hover-lift"
                   >
                     <div className={`absolute inset-0 bg-gradient-to-br ${feature.accent}`} />
                     <div className="absolute inset-0">
@@ -168,23 +167,30 @@ export default function Home() {
                         alt={feature.title}
                         fill
                         sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 90vw"
-                        className="object-cover opacity-20"
+                        className="object-cover opacity-70"
                       />
                     </div>
-                    <div className="relative z-10 flex flex-col gap-4">
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 backdrop-blur-md bg-white/70" />
+                    <div className="relative z-10 flex h-full flex-col justify-end gap-3">
                       <div className="flex items-center justify-between">
-                        <div className="w-11 h-11 rounded-2xl glass-pill flex items-center justify-center">
-                          <Icon className="w-5 h-5 text-primary-blue" />
+                        <div className="relative w-9 h-9 rounded-2xl overflow-hidden border border-white/70 shadow-sm">
+                          <Image
+                            src={feature.iconImage}
+                            alt={`${feature.title} icon`}
+                            fill
+                            sizes="36px"
+                            className="object-cover"
+                          />
                         </div>
-                        <span className="text-[11px] font-semibold text-primary-blue uppercase tracking-wide">
+                        <span className="text-[10px] font-semibold text-primary-blue uppercase tracking-wide">
                           {feature.badge}
                         </span>
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-black">{feature.title}</h3>
-                        <p className="text-sm text-muted-text mt-2">{feature.description}</p>
+                        <h3 className="text-base font-semibold text-black">{feature.title}</h3>
+                        <p className="text-xs text-muted-text mt-1.5">{feature.description}</p>
                       </div>
-                      <div className="flex items-center gap-2 text-primary-blue text-xs font-semibold">
+                      <div className="flex items-center gap-2 text-primary-blue text-[11px] font-semibold">
                         Learn more
                         <span className="transition-transform group-hover:translate-x-1">→</span>
                       </div>
