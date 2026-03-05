@@ -4,12 +4,14 @@
 import { useEffect, useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
 import ProductRow from "@/components/ProductRow";
-import PromoBanner from "@/components/PromoBanner";
 import FeaturedStores from "@/components/FeaturedStores";
 import StoreCard from "@/components/StoreCard";
 import ProductCard from "@/components/ProductCard";
 import { encodeGeohash } from "@/lib/geohash";
-import { Store, TrendingUp, Sparkles, Zap, Laptop, BookOpen } from "lucide-react";
+import { Store, TrendingUp, Sparkles, Zap, Laptop, BookOpen, Rocket, ShieldCheck, Coins, BadgeCheck } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { motion } from "framer-motion";
 
 type Product = Readonly<{
   id: string;
@@ -31,6 +33,44 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [nearbyStores, setNearbyStores] = useState<StoreType[]>([]);
   const [loading, setLoading] = useState(true);
+  const featureCards = [
+    {
+      title: "Instant Campus Delivery",
+      description: "Get essentials delivered in hours with real‑time tracking.",
+      icon: Rocket,
+      image: "https://images.unsplash.com/photo-1521335629791-ce4aec67dd47?auto=format&fit=crop&w=1200&q=80",
+      badge: "Fast",
+      slug: "delivery",
+      accent: "from-blue-100/80 via-white to-indigo-100/80",
+    },
+    {
+      title: "Verified Student Stores",
+      description: "Shop trusted campus sellers with reviews and ratings.",
+      icon: BadgeCheck,
+      image: "https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=1200&q=80",
+      badge: "Trusted",
+      slug: "verified",
+      accent: "from-emerald-100/80 via-white to-teal-100/80",
+    },
+    {
+      title: "Secure Wallet Payments",
+      description: "Pay with Solana in seconds or choose pay‑on‑delivery.",
+      icon: ShieldCheck,
+      image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
+      badge: "Secure",
+      slug: "payments",
+      accent: "from-purple-100/80 via-white to-pink-100/80",
+    },
+    {
+      title: "Rewards & Cashback",
+      description: "Earn points on every order and unlock campus perks.",
+      icon: Coins,
+      image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+      badge: "Rewards",
+      slug: "rewards",
+      accent: "from-amber-100/80 via-white to-orange-100/80",
+    },
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,30 +136,65 @@ export default function Home() {
           <HeroCarousel />
         </div>
 
-        {/* Promo Banners */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <PromoBanner
-            title="Earn Rewards"
-            subtitle="Get points on every purchase"
-            bgColor="bg-gradient-to-r from-blue-600 to-purple-600"
-            ctaText="Learn More"
-            ctaLink="/dashboard"
-          />
-          <PromoBanner
-            title="Campus Deals"
-            subtitle="Exclusive student discounts"
-            bgColor="bg-gradient-to-r from-purple-600 to-pink-600"
-            ctaText="Shop Deals"
-            ctaLink="/search"
-          />
-          <PromoBanner
-            title="Fast Delivery"
-            subtitle="Same-day campus delivery"
-            bgColor="bg-gradient-to-r from-green-600 to-teal-600"
-            ctaText="Order Now"
-            ctaLink="/search"
-          />
-        </div>
+        <section className="glass-panel rounded-3xl p-5 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-black">Why Students Love StudIQ</h2>
+              <p className="text-sm text-muted-text">Premium features built for campus life.</p>
+            </div>
+            <Link
+              href="/features"
+              className="text-primary-blue font-medium text-xs px-3 py-1.5 rounded-full glass-pill hover:bg-white/90 transition-colors w-fit"
+            >
+              Explore all features
+            </Link>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {featureCards.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <Link key={feature.slug} href={`/features#${feature.slug}`} className="block h-full">
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ duration: 0.4, delay: index * 0.06 }}
+                    className="group relative h-full overflow-hidden glass-card rounded-3xl border border-white/60 p-5 hover-lift"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${feature.accent}`} />
+                    <div className="absolute inset-0">
+                      <Image
+                        src={feature.image}
+                        alt={feature.title}
+                        fill
+                        sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 90vw"
+                        className="object-cover opacity-20"
+                      />
+                    </div>
+                    <div className="relative z-10 flex flex-col gap-4">
+                      <div className="flex items-center justify-between">
+                        <div className="w-11 h-11 rounded-2xl glass-pill flex items-center justify-center">
+                          <Icon className="w-5 h-5 text-primary-blue" />
+                        </div>
+                        <span className="text-[11px] font-semibold text-primary-blue uppercase tracking-wide">
+                          {feature.badge}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-black">{feature.title}</h3>
+                        <p className="text-sm text-muted-text mt-2">{feature.description}</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-primary-blue text-xs font-semibold">
+                        Learn more
+                        <span className="transition-transform group-hover:translate-x-1">→</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
 
         {/* Trending Products */}
         <ProductRow
