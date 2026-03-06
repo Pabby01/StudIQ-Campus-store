@@ -181,7 +181,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   return (
     <div className="h-full">
       <div
-        className="glass-card rounded-2xl border border-white/60 overflow-hidden hover-lift h-full flex flex-col group relative cursor-pointer"
+        className="bg-white rounded-[28px] border border-gray-200 overflow-hidden hover-lift h-full flex flex-col group relative cursor-pointer shadow-sm"
         onClick={openDetails}
       >
 
@@ -189,45 +189,49 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         {!isOwnProduct && (
           <button
             onClick={toggleWishlist}
-            className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full glass-pill flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
+            className="absolute top-3 left-3 z-10 w-9 h-9 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition-all shadow-sm border border-white/70"
           >
-            <Heart className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500 hover:text-red-500'}`} />
+            <Heart className={`w-4 h-4 transition-colors ${isWishlisted ? "fill-red-500 text-red-500" : "text-gray-600 hover:text-red-500"}`} />
           </button>
         )}
 
         {/* Sold Out Badge */}
         {isSoldOut && (
-          <div className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full z-10 shadow-lg">
+          <div className="absolute top-14 left-3 bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full z-10 shadow-lg">
             SOLD OUT
           </div>
         )}
 
         {/* Discount Badge */}
         {hasDiscount && !isSoldOut && (
-          <Badge variant="green" className="absolute top-3 left-3 font-bold shadow-md rounded-full">
+          <Badge variant="green" className="absolute top-14 left-3 font-bold shadow-md rounded-full">
             {discountPercent}% OFF
           </Badge>
         )}
 
         {/* Image */}
-        <div className="relative w-full pt-[60%] bg-gradient-to-br from-slate-50 to-white overflow-hidden">
+        <div className="relative w-full pt-[72%] bg-slate-50 overflow-hidden rounded-2xl m-3">
           {p.image_url ? (
             <Image
               src={p.image_url}
               alt={p.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="object-contain p-4 group-hover:scale-[1.02] transition-transform duration-300"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">
               No Image
             </div>
           )}
+          <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold text-black shadow-sm border border-black/10">
+            <Star className="w-3 h-3 fill-black text-black" />
+            {p.rating?.toFixed?.(1) ?? "0.0"}
+          </div>
         </div>
 
         {/* Product Details */}
-        <div className="p-3 flex-1 flex flex-col">
+        <div className="px-4 pb-4 flex-1 flex flex-col">
           {/* Premium Badge + Category */}
           <div className="flex items-center justify-between mb-1">
             {p.category && (
@@ -249,25 +253,18 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               For {p.stores.name}
             </Link>
           )}
-          <p className="font-semibold text-black text-xs sm:text-sm line-clamp-2 mb-1 min-h-[14px] leading-tight group-hover:text-primary-blue transition-colors">
+          <p className="font-semibold text-black text-sm line-clamp-2 mb-1 min-h-[18px] leading-tight group-hover:text-black">
             {p.name}
           </p>
-          <div className="flex items-center gap-1 mb-1">
-            <Star className="w-2 h-2 fill-yellow-400 text-yellow-400" />
-            <span className="text-[9px] font-medium text-black">
-              {p.rating?.toFixed?.(1) ?? "0.0"}
-            </span>
-            <span className="text-[8px] text-muted-text">({p.reviews_count || 0})</span>
-          </div>
 
           {/* Pricing */}
           <div className="space-y-1 mt-auto">
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[12px] sm:text-sm font-bold text-black">
+              <span className="text-sm font-bold text-black">
                 {formatPrice(Number(displayPrice))}
               </span>
               {hasDiscount && (
-                <span className="text-[9px] sm:text-[10px] text-muted-text line-through">
+                <span className="text-[10px] text-muted-text line-through">
                   {formatPrice(originalPrice!)}
                 </span>
               )}
@@ -305,7 +302,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           )}
 
           {/* Add to Cart Button or Sold Out / Own Product Message */}
-          <div className="mt-2">
+          <div className="mt-3">
             {isSoldOut ? (
               <Button
                 variant="outline"
@@ -348,12 +345,11 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               </div>
             ) : (
               <Button
-                variant="primary"
                 size="sm"
-                className="w-full h-8 text-xs"
+                className="w-full h-9 text-xs bg-black text-white hover:bg-black/90 focus:ring-black rounded-full"
                 onClick={handleAddToCart}
               >
-                Add to cart
+                Buy Now
               </Button>
             )}
           </div>
