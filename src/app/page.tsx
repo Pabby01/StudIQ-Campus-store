@@ -136,72 +136,6 @@ export default function Home() {
           <HeroCarousel />
         </div>
 
-        <section className="glass-panel rounded-3xl p-5 sm:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-black">Why Students Love StudIQ</h2>
-              <p className="text-sm text-muted-text">Premium features built for campus life.</p>
-            </div>
-            <Link
-              href="/features"
-              className="text-primary-blue font-medium text-xs px-3 py-1.5 rounded-full glass-pill hover:bg-white/90 transition-colors w-fit"
-            >
-              Explore all features
-            </Link>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {featureCards.map((feature, index) => {
-              return (
-                <Link key={feature.slug} href={`/features#${feature.slug}`} className="block h-full">
-                  <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-40px" }}
-                    transition={{ duration: 0.4, delay: index * 0.06 }}
-                    className="group relative h-full overflow-hidden glass-card rounded-3xl border border-white/60 p-4 hover-lift"
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${feature.accent}`} />
-                    <div className="absolute inset-0">
-                      <Image
-                        src={feature.image}
-                        alt={feature.title}
-                        fill
-                        sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 90vw"
-                        className="object-cover opacity-70"
-                      />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 h-[48%] backdrop-blur-lg bg-white/75" />
-                    <div className="relative z-10 flex h-full flex-col justify-end gap-3 pb-2">
-                      <div className="flex items-center justify-between">
-                        <div className="relative w-9 h-9 rounded-2xl overflow-hidden border border-white/70 shadow-sm bg-white/70">
-                          <Image
-                            src={feature.iconImage}
-                            alt={`${feature.title} icon`}
-                            fill
-                            sizes="36px"
-                            className="object-cover"
-                          />
-                        </div>
-                        <span className="text-[10px] font-semibold text-primary-blue uppercase tracking-wide">
-                          {feature.badge}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="text-base font-semibold text-black">{feature.title}</h3>
-                        <p className="text-xs text-muted-text mt-1.5">{feature.description}</p>
-                      </div>
-                      <div className="flex items-center gap-2 text-primary-blue text-[11px] font-semibold">
-                        Learn more
-                        <span className="transition-transform group-hover:translate-x-1">→</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
         {/* Trending Products */}
         <ProductRow
           title="Trending Now"
@@ -276,6 +210,72 @@ export default function Home() {
             {nearbyStores.slice(0, 6).map((store) => (
               <StoreCard key={store.id} s={store} />
             ))}
+          </div>
+        </section>
+
+        <section className="glass-panel rounded-3xl p-5 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-black">Why Students Love StudIQ</h2>
+              <p className="text-sm text-muted-text">Premium features built for campus life.</p>
+            </div>
+            <Link
+              href="/features"
+              className="text-primary-blue font-medium text-xs px-3 py-1.5 rounded-full glass-pill hover:bg-white/90 transition-colors w-fit"
+            >
+              Explore all features
+            </Link>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {featureCards.map((feature, index) => {
+              return (
+                <Link key={feature.slug} href={`/features#${feature.slug}`} className="block h-full">
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ duration: 0.4, delay: index * 0.06 }}
+                    className="group relative h-full overflow-hidden glass-card rounded-3xl border border-white/60 p-4 hover-lift"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${feature.accent}`} />
+                    <div className="absolute inset-0">
+                      <Image
+                        src={feature.image}
+                        alt={feature.title}
+                        fill
+                        sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 90vw"
+                        className="object-cover opacity-70"
+                      />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 h-[48%] backdrop-blur-lg bg-white/75" />
+                    <div className="relative z-10 flex h-full flex-col justify-end gap-3 pb-2">
+                      <div className="flex items-center justify-between">
+                        <div className="relative w-9 h-9 rounded-2xl overflow-hidden border border-white/70 shadow-sm bg-white/70">
+                          <Image
+                            src={feature.iconImage}
+                            alt={`${feature.title} icon`}
+                            fill
+                            sizes="36px"
+                            className="object-cover"
+                          />
+                        </div>
+                        <span className="text-[10px] font-semibold text-primary-blue uppercase tracking-wide">
+                          {feature.badge}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold text-black">{feature.title}</h3>
+                        <p className="text-xs text-muted-text mt-1.5">{feature.description}</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-primary-blue text-[11px] font-semibold">
+                        Learn more
+                        <span className="transition-transform group-hover:translate-x-1">→</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              );
+            })}
           </div>
         </section>
 

@@ -113,13 +113,13 @@ export default function Navbar() {
           </div>
 
           {/* Search Bar - Center */}
-          <div className={`hidden lg:flex flex-1 mx-6 transition-all ${isCompact ? "max-w-sm" : "max-w-md"}`}>
+          <div className={`flex flex-1 mx-3 sm:mx-6 transition-all ${isCompact ? "max-w-[170px] sm:max-w-sm" : "max-w-[190px] sm:max-w-sm lg:max-w-md"}`}>
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-text" />
               <input
                 type="text"
                 placeholder="Search products, stores..."
-                className={`w-full pl-10 pr-4 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm ${
+                className={`w-full pl-10 pr-4 glass-pill rounded-full text-[11px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm ${
                   isCompact ? "py-2" : "py-2.5"
                 }`}
                 onKeyDown={(e) => {
