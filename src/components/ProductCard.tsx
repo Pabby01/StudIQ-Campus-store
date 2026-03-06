@@ -181,7 +181,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   return (
     <div className="h-full">
       <div
-        className="bg-white rounded-[28px] border border-gray-200 overflow-hidden hover-lift h-full grid grid-rows-[3fr_2fr] group relative cursor-pointer shadow-sm min-h-[320px]"
+        className="bg-white rounded-[22px] border border-gray-200 overflow-hidden hover-lift h-full grid grid-rows-[3fr_2fr] group relative cursor-pointer shadow-sm min-h-[150px] sm:min-h-[220px] lg:min-h-[120px]"
         onClick={openDetails}
       >
 
@@ -189,53 +189,53 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         {!isOwnProduct && (
           <button
             onClick={toggleWishlist}
-            className="absolute top-3 left-3 z-10 w-9 h-9 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition-all shadow-sm border border-white/70"
+            className="absolute top-2.5 left-2.5 z-10 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition-all shadow-sm border border-white/70"
           >
-            <Heart className={`w-4 h-4 transition-colors ${isWishlisted ? "fill-red-500 text-red-500" : "text-gray-600 hover:text-red-500"}`} />
+            <Heart className={`w-3.5 h-3.5 transition-colors ${isWishlisted ? "fill-red-500 text-red-500" : "text-gray-600 hover:text-red-500"}`} />
           </button>
         )}
 
         {/* Sold Out Badge */}
         {isSoldOut && (
-          <div className="absolute top-14 left-3 bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full z-10 shadow-lg">
+          <div className="absolute top-12 left-2.5 bg-red-600 text-white text-[9px] font-bold px-2.5 py-1 rounded-full z-10 shadow-lg">
             SOLD OUT
           </div>
         )}
 
         {/* Discount Badge */}
         {hasDiscount && !isSoldOut && (
-          <Badge variant="green" className="absolute top-14 left-3 font-bold shadow-md rounded-full">
+          <Badge variant="green" className="absolute top-12 left-2.5 font-bold shadow-md rounded-full">
             {discountPercent}% OFF
           </Badge>
         )}
 
         {/* Image */}
-        <div className="relative w-full bg-slate-50 overflow-hidden rounded-2xl m-3">
+        <div className="relative w-full bg-slate-50 overflow-hidden rounded-2xl m-2.5">
           {p.image_url ? (
             <Image
               src={p.image_url}
               alt={p.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
-              className="object-contain p-4 group-hover:scale-[1.02] transition-transform duration-300"
+              className="object-contain p-3 group-hover:scale-[1.02] transition-transform duration-300"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">
               No Image
             </div>
           )}
-          <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold text-black shadow-sm border border-black/10">
-            <Star className="w-3 h-3 fill-black text-black" />
+          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-black shadow-sm border border-black/10">
+            <Star className="w-2.5 h-2.5 fill-black text-black" />
             {p.rating?.toFixed?.(1) ?? "0.0"}
           </div>
         </div>
 
         {/* Product Details */}
-        <div className="px-4 pb-4 flex flex-col min-h-0">
+        <div className="px-3.5 pb-3.5 flex flex-col min-h-0">
           {/* Premium Badge + Category */}
           <div className="flex items-center justify-between mb-1">
             {p.category && (
-              <span className="text-[9px] text-muted-text uppercase tracking-wide truncate pr-1">
+              <span className="text-[8px] text-muted-text uppercase tracking-wide truncate pr-1">
                 {p.category}
               </span>
             )}
@@ -247,30 +247,30 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           {p.stores?.name && (
             <Link
               href={`/store/${p.store_id}`}
-              className="text-[9px] text-primary-blue mb-1 hover:underline block w-fit"
+              className="text-[8px] text-primary-blue mb-1 hover:underline block w-fit"
               onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
             >
               For {p.stores.name}
             </Link>
           )}
-          <p className="font-semibold text-black text-sm line-clamp-2 mb-1 min-h-[18px] leading-tight group-hover:text-black">
+          <p className="font-semibold text-black text-[13px] line-clamp-2 mb-1 min-h-[16px] leading-tight group-hover:text-black">
             {p.name}
           </p>
 
           {/* Pricing */}
           <div className="space-y-1 mt-auto">
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-sm font-bold text-black">
+              <span className="text-[13px] font-bold text-black">
                 {formatPrice(Number(displayPrice))}
               </span>
               {hasDiscount && (
-                <span className="text-[10px] text-muted-text line-through">
+                <span className="text-[9px] text-muted-text line-through">
                   {formatPrice(originalPrice!)}
                 </span>
               )}
             </div>
             {(ngnEquivalent || otherCurrency) && (
-              <div className="flex flex-wrap items-center gap-1 text-[8px]">
+              <div className="flex flex-wrap items-center gap-1 text-[7px]">
                 <span className="px-1 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                   FX
                 </span>
@@ -288,7 +288,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             )}
 
             {hasDiscount && (
-              <div className="text-[8px] text-green-600 font-medium">
+              <div className="text-[7px] text-green-600 font-medium">
                 Save {formatPrice(originalPrice! - p.price)}
               </div>
             )}
@@ -302,12 +302,12 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           )}
 
           {/* Add to Cart Button or Sold Out / Own Product Message */}
-          <div className="mt-3">
+          <div className="mt-2">
             {isSoldOut ? (
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full h-8 text-xs cursor-not-allowed opacity-60"
+                className="w-full h-7 text-[10px] cursor-not-allowed opacity-60"
                 disabled
               >
                 Sold Out
@@ -346,7 +346,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             ) : (
               <Button
                 size="sm"
-                className="w-full h-9 text-xs bg-black text-white hover:bg-black/90 focus:ring-black rounded-full"
+                className="w-full h-7 text-[10px] bg-black text-white hover:bg-black/90 focus:ring-black rounded-full"
                 onClick={handleAddToCart}
               >
                 Buy Now
