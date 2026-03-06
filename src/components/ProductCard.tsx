@@ -181,7 +181,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   return (
     <div className="h-full">
       <div
-        className="bg-white rounded-[28px] border border-gray-200 overflow-hidden hover-lift h-full flex flex-col group relative cursor-pointer shadow-sm"
+        className="bg-white rounded-[28px] border border-gray-200 overflow-hidden hover-lift h-full grid grid-rows-[3fr_2fr] group relative cursor-pointer shadow-sm min-h-[320px]"
         onClick={openDetails}
       >
 
@@ -210,7 +210,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         )}
 
         {/* Image */}
-        <div className="relative w-full pt-[72%] bg-slate-50 overflow-hidden rounded-2xl m-3">
+        <div className="relative w-full bg-slate-50 overflow-hidden rounded-2xl m-3">
           {p.image_url ? (
             <Image
               src={p.image_url}
@@ -231,7 +231,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         </div>
 
         {/* Product Details */}
-        <div className="px-4 pb-4 flex-1 flex flex-col">
+        <div className="px-4 pb-4 flex flex-col min-h-0">
           {/* Premium Badge + Category */}
           <div className="flex items-center justify-between mb-1">
             {p.category && (
