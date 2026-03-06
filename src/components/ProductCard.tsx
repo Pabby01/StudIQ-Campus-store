@@ -177,11 +177,12 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
       : p.currency === "USDC" && solUsd
         ? `SOL ${(displayPrice / solUsd).toFixed(4)}`
         : null;
+  const fxLabel = otherCurrency ?? (ngnEquivalent ? formatNgn(ngnEquivalent) : null);
 
   return (
     <div className="h-full">
       <div
-        className="bg-white rounded-[18px] border border-gray-200 overflow-hidden hover-lift h-full grid grid-rows-[2.6fr_2.4fr] sm:grid-rows-[3fr_2fr] group relative cursor-pointer shadow-sm min-h-[165px] sm:min-h-[220px] lg:min-h-[180px] aspect-square sm:aspect-[3/4]"
+        className="bg-white rounded-[18px] border border-gray-200 overflow-hidden hover-lift h-full grid grid-rows-[2.4fr_2.6fr] sm:grid-rows-[3fr_2fr] group relative cursor-pointer shadow-sm min-h-[210px] sm:min-h-[230px] lg:min-h-[190px] aspect-[4/5] sm:aspect-[3/4]"
         onClick={openDetails}
       >
 
@@ -231,7 +232,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         </div>
 
         {/* Product Details */}
-        <div className="px-3 pb-3 flex flex-col min-h-0 h-full justify-between">
+        <div className="px-3 pb-3 flex flex-col min-h-0 h-full">
           {/* Premium Badge + Category */}
           <div className="flex items-center justify-between mb-0.5">
             {p.category && (
@@ -258,41 +259,37 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           </p>
 
           {/* Pricing */}
-          <div className="space-y-0.5">
-            <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-[11px] font-bold text-black">
-                {formatPrice(Number(displayPrice))}
-              </span>
-              {hasDiscount && (
-                <span className="text-[8px] text-muted-text line-through">
-                  {formatPrice(originalPrice!)}
+          <div className="space-y-0.5 mt-auto">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-baseline gap-1.5 flex-wrap">
+                <span className="text-[11px] font-bold text-black">
+                  {formatPrice(Number(displayPrice))}
                 </span>
-              )}
-            </div>
-            {(ngnEquivalent || otherCurrency) && (
-              <div className="hidden sm:flex flex-wrap items-center gap-0.5 text-[6px]">
-                <span className="px-1 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  FX
-                </span>
-                {otherCurrency && (
-                  <span className="px-1 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                    ≈ {otherCurrency}
-                  </span>
-                )}
-                {ngnEquivalent && (
-                  <span className="px-1 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    ≈ {formatNgn(ngnEquivalent)}
+                {hasDiscount && (
+                  <span className="text-[8px] text-muted-text line-through">
+                    {formatPrice(originalPrice!)}
                   </span>
                 )}
               </div>
+              <Button
+                size="sm"
+                className="h-6 px-2.5 text-[9px] bg-black text-white hover:bg-black/90 focus:ring-black rounded-full"
+                onClick={handleAddToCart}
+              >
+                Buy
+              </Button>
+            </div>
+            {fxLabel && (
+              <div className="text-[6px] text-muted-text">
+                ≈ {fxLabel}
+              </div>
             )}
 
-            {hasDiscount && (
+              <div className="text-[6px] text-green-600 font-medium hidden sm:block">
               <div className="text-[6px] text-green-600 font-medium hidden sm:block">
                 Save {formatPrice(originalPrice! - p.price)}
               </div>
             )}
-          </div>
 
           {/* Stock Count - Show for sellers */}
           {isOwnProduct && p.inventory !== undefined && (
@@ -302,7 +299,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           )}
 
           {/* Add to Cart Button or Sold Out / Own Product Message */}
-          <div className="mt-1.5">
+          <div className="mt-1">
             {isSoldOut ? (
               <Button
                 variant="outline"
@@ -313,12 +310,12 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                 Sold Out
               </Button>
             ) : isOwnProduct ? (
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 {onEdit && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 h-8 text-xs"
+                    className="flex-1 h-6 text-[9px]"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -332,7 +329,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   <Button
                     variant="danger"
                     size="sm"
-                    className="flex-1 h-8 text-xs"
+                    className="flex-1 h-6 text-[9px]"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -343,15 +340,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   </Button>
                 )}
               </div>
-            ) : (
-              <Button
-                size="sm"
-                className="w-full h-6 text-[9px] bg-black text-white hover:bg-black/90 focus:ring-black rounded-full"
-                onClick={handleAddToCart}
-              >
-                Buy Now
-              </Button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
