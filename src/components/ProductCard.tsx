@@ -284,12 +284,12 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                 ≈ {fxLabel}
               </div>
             )}
-
-              <div className="text-[6px] text-green-600 font-medium hidden sm:block">
+            {hasDiscount && (
               <div className="text-[6px] text-green-600 font-medium hidden sm:block">
                 Save {formatPrice(originalPrice! - p.price)}
               </div>
             )}
+          </div>
 
           {/* Stock Count - Show for sellers */}
           {isOwnProduct && p.inventory !== undefined && (
