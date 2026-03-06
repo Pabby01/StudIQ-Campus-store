@@ -181,7 +181,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   return (
     <div className="h-full">
       <div
-        className="bg-white rounded-[18px] border border-gray-200 overflow-hidden hover-lift h-full grid grid-rows-[3fr_2fr] group relative cursor-pointer shadow-sm min-h-[140px] sm:min-h-[200px] lg:min-h-[160px] aspect-square sm:aspect-[3/4]"
+        className="bg-white rounded-[18px] border border-gray-200 overflow-hidden hover-lift h-full grid grid-rows-[2.6fr_2.4fr] sm:grid-rows-[3fr_2fr] group relative cursor-pointer shadow-sm min-h-[165px] sm:min-h-[220px] lg:min-h-[180px] aspect-square sm:aspect-[3/4]"
         onClick={openDetails}
       >
 
@@ -231,11 +231,11 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         </div>
 
         {/* Product Details */}
-        <div className="px-3 pb-3 flex flex-col min-h-0">
+        <div className="px-3 pb-3 flex flex-col min-h-0 h-full justify-between">
           {/* Premium Badge + Category */}
           <div className="flex items-center justify-between mb-0.5">
             {p.category && (
-              <span className="text-[7px] text-muted-text uppercase tracking-wide truncate pr-1">
+              <span className="hidden sm:inline text-[7px] text-muted-text uppercase tracking-wide truncate pr-1">
                 {p.category}
               </span>
             )}
@@ -247,18 +247,18 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           {p.stores?.name && (
             <Link
               href={`/store/${p.store_id}`}
-              className="text-[7px] text-primary-blue mb-0.5 hover:underline block w-fit"
+              className="hidden sm:block text-[7px] text-primary-blue mb-0.5 hover:underline w-fit"
               onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
             >
               For {p.stores.name}
             </Link>
           )}
-          <p className="font-semibold text-black text-[11px] line-clamp-1 mb-0.5 min-h-[12px] leading-tight group-hover:text-black">
+          <p className="font-semibold text-black text-[10px] line-clamp-1 mb-0.5 min-h-[11px] leading-tight group-hover:text-black">
             {p.name}
           </p>
 
           {/* Pricing */}
-          <div className="space-y-0.5 mt-auto">
+          <div className="space-y-0.5">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-[11px] font-bold text-black">
                 {formatPrice(Number(displayPrice))}
@@ -270,7 +270,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
               )}
             </div>
             {(ngnEquivalent || otherCurrency) && (
-              <div className="flex flex-wrap items-center gap-0.5 text-[6px]">
+              <div className="hidden sm:flex flex-wrap items-center gap-0.5 text-[6px]">
                 <span className="px-1 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                   FX
                 </span>
@@ -288,7 +288,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             )}
 
             {hasDiscount && (
-              <div className="text-[6px] text-green-600 font-medium">
+              <div className="text-[6px] text-green-600 font-medium hidden sm:block">
                 Save {formatPrice(originalPrice! - p.price)}
               </div>
             )}
