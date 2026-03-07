@@ -260,30 +260,29 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
 
           {/* Pricing */}
           <div className="space-y-0.5 mt-auto">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-baseline gap-1.5 flex-wrap">
+            <div className="text-[6px] text-muted-text min-h-[10px]">
+              {fxLabel ? `≈ ${fxLabel}` : ""}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-1/2 flex items-baseline gap-1">
                 <span className="text-[11px] font-bold text-black">
                   {formatPrice(Number(displayPrice))}
                 </span>
                 {hasDiscount && (
-                  <span className="text-[8px] text-muted-text line-through">
+                  <span className="text-[8px] text-muted-text line-through hidden sm:inline">
                     {formatPrice(originalPrice!)}
                   </span>
                 )}
               </div>
               <Button
                 size="sm"
-                className="h-6 px-2.5 text-[9px] bg-black text-white hover:bg-black/90 focus:ring-black rounded-full"
+                className="w-1/2 h-6 text-[9px] bg-black text-white hover:bg-black/90 focus:ring-black rounded-full"
                 onClick={handleAddToCart}
+                disabled={isSoldOut}
               >
-                Buy
+                {isSoldOut ? "Sold Out" : "Buy"}
               </Button>
             </div>
-            {fxLabel && (
-              <div className="text-[6px] text-muted-text">
-                ≈ {fxLabel}
-              </div>
-            )}
             {hasDiscount && (
               <div className="text-[6px] text-green-600 font-medium hidden sm:block">
                 Save {formatPrice(originalPrice! - p.price)}
@@ -293,55 +292,42 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
 
           {/* Stock Count - Show for sellers */}
           {isOwnProduct && p.inventory !== undefined && (
-            <div className="mt-1 text-[8px] text-muted-text">
+            <div className="mt-1 text-[8px] text-muted-text hidden sm:block">
               Stock: {p.inventory}
             </div>
           )}
-
-          {/* Add to Cart Button or Sold Out / Own Product Message */}
-          <div className="mt-1">
-            {isSoldOut ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full h-6 text-[9px] cursor-not-allowed opacity-60"
-                disabled
-              >
-                Sold Out
-              </Button>
-            ) : isOwnProduct ? (
-              <div className="flex gap-1.5">
-                {onEdit && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-6 text-[9px]"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onEdit();
-                    }}
-                  >
-                    Edit
-                  </Button>
-                )}
-                {onDelete && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    className="flex-1 h-6 text-[9px]"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onDelete();
-                    }}
-                  >
-                    Delete
-                  </Button>
-                )}
-              </div>
-            ) : null}
-          </div>
+          {isOwnProduct && (
+            <div className="mt-1 hidden sm:flex gap-1.5">
+              {onEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 h-6 text-[9px]"
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                >
+                  Edit
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="flex-1 h-6 text-[9px]"
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                >
+                  Delete
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

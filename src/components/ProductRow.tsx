@@ -87,7 +87,7 @@ export default function ProductRow({
                 {/* Products Container */}
                 <div
                     ref={scrollRef}
-                    className="grid grid-cols-2 gap-3 sm:flex sm:gap-4 sm:overflow-x-auto sm:scrollbar-hide sm:scroll-smooth sm:pb-2"
+                    className="grid grid-cols-2 gap-4 sm:flex sm:gap-4 sm:overflow-x-auto sm:scrollbar-hide sm:scroll-smooth sm:pb-2"
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                     {products.map((product) => {
