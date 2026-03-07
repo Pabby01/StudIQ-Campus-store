@@ -246,18 +246,18 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             )}
           </div>
 
-          {p.stores?.name && (
-            <Link
-              href={`/store/${p.store_id}`}
-              className="hidden sm:block text-[7px] text-primary-blue mb-0.5 hover:underline w-fit"
-              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
-            >
-              For {p.stores.name}
-            </Link>
-          )}
           <p className="font-semibold text-black text-[10px] line-clamp-1 mb-0.5 min-h-[11px] leading-tight group-hover:text-black">
             {p.name}
           </p>
+          {p.stores?.name && (
+            <Link
+              href={`/store/${p.store_id}`}
+              className="text-[8px] text-primary-blue mb-0.5 hover:underline w-fit"
+              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
+            >
+              {p.stores.name}
+            </Link>
+          )}
 
           {/* Pricing */}
           <div className="space-y-0.5 mt-auto">
