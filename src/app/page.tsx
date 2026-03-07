@@ -8,7 +8,7 @@ import FeaturedStores from "@/components/FeaturedStores";
 import StoreCard from "@/components/StoreCard";
 import ProductCard from "@/components/ProductCard";
 import { encodeGeohash } from "@/lib/geohash";
-import { Store, TrendingUp, Sparkles, Zap, Laptop, BookOpen, Search } from "lucide-react";
+import { Store, TrendingUp, Sparkles, Zap, Laptop, BookOpen, Search, Package } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -131,27 +131,21 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 sm:pt-6 space-y-10 md:space-y-14">
-        <div className="glass-panel rounded-3xl p-4 sm:p-5">
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-text" />
-              <input
-                type="text"
-                placeholder="Search products, stores..."
-                className="w-full pl-10 pr-4 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm py-2.5"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const query = e.currentTarget.value;
-                    if (query) window.location.href = `/search?q=${encodeURIComponent(query)}`;
-                  }
-                }}
-              />
-            </div>
+        <div className="glass-panel rounded-3xl p-3 sm:p-4">
+          <div className="flex items-center justify-between">
             <Link
               href="/search"
-              className="px-4 py-2.5 rounded-full bg-black text-white text-sm font-semibold text-center hover:bg-black/90 transition-colors"
+              className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-black/90 transition-colors"
+              aria-label="All Products"
             >
-              All Products
+              <Package className="w-5 h-5" />
+            </Link>
+            <Link
+              href="/search"
+              className="w-10 h-10 rounded-full bg-white text-black border border-white/70 flex items-center justify-center hover:bg-white/90 transition-colors"
+              aria-label="Search"
+            >
+              <Search className="w-5 h-5" />
             </Link>
           </div>
         </div>
