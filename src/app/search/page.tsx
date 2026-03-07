@@ -34,7 +34,7 @@ function SearchPageContent() {
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 640px)");
     const handleChange = () => {
-      setLimit(mediaQuery.matches ? 9 : 64);
+      setLimit(mediaQuery.matches ? 10 : 64);
     };
     handleChange();
     mediaQuery.addEventListener("change", handleChange);

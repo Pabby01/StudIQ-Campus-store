@@ -442,38 +442,49 @@ export default function CartPage() {
               {/* Cart Items */}
               <div className="space-y-4">
                 {items.map((item) => (
-                  <Card key={item.id} className="p-4 glass-panel border-white/60">
+                  <Card key={item.id} className="p-4 sm:p-5 bg-white/80 border border-white/60 rounded-3xl shadow-sm">
                     <div className="flex gap-4">
                       {item.imageUrl ? (
                         <img
                           src={item.imageUrl}
                           alt={item.name}
-                          className="w-24 h-24 object-cover rounded-lg flex-shrink-0 border border-border-gray"
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-2xl flex-shrink-0 border border-border-gray"
                         />
                       ) : (
-                        <div className="w-24 h-24 bg-soft-gray-bg rounded-lg flex-shrink-0 flex items-center justify-center text-muted-text text-xs">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-soft-gray-bg rounded-2xl flex-shrink-0 flex items-center justify-center text-muted-text text-xs">
                           No image
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-black mb-1">{item.name}</h3>
-                        <p className="text-lg font-bold text-primary-blue">
-                          {item.currency === "SOL"
-                            ? `${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)} SOL`
-                            : `$${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)}`
-                          }
-                        </p>
-                        {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
-                          <p className="text-xs text-muted-text mb-3">
-                            {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd) && (
-                              <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)} </>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-black mb-1 text-sm sm:text-base truncate">{item.name}</h3>
+                            <p className="text-base font-bold text-black">
+                              {item.currency === "SOL"
+                                ? `${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)} SOL`
+                                : `$${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)}`
+                              }
+                            </p>
+                            {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
+                              <p className="text-xs text-muted-text">
+                                {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd) && (
+                                  <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)} </>
+                                )}
+                                {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
+                                  <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)!)} </>
+                                )}
+                              </p>
                             )}
-                            {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
-                              <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)!)} </>
-                            )}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-3">
+                          </div>
+                          <button
+                            onClick={() => remove(item.id)}
+                            className="w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"
+                            disabled={checkoutStatus !== "idle"}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 glass-pill rounded-full p-1">
                             <button
                               onClick={() => updateQty(item.id, Math.max(1, item.qty - 1))}
@@ -491,32 +502,25 @@ export default function CartPage() {
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
-                          <button
-                            onClick={() => remove(item.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                            disabled={checkoutStatus !== "idle"}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="text-right">
+                            <p className="font-semibold text-black text-sm">
+                              {item.currency === "SOL"
+                                ? `${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)} SOL`
+                                : `$${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)}`
+                              }
+                            </p>
+                            {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
+                              <p className="text-xs text-muted-text">
+                                {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty) && (
+                                  <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty)} </>
+                                )}
+                                {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
+                                  <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)! * item.qty)} </>
+                                )}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-black">
-                          {item.currency === "SOL"
-                            ? `${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)} SOL`
-                            : `$${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)}`
-                          }
-                        </p>
-                        {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
-                          <p className="text-xs text-muted-text">
-                            {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty) && (
-                              <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty)} </>
-                            )}
-                            {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
-                              <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)! * item.qty)} </>
-                            )}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </Card>

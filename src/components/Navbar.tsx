@@ -14,6 +14,11 @@ export default function Navbar() {
   const items = useCart((s) => s.items);
   const fetchSolPrice = useCart((s) => s.fetchSolPrice);
   const [isCompact, setIsCompact] = useState(false);
+  const avatarUrl =
+    (user as { picture?: string; image?: string; avatar?: string } | null)?.picture ||
+    (user as { picture?: string; image?: string; avatar?: string } | null)?.image ||
+    (user as { picture?: string; image?: string; avatar?: string } | null)?.avatar ||
+    null;
 
   // Pre-fetch SOL price on mount to warm cache for checkout
   useEffect(() => {
@@ -142,7 +147,15 @@ export default function Navbar() {
                     isCompact ? "p-1.5" : "p-2"
                   }`}
                 >
-                  <User className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Profile"
+                      className="w-6 h-6 rounded-full object-cover border border-white/60"
+                    />
+                  ) : (
+                    <User className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                  )}
                   <span
                     className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
                       isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"

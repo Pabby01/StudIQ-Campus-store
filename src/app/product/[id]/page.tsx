@@ -52,6 +52,7 @@ export default function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [ngnPerUsd, setNgnPerUsd] = useState<number | null>(cachedNgnPerUsd);
   const [solUsd, setSolUsd] = useState<number | null>(cachedSolUsd);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
@@ -86,6 +87,53 @@ export default function ProductDetailPage() {
       toast.error("Failed to load product");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+    if (!shareUrl) return;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: product?.name || "StudIQ Product",
+          url: shareUrl,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Could not share link");
+    }
+  };
+
+  const toggleWishlist = async () => {
+    if (!walletAddress || !product) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    const previousState = isWishlisted;
+    setIsWishlisted(!previousState);
+
+    try {
+      if (!previousState) {
+        await fetch("/api/wishlist", {
+          method: "POST",
+          body: JSON.stringify({ address: walletAddress, productId: product.id }),
+        });
+        toast.success("Added to wishlist");
+      } else {
+        await fetch(`/api/wishlist?address=${walletAddress}&productId=${product.id}`, {
+          method: "DELETE",
+        });
+        toast.success("Removed from wishlist");
+      }
+    } catch (error) {
+      setIsWishlisted(previousState);
+      toast.error("Failed to update wishlist");
+      console.error("[Wishlist] Failed to update wishlist:", error);
     }
   };
 
@@ -169,11 +217,17 @@ export default function ProductDetailPage() {
             <ChevronLeft className="w-5 h-5 text-black" />
           </button>
           <div className="flex items-center gap-2">
-            <button className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm">
+            <button
+              onClick={handleShare}
+              className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm"
+            >
               <Share2 className="w-4 h-4 text-black" />
             </button>
-            <button className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm">
-              <Heart className="w-4 h-4 text-black" />
+            <button
+              onClick={toggleWishlist}
+              className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm"
+            >
+              <Heart className={`w-4 h-4 ${isWishlisted ? "fill-red-500 text-red-500" : "text-black"}`} />
             </button>
           </div>
         </div>
