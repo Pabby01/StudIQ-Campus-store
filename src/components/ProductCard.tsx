@@ -177,7 +177,8 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
       : p.currency === "USDC" && solUsd
         ? `SOL ${(displayPrice / solUsd).toFixed(4)}`
         : null;
-  const fxLabel = otherCurrency ?? (ngnEquivalent ? formatNgn(ngnEquivalent) : null);
+  const fxNgnLabel = ngnEquivalent ? formatNgn(ngnEquivalent) : null;
+  const fxOtherLabel = otherCurrency;
 
   return (
     <div className="h-full">
@@ -261,7 +262,13 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           {/* Pricing */}
           <div className="space-y-0.5 mt-auto">
             <div className="text-[6px] text-muted-text min-h-[10px]">
-              {fxLabel ? `≈ ${fxLabel}` : ""}
+              {fxNgnLabel && fxOtherLabel
+                ? `≈ ${fxOtherLabel} · ${fxNgnLabel}`
+                : fxOtherLabel
+                  ? `≈ ${fxOtherLabel}`
+                  : fxNgnLabel
+                    ? `≈ ${fxNgnLabel}`
+                    : ""}
             </div>
             <div className="flex items-center gap-2">
               <div className="w-1/2 flex items-baseline gap-1">
