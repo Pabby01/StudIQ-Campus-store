@@ -131,22 +131,38 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 sm:pt-6 space-y-10 md:space-y-14">
-        <div className="glass-panel rounded-3xl p-3 sm:p-4">
-          <div className="flex items-center justify-between">
-            <Link
-              href="/search"
-              className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-black/90 transition-colors"
-              aria-label="All Products"
-            >
-              <Package className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/search"
-              className="w-10 h-10 rounded-full bg-white text-black border border-white/70 flex items-center justify-center hover:bg-white/90 transition-colors"
-              aria-label="Search"
-            >
-              <Search className="w-5 h-5" />
-            </Link>
+        <div className="flex items-center justify-between sm:hidden">
+          <Link
+            href="/search"
+            className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:bg-black/90 transition-colors"
+            aria-label="All Products"
+          >
+            <Package className="w-4.5 h-4.5" />
+          </Link>
+          <Link
+            href="/search"
+            className="w-9 h-9 rounded-full bg-white text-black border border-white/70 flex items-center justify-center hover:bg-white/90 transition-colors"
+            aria-label="Search"
+          >
+            <Search className="w-4.5 h-4.5" />
+          </Link>
+        </div>
+        <div className="hidden sm:block">
+          <div className="glass-panel rounded-3xl p-4">
+            <div className="flex items-center gap-3">
+              <Search className="w-5 h-5 text-muted-text" />
+              <input
+                type="text"
+                placeholder="Search products, stores..."
+                className="w-full glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm py-2.5 px-4"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const query = e.currentTarget.value;
+                    if (query) window.location.href = `/search?q=${encodeURIComponent(query)}`;
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
         {/* Hero Carousel */}
