@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Star, ShoppingCart, Minus, Plus, Loader2, Package, ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
+import { Star, ShoppingCart, Minus, Plus, Loader2, Package, ChevronLeft, ChevronRight, Edit, Trash2, Share2, Heart } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { useCart } from "@/store/cart";
@@ -160,12 +160,28 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid md:grid-cols-2 gap-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="flex items-center justify-between mb-4 lg:hidden">
+          <button
+            onClick={() => router.back()}
+            className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm"
+          >
+            <ChevronLeft className="w-5 h-5 text-black" />
+          </button>
+          <div className="flex items-center gap-2">
+            <button className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm">
+              <Share2 className="w-4 h-4 text-black" />
+            </button>
+            <button className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm">
+              <Heart className="w-4 h-4 text-black" />
+            </button>
+          </div>
+        </div>
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
           {/* Product Images Gallery */}
           <div className="space-y-4">
-            <div className="glass-panel rounded-3xl overflow-hidden border border-white/60 relative group">
-              <div className="aspect-square bg-white/70 flex items-center justify-center">
+            <div className="rounded-3xl overflow-hidden border border-white/60 bg-white/80 shadow-sm relative group">
+              <div className="aspect-square bg-white/60 flex items-center justify-center p-4">
                 {uniqueImages.length > 0 ? (
                   <img
                     src={uniqueImages[selectedImageIndex]}
@@ -181,13 +197,13 @@ export default function ProductDetailPage() {
                 <>
                   <button
                     onClick={() => setSelectedImageIndex((prev) => (prev === 0 ? uniqueImages.length - 1 : prev - 1))}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 glass-pill rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <ChevronLeft className="w-5 h-5 text-black" />
                   </button>
                   <button
                     onClick={() => setSelectedImageIndex((prev) => (prev === uniqueImages.length - 1 ? 0 : prev + 1))}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 glass-pill rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <ChevronRight className="w-5 h-5 text-black" />
                   </button>
@@ -195,33 +211,32 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Thumbnails */}
             {uniqueImages.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {uniqueImages.map((img, idx) => (
+              <div className="flex items-center justify-center gap-2">
+                {uniqueImages.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}
-                    className={`relative w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden border-2 transition-all ${selectedImageIndex === idx ? 'border-primary-blue opacity-100 ring-2 ring-primary-blue/20' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                  >
-                    <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
-                  </button>
+                    className={`w-2 h-2 rounded-full transition-all ${selectedImageIndex === idx ? "bg-primary-blue" : "bg-slate-300"}`}
+                  />
                 ))}
               </div>
             )}
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6 glass-panel rounded-3xl p-6">
-            {/* Category Badge */}
+          <div className="space-y-6 bg-white/80 border border-white/60 rounded-3xl p-6 shadow-sm">
             {product.category && (
               <Badge variant="blue">{product.category}</Badge>
             )}
 
-            {/* Title */}
-            <h1 className="text-3xl font-bold text-black">{product.name}</h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-black">{product.name}</h1>
+              {product.stores?.name && (
+                <p className="text-sm text-primary-blue mt-1">{product.stores.name}</p>
+              )}
+            </div>
 
-            {/* Rating */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
                 <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
@@ -234,25 +249,37 @@ export default function ProductDetailPage() {
               </span>
             </div>
 
-            {/* Price */}
-            <div className="flex items-baseline gap-3 flex-wrap">
-              <span className="text-4xl font-bold text-primary-blue">
-                {product.currency === "USDC" ? "USDC" : "SOL"} {displayPrice.toFixed(2)}
-              </span>
-              {product.original_price && product.original_price > product.price && (
-                <span className="text-xl text-muted-text line-through">
-                  {product.currency === "USDC" ? "USDC" : "SOL"} {product.original_price.toFixed(2)}
-                </span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-3xl font-bold text-black">
+                    {product.currency === "USDC" ? "USDC" : "SOL"} {displayPrice.toFixed(2)}
+                  </span>
+                  {product.original_price && product.original_price > product.price && (
+                    <span className="text-base text-muted-text line-through">
+                      {product.currency === "USDC" ? "USDC" : "SOL"} {product.original_price.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="px-6"
+                  onClick={handleAddToCart}
+                  disabled={!inStock}
+                >
+                  {inStock ? "Add to Cart" : "Out of Stock"}
+                </Button>
+              </div>
+              {ngnEquivalent && (
+                <p className="text-sm text-muted-text">≈ ₦{ngnEquivalent.toFixed(2)}</p>
               )}
               {product.is_pod_enabled && (
-                <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
+                <div className="w-fit px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200">
                   Cash on Delivery Available
                 </div>
               )}
             </div>
-            {ngnEquivalent && (
-              <p className="text-sm text-muted-text">≈ ₦{ngnEquivalent.toFixed(2)}</p>
-            )}
 
             {/* Stock Status */}
             <div>
@@ -265,7 +292,6 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Description */}
             <div>
               <h3 className="font-semibold text-black mb-2">Description</h3>
               <p className="text-muted-text leading-relaxed whitespace-pre-line">
@@ -273,7 +299,6 @@ export default function ProductDetailPage() {
               </p>
             </div>
 
-            {/* Store Info */}
             {product.stores && (
               <div className="p-4 glass-pill rounded-2xl">
                 <p className="text-sm text-muted-text mb-1">Sold by</p>
@@ -281,7 +306,6 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Actions: Edit/Delete for Owner, Add to Cart for Buyer */}
             {isOwner ? (
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 text-blue-800 rounded-2xl border border-blue-100">
@@ -313,7 +337,6 @@ export default function ProductDetailPage() {
               </div>
             ) : (
               <>
-                {/* Quantity Selector */}
                 {inStock && (
                   <div>
                     <label className="block text-sm font-medium text-black mb-2">
@@ -340,18 +363,6 @@ export default function ProductDetailPage() {
                     </div>
                   </div>
                 )}
-
-                {/* Add to Cart Button */}
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
-                  onClick={handleAddToCart}
-                  disabled={!inStock}
-                >
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  {inStock ? "Add to Cart" : "Out of Stock"}
-                </Button>
               </>
             )}
           </div>

@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Search, ShoppingCart, LayoutDashboard, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft, Bell } from "lucide-react";
+import { ShoppingCart, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft, Bell, User, Search } from "lucide-react";
 import { useUser } from "@civic/auth-web3/react";
 import CivicAuthButton from "@/components/CivicAuthButton";
 import { useCart } from "@/store/cart";
@@ -50,7 +50,6 @@ export default function Navbar() {
           }`}
         >
           <div className="flex items-center justify-between">
-          {/* Logo */}
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-3">
               <img
@@ -67,92 +66,56 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* Desktop Icon Navigation */}
-            <div className={`hidden md:flex items-center transition-all ${isCompact ? "gap-1" : "gap-2"}`}>
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isExternal = item.href.startsWith("http");
+            {!user && (
+              <div className={`hidden md:flex items-center transition-all ${isCompact ? "gap-1" : "gap-2"}`}>
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isExternal = item.href.startsWith("http");
 
-                return isExternal ? (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
-                      isCompact ? "p-1.5" : "p-2"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                    <span
-                      className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
-                        isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  return isExternal ? (
+                    <a
+                      key={item.label}
+                      href={item.href}
+                      className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
+                        isCompact ? "p-1.5" : "p-2"
                       }`}
                     >
-                      {item.label}
-                    </span>
-                  </a>
-                ) : (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
-                      isCompact ? "p-1.5" : "p-2"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                    <span
-                      className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
-                        isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                      <span
+                        className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
+                          isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </a>
+                  ) : (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
+                        isCompact ? "p-1.5" : "p-2"
                       }`}
                     >
-                      {item.label}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
+                      <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                      <span
+                        className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
+                          isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Search Bar - Center */}
-          <div className={`flex flex-1 mx-3 sm:mx-6 transition-all ${isCompact ? "max-w-[170px] sm:max-w-sm" : "max-w-[190px] sm:max-w-sm lg:max-w-md"}`}>
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-text" />
-              <input
-                type="text"
-                placeholder="Search products, stores..."
-                className={`w-full pl-10 pr-4 glass-pill rounded-full text-[11px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm ${
-                  isCompact ? "py-2" : "py-2.5"
-                }`}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const query = e.currentTarget.value;
-                    if (query) window.location.href = `/search?q=${encodeURIComponent(query)}`;
-                  }
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Right Side - Dashboard, Cart & Auth */}
+          {/* Right Side */}
           <div className={`flex items-center transition-all ${isCompact ? "gap-2" : "gap-3"}`}>
-            {/* Dashboard Button (only when signed in) */}
             {user && (
               <>
-                <Link
-                  href="/dashboard"
-                  className={`group hidden sm:flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
-                    isCompact ? "p-1.5" : "p-2"
-                  }`}
-                >
-                  <LayoutDashboard className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                  <span
-                    className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
-                      isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    }`}
-                  >
-                    Dashboard
-                  </span>
-                </Link>
-
                 <Link
                   href="/dashboard/notifications"
                   className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all relative ${
@@ -172,6 +135,22 @@ export default function Navbar() {
                     Alerts
                   </span>
                 </Link>
+
+                <Link
+                  href="/dashboard/settings"
+                  className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
+                    isCompact ? "p-1.5" : "p-2"
+                  }`}
+                >
+                  <User className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                  <span
+                    className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
+                      isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    }`}
+                  >
+                    Profile
+                  </span>
+                </Link>
               </>
             )}
 
@@ -188,10 +167,11 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Civic Auth Button */}
-            <div className={`transition-all ${isCompact ? "scale-95" : "scale-100"}`}>
-              <CivicAuthButton />
-            </div>
+            {!user && (
+              <div className={`transition-all ${isCompact ? "scale-95" : "scale-100"}`}>
+                <CivicAuthButton />
+              </div>
+            )}
           </div>
         </div>
       </div>
