@@ -4,41 +4,58 @@
 import { Home, LayoutDashboard, ShoppingCart, Package, User, TrendingUp, Trophy } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 
 export default function MobileNav() {
     const pathname = usePathname();
     const tabs = [
         { icon: Home, label: "Home", href: "/", match: "/" },
-        { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", match: "/dashboard" },
+        { icon: LayoutDashboard, label: "Dash", href: "/dashboard", match: "/dashboard" },
         { icon: TrendingUp, label: "Predict", href: "/prediction", match: "/prediction" },
         { icon: Package, label: "Track", href: "/track", match: "/track" },
-        { icon: Trophy, label: "Board", href: "/leaderboard", match: "/leaderboard" },
         { icon: User, label: "Profile", href: "/dashboard/settings", match: "/dashboard/settings" }
     ];
 
     return (
-        <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-white/85 backdrop-blur-xl border border-white/60 z-50 safe-area-inset-bottom shadow-[0_12px_30px_rgba(15,23,42,0.12)] rounded-3xl">
-            <div className="flex justify-around items-center h-14 px-1">
-                {tabs.map((tab) => {
-                    const isActive = pathname === tab.match || pathname.startsWith(tab.match + '/');
-                    const Icon = tab.icon;
+        <nav className="md:hidden fixed bottom-6 left-6 right-6 z-50">
+            <div className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-[2rem] px-2 py-2">
+                <ul className="flex justify-between items-center relative">
+                    {tabs.map((tab) => {
+                        const isActive = pathname === tab.match || (tab.match !== '/' && pathname.startsWith(tab.match));
+                        const Icon = tab.icon;
 
-                    return (
-                        <Link
-                            key={tab.href}
-                            href={tab.href}
-                            className={`flex flex-col items-center justify-center flex-1 h-full relative transition-colors ${isActive ? 'text-primary-blue' : 'text-gray-500'
-                                }`}
-                        >
-                            <div className={`relative w-9 h-9 rounded-2xl flex items-center justify-center transition-all ${isActive ? "bg-primary-blue/10" : "bg-transparent"}`}>
-                                <Icon className="w-5 h-5" />
-                            </div>
-                            <span className={`text-[10px] mt-0.5 font-medium ${isActive ? 'text-primary-blue' : 'text-gray-600'}`}>
-                                {tab.label}
-                            </span>
-                        </Link>
-                    );
-                })}
+                        return (
+                            <li key={tab.href} className="flex-1 relative z-10">
+                                <Link
+                                    href={tab.href}
+                                    className="flex flex-col items-center justify-center py-2 relative w-full h-full group"
+                                >
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="active-tab"
+                                            className="absolute inset-0 bg-slate-900 rounded-[1.5rem]"
+                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                        />
+                                    )}
+                                    
+                                    <span className="relative z-10 flex flex-col items-center gap-1">
+                                        <Icon 
+                                            className={`w-6 h-6 transition-all duration-300 ${
+                                                isActive ? 'text-white translate-y-0' : 'text-slate-400 group-hover:text-slate-600'
+                                            }`} 
+                                            strokeWidth={isActive ? 2.5 : 2}
+                                        />
+                                        <span className={`text-[10px] font-semibold transition-all duration-300 ${
+                                            isActive ? 'text-white opacity-100' : 'text-slate-400 opacity-0 h-0 overflow-hidden'
+                                        }`}>
+                                            {tab.label}
+                                        </span>
+                                    </span>
+                                </Link>
+                            </li>
+                        );
+                    })}
+                </ul>
             </div>
         </nav>
     );
