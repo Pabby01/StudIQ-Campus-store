@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useUser } from "@civic/auth-web3/react";
@@ -27,10 +28,14 @@ export function ProtectedRoute({ children, requireWallet = false }: ProtectedRou
     // Show loading while checking auth
     if (!mounted || isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-soft-gray-bg">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 animate-spin text-primary-blue mx-auto mb-4" />
-                    <p className="text-muted-text">Loading...</p>
+            <div className="min-h-screen flex items-center justify-center bg-soft-gray-bg mesh-bg px-4">
+                <div className="glass-panel rounded-3xl p-8 w-full max-w-sm text-center">
+                    <div className="mx-auto h-12 w-12 rounded-full border-2 border-primary-blue/30 border-t-primary-blue animate-spin" />
+                    <p className="text-sm text-muted-text mt-4">Loading your dashboard...</p>
+                    <div className="mt-6 space-y-3">
+                        <div className="h-3 w-32 mx-auto rounded-full bg-white/80" />
+                        <div className="h-3 w-24 mx-auto rounded-full bg-white/70" />
+                    </div>
                 </div>
             </div>
         );

@@ -226,8 +226,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 pt-2 pb-6 md:px-6 md:pt-3 md:pb-8 lg:px-8 lg:pt-4 lg:pb-10 w-full max-w-full overflow-x-hidden">
-      <div className="max-w-7xl mx-auto space-y-4 md:space-y-5 w-full">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 pt-0 pb-6 md:px-6 md:pt-1 md:pb-8 lg:px-8 lg:pt-2 lg:pb-10 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto space-y-4 w-full">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}

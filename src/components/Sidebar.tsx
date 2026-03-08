@@ -27,7 +27,7 @@ type SidebarContentProps = {
 function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
     return (
         <>
-            <nav className="flex-1 px-3 pt-6 pb-4 space-y-6 overflow-y-auto relative z-10">
+            <nav className="flex-1 px-3 pt-4 pb-4 space-y-5 overflow-y-auto relative z-10">
                 <div>
                     <h3 className="px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
                         Buying
@@ -224,10 +224,10 @@ export default function Sidebar() {
                 initial={{ x: -16, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
-                className="hidden md:flex w-64 fixed left-0 top-0 h-screen bg-white/80 border-r border-white/60 flex-col shrink-0 backdrop-blur-xl shadow-xl rounded-r-3xl relative"
+                className="hidden md:flex w-64 fixed left-0 top-0 h-screen bg-white/80 border-r border-white/60 flex-col shrink-0 backdrop-blur-xl shadow-xl z-40"
             >
                 <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/60 via-white/20 to-transparent" />
-                <div className="pt-16">
+                <div className="flex flex-col flex-1 pt-24 w-full h-full">
                     <SidebarContent pathname={pathname} />
                 </div>
             </motion.aside>
