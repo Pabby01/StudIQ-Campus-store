@@ -11,7 +11,7 @@ import { encodeGeohash } from "@/lib/geohash";
 import { Store, TrendingUp, Sparkles, Zap, Laptop, BookOpen, Search, Package } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 type Product = Readonly<{
   id: string;
@@ -33,6 +33,7 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [nearbyStores, setNearbyStores] = useState<StoreType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mobileFeatureIndex, setMobileFeatureIndex] = useState(0);
   const featureCards = [
     {
       title: "Instant Campus Delivery",
@@ -127,6 +128,13 @@ export default function Home() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMobileFeatureIndex((prev) => (prev + 1) % featureCards.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [featureCards.length]);
 
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
@@ -242,7 +250,69 @@ export default function Home() {
               Explore all features
             </Link>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="sm:hidden">
+            <div className="relative overflow-hidden rounded-2xl">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={featureCards[mobileFeatureIndex].slug}
+                  initial={{ opacity: 0, x: 28, scale: 0.98 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -28, scale: 0.98 }}
+                  transition={{ duration: 0.32, ease: "easeOut" }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={(_, info) => {
+                    if (info.offset.x < -40) {
+                      setMobileFeatureIndex((prev) => (prev + 1) % featureCards.length);
+                    } else if (info.offset.x > 40) {
+                      setMobileFeatureIndex((prev) => (prev - 1 + featureCards.length) % featureCards.length);
+                    }
+                  }}
+                >
+                  <Link href={`/features#${featureCards[mobileFeatureIndex].slug}`} className="block">
+                    <div className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                          <Image
+                            src={featureCards[mobileFeatureIndex].iconImage}
+                            alt={`${featureCards[mobileFeatureIndex].title} icon`}
+                            fill
+                            sizes="40px"
+                            className="object-cover"
+                          />
+                        </div>
+                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                          {featureCards[mobileFeatureIndex].badge}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900 leading-tight">
+                        {featureCards[mobileFeatureIndex].title}
+                      </h3>
+                      <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                        {featureCards[mobileFeatureIndex].description}
+                      </p>
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-slate-800 text-xs font-semibold">
+                        Learn more
+                        <span className="transition-transform group-hover:translate-x-1">→</span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+            <div className="mt-3 flex items-center justify-center gap-2">
+              {featureCards.map((feature, index) => (
+                <button
+                  key={feature.slug}
+                  onClick={() => setMobileFeatureIndex(index)}
+                  className={`h-1.5 rounded-full transition-all ${mobileFeatureIndex === index ? "w-6 bg-slate-900" : "w-2 bg-slate-300"}`}
+                  aria-label={`Go to ${feature.title}`}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="hidden sm:grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {featureCards.map((feature, index) => {
               return (
                 <Link key={feature.slug} href={`/features#${feature.slug}`} className="block h-full">
