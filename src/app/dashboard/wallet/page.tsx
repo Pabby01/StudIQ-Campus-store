@@ -15,6 +15,7 @@ import Dialog from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
 import TokenList from "@/components/wallet/TokenList";
 import RampModal from "@/components/ramp/RampModal";
+import { motion } from "framer-motion";
 
 export default function WalletPage() {
     const { walletAddress, isAuthenticated } = useCivicWallet();
@@ -40,13 +41,24 @@ export default function WalletPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-black mb-2">My Wallet</h1>
-                <p className="text-muted-text">Manage your funds and view portfolio</p>
-            </div>
+        <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 sm:px-6 lg:px-8 w-full max-w-full overflow-x-hidden">
+            <div className="max-w-5xl mx-auto space-y-6 w-full">
+                <motion.div
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="glass-panel rounded-3xl p-5 sm:p-6"
+                >
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-black mb-1">My Wallet</h1>
+                    <p className="text-sm text-muted-text">Manage your funds and view portfolio</p>
+                </motion.div>
 
-            <WalletCard
+            <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+            >
+                <WalletCard
                 tokens={tokens}
                 totalUsd={totalUsd}
                 address={walletAddress}
@@ -67,7 +79,8 @@ export default function WalletPage() {
                     setComingSoonFeature("Swap");
                     setIsComingSoonOpen(true);
                 }}
-            />
+                />
+            </motion.div>
 
             <TokenList tokens={tokens} loading={balanceLoading} />
 
@@ -129,5 +142,6 @@ export default function WalletPage() {
                 </div>
             </Dialog>
         </div>
+    </div>
     );
 }

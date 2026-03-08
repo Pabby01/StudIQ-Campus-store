@@ -10,6 +10,7 @@ import Input from "@/components/ui/Input";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { updateProfileSchema } from "@/lib/validators";
+import { motion } from "framer-motion";
 
 export default function EditProfilePage() {
     const router = useRouter();
@@ -125,8 +126,8 @@ export default function EditProfilePage() {
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
-                <Card className="p-8 text-center">
+            <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 flex items-center justify-center">
+                <Card className="p-8 text-center border-white/60">
                     <h2 className="text-xl font-bold mb-4">Sign In Required</h2>
                     <p className="text-muted-text">Please sign in to edit your profile</p>
                 </Card>
@@ -136,16 +137,21 @@ export default function EditProfilePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
+            <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-primary-blue animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-soft-gray-bg px-4 py-6 md:p-8">
-            <div className="max-w-2xl mx-auto space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 sm:px-6 lg:px-8 w-full max-w-full overflow-x-hidden">
+            <div className="max-w-2xl mx-auto space-y-6 w-full">
+                <motion.div
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="glass-panel rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+                >
                     <Button
                         variant="outline"
                         onClick={() => router.push("/dashboard/settings")}
@@ -154,13 +160,13 @@ export default function EditProfilePage() {
                         Back
                     </Button>
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-black">Edit Profile</h1>
-                        <p className="text-sm md:text-base text-muted-text">Update your account information</p>
+                        <h1 className="text-2xl sm:text-3xl font-semibold text-black">Edit Profile</h1>
+                        <p className="text-sm text-muted-text">Update your account information</p>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Edit Form */}
-                <Card className="p-6">
+                <Card className="p-6 border-white/60">
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <Input
                             name="name"
@@ -212,7 +218,7 @@ export default function EditProfilePage() {
                                 value={formData.level}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                                className="w-full px-4 py-2 bg-white/80 border border-white/70 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
                             >
                                 <option value="">Select your level</option>
                                 <option value="Freshman">Freshman</option>

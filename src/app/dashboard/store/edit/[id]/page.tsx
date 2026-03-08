@@ -11,6 +11,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { CATEGORIES } from "@/lib/categories";
 import ImageUpload from "@/components/ImageUpload";
+import { motion } from "framer-motion";
 
 export default function EditStorePage() {
     const router = useRouter();
@@ -150,8 +151,8 @@ export default function EditStorePage() {
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
-                <Card className="p-8 text-center">
+            <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 flex items-center justify-center">
+                <Card className="p-8 text-center border-white/60">
                     <h2 className="text-xl font-bold mb-4">Sign In Required</h2>
                     <p className="text-muted-text">Please sign in to edit your store</p>
                 </Card>
@@ -161,19 +162,21 @@ export default function EditStorePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-soft-gray-bg p-8">
-                <div className="max-w-2xl mx-auto">
-                    <p className="text-center text-muted-text">Loading store...</p>
-                </div>
+            <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 flex items-center justify-center">
+                <p className="text-center text-muted-text">Loading store...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-soft-gray-bg px-4 py-6 md:p-8">
-            <div className="max-w-2xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-4">
+        <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 sm:px-6 lg:px-8 w-full max-w-full overflow-x-hidden">
+            <div className="max-w-2xl mx-auto space-y-6 w-full">
+                <motion.div
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="glass-panel rounded-3xl p-5 sm:p-6 flex items-center gap-4"
+                >
                     <Button
                         variant="outline"
                         className="shrink-0"
@@ -183,13 +186,13 @@ export default function EditStorePage() {
                         Back
                     </Button>
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-black">Edit Store</h1>
-                        <p className="text-sm md:text-base text-muted-text">Update your store information</p>
+                        <h1 className="text-2xl sm:text-3xl font-semibold text-black">Edit Store</h1>
+                        <p className="text-sm text-muted-text">Update your store information</p>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Edit Form */}
-                <Card className="p-6">
+                <Card className="p-6 border-white/60">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -201,9 +204,9 @@ export default function EditStorePage() {
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
-                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${errors.name
+                                className={`w-full px-4 py-3 border rounded-2xl bg-white/80 focus:ring-2 focus:border-transparent ${errors.name
                                     ? "border-red-500 focus:ring-red-500"
-                                    : "border-gray-300 focus:ring-primary-blue"
+                                    : "border-white/70 focus:ring-primary-blue"
                                 }`}
                                 placeholder="My Awesome Store"
                             />
@@ -221,9 +224,9 @@ export default function EditStorePage() {
                                 value={formData.category}
                                 onChange={handleChange}
                                 required
-                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${errors.category
+                                className={`w-full px-4 py-3 border rounded-2xl bg-white/80 focus:ring-2 focus:border-transparent ${errors.category
                                     ? "border-red-500 focus:ring-red-500"
-                                    : "border-gray-300 focus:ring-primary-blue"
+                                    : "border-white/70 focus:ring-primary-blue"
                                 }`}
                             >
                                 <option value="">Select a category</option>
@@ -246,9 +249,9 @@ export default function EditStorePage() {
                                 onChange={handleChange}
                                 required
                                 rows={4}
-                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent resize-none overflow-y-auto max-h-40 ${errors.description
+                                className={`w-full px-4 py-3 border rounded-2xl bg-white/80 focus:ring-2 focus:border-transparent resize-none overflow-y-auto max-h-40 ${errors.description
                                     ? "border-red-500 focus:ring-red-500"
-                                    : "border-gray-300 focus:ring-primary-blue"
+                                    : "border-white/70 focus:ring-primary-blue"
                                 }`}
                                 placeholder="Describe your store and what you sell..."
                             />

@@ -48,7 +48,7 @@ export default function DashboardCard({
                         </p>
                     )}
                 </div>
-                <div className={cn("p-2 md:p-3 bg-blue-50 rounded-2xl shrink-0", iconColor)}>
+            <div className={cn("p-2 md:p-3 bg-white/80 border border-white/70 rounded-2xl shrink-0", iconColor)}>
                     <Icon className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
             </div>

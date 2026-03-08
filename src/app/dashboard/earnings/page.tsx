@@ -15,6 +15,7 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
+import { motion } from "framer-motion";
 
 interface CurrencyEarnings {
     totalOrders: number;
@@ -167,7 +168,7 @@ export default function EarningsPage() {
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center p-4">
-                <Card className="p-8 text-center max-w-md">
+                <Card className="p-8 text-center max-w-md border-white/60">
                     <Wallet className="w-16 h-16 text-primary-blue mx-auto mb-4" />
                     <h2 className="text-2xl font-bold text-black mb-2">Sign In Required</h2>
                     <p className="text-muted-text">Please sign in to view earnings</p>
@@ -187,20 +188,24 @@ export default function EarningsPage() {
     const currentCurrency = earnings?.[activeCurrencyTab.toLowerCase() as 'sol' | 'usdc'];
 
     return (
-        <div className="min-h-screen bg-soft-gray-bg px-4 py-8">
-            <div className="max-w-6xl mx-auto space-y-8">
-                {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold text-black mb-2">Earnings & Withdrawals</h1>
-                    <p className="text-muted-text">Manage your seller earnings and request withdrawals</p>
-                </div>
+        <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 sm:px-6 lg:px-8 w-full max-w-full overflow-x-hidden">
+            <div className="max-w-6xl mx-auto space-y-6 w-full">
+                <motion.div
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="glass-panel rounded-3xl p-5 sm:p-6"
+                >
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-black mb-1">Earnings & Withdrawals</h1>
+                    <p className="text-sm text-muted-text">Manage your seller earnings and request withdrawals</p>
+                </motion.div>
 
                 {/* Currency Tabs */}
-                <div className="flex gap-2 border-b border-border-gray">
+                <div className="glass-panel rounded-3xl p-2 flex flex-wrap gap-2">
                     <button
                         onClick={() => setActiveCurrencyTab("SOL")}
-                        className={`px-6 py-3 font-medium text-sm transition-colors relative ${activeCurrencyTab === "SOL"
-                            ? "text-primary-blue border-b-2 border-primary-blue"
+                        className={`px-4 py-2.5 font-medium text-sm rounded-2xl transition-colors ${activeCurrencyTab === "SOL"
+                            ? "bg-white text-primary-blue shadow-sm border border-white/70"
                             : "text-muted-text hover:text-black"
                             }`}
                     >
@@ -213,8 +218,8 @@ export default function EarningsPage() {
                     </button>
                     <button
                         onClick={() => setActiveCurrencyTab("USDC")}
-                        className={`px-6 py-3 font-medium text-sm transition-colors relative ${activeCurrencyTab === "USDC"
-                            ? "text-primary-blue border-b-2 border-primary-blue"
+                        className={`px-4 py-2.5 font-medium text-sm rounded-2xl transition-colors ${activeCurrencyTab === "USDC"
+                            ? "bg-white text-primary-blue shadow-sm border border-white/70"
                             : "text-muted-text hover:text-black"
                             }`}
                     >
@@ -228,7 +233,7 @@ export default function EarningsPage() {
                 </div>
 
                 {/* Earnings Overview */}
-                <Card className="p-6">
+                <Card className="p-6 border-white/60">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
                             <div className={`p-3 rounded-lg ${activeCurrencyTab === 'SOL' ? 'bg-purple-100' : 'bg-green-100'}`}>
@@ -324,7 +329,7 @@ export default function EarningsPage() {
                 {/* Combined Stats */}
                 {earnings && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Card className="p-6">
+                        <Card className="p-6 border-white/60">
                             <h3 className="text-lg font-bold text-black mb-4">Total Statistics</h3>
                             <div className="space-y-3">
                                 <div className="flex justify-between">
@@ -338,7 +343,7 @@ export default function EarningsPage() {
                             </div>
                         </Card>
 
-                        <Card className="p-6">
+                        <Card className="p-6 border-white/60">
                             <h3 className="text-lg font-bold text-black mb-4">Currency Breakdown</h3>
                             <div className="space-y-3">
                                 <div className="flex justify-between">
@@ -355,7 +360,7 @@ export default function EarningsPage() {
                 )}
 
                 {/* Withdrawal History */}
-                <Card className="p-6">
+                <Card className="p-6 border-white/60">
                     <h2 className="text-xl font-bold text-black mb-4">Withdrawal History</h2>
 
                     {withdrawals.length === 0 ? (
@@ -429,7 +434,7 @@ export default function EarningsPage() {
                 {/* Withdrawal Modal */}
                 {showWithdrawModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <Card className="max-w-md w-full p-6">
+                        <Card className="max-w-md w-full p-6 border-white/60">
                             <h3 className="text-xl font-bold text-black mb-4">Request {selectedCurrency} Withdrawal</h3>
 
                             <div className="space-y-4">

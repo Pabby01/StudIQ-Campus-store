@@ -7,6 +7,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { Package, Loader2, MapPin, Mail, User, Phone, Calendar, CreditCard, Truck, Check } from "lucide-react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 type OrderItem = {
   id: string;
@@ -90,23 +91,32 @@ export default function VendorOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-400 rounded-xl shadow-md">
-            <Package className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 sm:px-6 lg:px-8 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto space-y-6 w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="glass-panel rounded-3xl p-5 sm:p-6 flex items-center gap-3"
+        >
+          <div className="p-2 bg-white/85 rounded-2xl border border-white/70">
+            <Package className="w-5 h-5 text-primary-blue" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-black">Store Orders</h1>
-            <p className="text-muted-text">Manage and fulfill your customer orders</p>
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-black truncate">Store Orders</h1>
+            <p className="text-sm text-muted-text">Manage and fulfill your customer orders</p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Orders List */}
-        <div className="space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+          className="space-y-4"
+        >
           {!data || data.length === 0 ? (
-            <Card className="text-center py-16">
+            <Card className="text-center py-16 border-white/60">
               <Package className="w-16 h-16 text-muted-text mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-black mb-2">No orders yet</h3>
               <p className="text-muted-text">Orders will appear here when customers make purchases</p>
@@ -116,9 +126,9 @@ export default function VendorOrdersPage() {
               const isExpanded = expandedOrder === order.id;
 
               return (
-                <Card key={order.id} className="overflow-hidden">
+                <Card key={order.id} className="overflow-hidden border-white/60">
                   {/* Order Header */}
-                  <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-border-gray">
+                  <div className="bg-white/70 px-5 sm:px-6 py-4 border-b border-white/60">
                     <div className="flex flex-wrap gap-4 justify-between items-center">
                       <div className="flex gap-6">
                         <div>
@@ -154,11 +164,11 @@ export default function VendorOrdersPage() {
 
                   {/* Order Details (Expanded) */}
                   {isExpanded && (
-                    <div className="p-6 space-y-6">
+                    <div className="p-5 sm:p-6 space-y-6">
                       {/* Customer & Delivery Info */}
                       <div className="grid md:grid-cols-2 gap-6">
                         {/* Customer Info */}
-                        <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
+                        <div className="bg-white/80 p-5 rounded-2xl border border-white/70">
                           <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                             <User className="w-4 h-4" />
                             Customer Information
@@ -182,7 +192,7 @@ export default function VendorOrdersPage() {
                         </div>
 
                         {/* Delivery Info */}
-                        <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
+                        <div className="bg-white/80 p-5 rounded-2xl border border-white/70">
                           <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                             <Truck className="w-4 h-4" />
                             Delivery Information
@@ -223,42 +233,44 @@ export default function VendorOrdersPage() {
                       {/* Order Items */}
                       <div>
                         <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Order Items</h3>
-                        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                          <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                        <div className="bg-white border border-white/70 rounded-2xl overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[640px]">
+                              <thead className="bg-white/80 border-b border-white/70">
                               <tr>
                                 <th className="text-left px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">Product</th>
                                 <th className="text-center px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">Qty</th>
                                 <th className="text-right px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">Price</th>
                                 <th className="text-right px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">Total</th>
                               </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                              {order.items?.map((item) => (
-                                <tr key={item.id} className="hover:bg-gray-50">
-                                  <td className="px-4 py-3">
-                                    <div className="flex items-center gap-3">
-                                      {item.product.image_url ? (
-                                        <img src={item.product.image_url} alt={item.product.name} className="w-12 h-12 object-cover rounded-md border border-gray-200" />
-                                      ) : (
-                                        <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center">
-                                          <Package className="w-6 h-6 text-gray-400" />
-                                        </div>
-                                      )}
-                                      <span className="font-medium text-black">{item.product.name}</span>
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3 text-center font-semibold text-black">{item.qty}</td>
-                                  <td className="px-4 py-3 text-right text-gray-600">
-                                    {order.currency === 'SOL' ? `${item.price.toFixed(2)} SOL` : `$${item.price.toFixed(2)}`}
-                                  </td>
-                                  <td className="px-4 py-3 text-right font-semibold text-black">
-                                    {order.currency === 'SOL' ? `${(item.price * item.qty).toFixed(2)} SOL` : `$${(item.price * item.qty).toFixed(2)}`}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {order.items?.map((item) => (
+                                  <tr key={item.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-3">
+                                      <div className="flex items-center gap-3">
+                                        {item.product.image_url ? (
+                                          <img src={item.product.image_url} alt={item.product.name} className="w-12 h-12 object-cover rounded-xl border border-white/70" />
+                                        ) : (
+                                          <div className="w-12 h-12 bg-white/70 rounded-xl flex items-center justify-center border border-white/70">
+                                            <Package className="w-6 h-6 text-gray-400" />
+                                          </div>
+                                        )}
+                                        <span className="font-medium text-black">{item.product.name}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-center font-semibold text-black">{item.qty}</td>
+                                    <td className="px-4 py-3 text-right text-gray-600">
+                                      {order.currency === 'SOL' ? `${item.price.toFixed(2)} SOL` : `$${item.price.toFixed(2)}`}
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-semibold text-black">
+                                      {order.currency === 'SOL' ? `${(item.price * item.qty).toFixed(2)} SOL` : `$${(item.price * item.qty).toFixed(2)}`}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
 
@@ -309,7 +321,7 @@ export default function VendorOrdersPage() {
               );
             })
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );

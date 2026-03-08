@@ -6,13 +6,18 @@ import ProductForm from "@/components/ProductForm";
 import ProductCard from "@/components/ProductCard";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { Plus, Package, Loader2, Edit } from "lucide-react";
+import { Plus, Package, Loader2 } from "lucide-react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useToast } from "@/hooks/useToast";
+import { motion } from "framer-motion";
 
 type Store = {
   id: string;
   name: string;
+};
+
+type StoreWithOwner = Store & {
+  owner_address?: string | null;
 };
 
 type Product = {
@@ -49,7 +54,7 @@ export default function DashboardProductsPage() {
       const data = await res.json();
 
       // Filter for my stores
-      const myStores = data.stores.filter((s: any) => s.owner_address === address);
+      const myStores = (data.stores as StoreWithOwner[]).filter((s) => s.owner_address === address);
       setStores(myStores);
 
       if (myStores.length > 0) {
@@ -88,7 +93,7 @@ export default function DashboardProductsPage() {
       } else {
         toast.error("Failed to delete store");
       }
-    } catch (e) {
+    } catch {
       toast.error("Error deleting store");
     }
   };
@@ -103,15 +108,15 @@ export default function DashboardProductsPage() {
       } else {
         toast.error("Failed to delete product");
       }
-    } catch (e) {
+    } catch {
       toast.error("Error deleting product");
     }
   };
 
   if (!isAuthenticated || authLoading) {
     return (
-      <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
-        <Card className="p-8 text-center">
+      <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 flex items-center justify-center">
+        <Card className="p-8 text-center border-white/60">
           <h2 className="text-xl font-bold mb-4">Sign In Required</h2>
           <p className="text-muted-text">Please sign in to manage products.</p>
         </Card>
@@ -122,17 +127,21 @@ export default function DashboardProductsPage() {
   const sellerAddress = walletAddress || "";
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <Package className="w-6 h-6 text-primary-blue" />
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 sm:px-6 lg:px-8 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto space-y-6 w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="glass-panel rounded-3xl p-5 sm:p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 bg-white/80 rounded-2xl border border-white/70">
+              <Package className="w-5 h-5 text-primary-blue" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-black">Products</h1>
-              <p className="text-muted-text">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-semibold text-black truncate">Products</h1>
+              <p className="text-sm text-muted-text">
                 {stores.length > 0
                   ? `Managing ${stores.find(s => s.id === selectedStoreId)?.name || 'Store'} Inventory`
                   : "Manage your product inventory"}
@@ -141,10 +150,10 @@ export default function DashboardProductsPage() {
           </div>
 
           {stores.length > 0 && (
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               {stores.length > 1 && (
                 <select
-                  className="px-4 py-2 rounded-lg border border-border-gray"
+                  className="px-4 py-2 rounded-2xl border border-white/70 bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
                   value={selectedStoreId || ""}
                   onChange={(e) => {
                     setSelectedStoreId(e.target.value);
@@ -165,21 +174,26 @@ export default function DashboardProductsPage() {
               </Button>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Product Form */}
         {showForm && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4">Add New Product</h2>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="glass-panel rounded-3xl p-5 sm:p-6"
+          >
+            <h2 className="text-lg sm:text-xl font-semibold mb-4 text-black">Add New Product</h2>
             {selectedStoreId ? (
               <ProductForm storeId={selectedStoreId} onSuccess={() => {
                 setShowForm(false);
                 fetchProducts(selectedStoreId);
               }} />
             ) : (
-              <p>Select a store first.</p>
+              <p className="text-sm text-muted-text">Select a store first.</p>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Content */}
@@ -211,7 +225,12 @@ export default function DashboardProductsPage() {
             </div>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {products.map(product => {
               // Pass seller's address so ProductCard knows these are their own products
               const productWithOwner = {
@@ -228,7 +247,7 @@ export default function DashboardProductsPage() {
                 />
               );
             })}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

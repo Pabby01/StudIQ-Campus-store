@@ -13,6 +13,7 @@ import PointsChart from "@/components/charts/PointsChart";
 import ActivityFeed from "@/components/ActivityFeed";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { motion } from "framer-motion";
 
 type DashboardStats = {
   totalOrders: number;
@@ -211,8 +212,8 @@ export default function DashboardPage() {
   // Only check for user, not walletAddress (wallet may still be loading)
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center">
+      <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center p-4">
+        <div className="text-center glass-panel rounded-3xl p-8 border border-white/60">
           <h2 className="text-2xl font-bold text-black mb-4">Sign In Required</h2>
           <p className="text-lg text-muted-text mb-6">Please sign in to view your dashboard</p>
           <Button variant="primary" onClick={() => window.location.href = "/"}>
@@ -226,8 +227,12 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-4 md:px-6 md:py-6 lg:px-8 lg:py-8 w-full max-w-full overflow-x-hidden">
       <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 w-full">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between glass-panel rounded-3xl p-5 sm:p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between glass-panel rounded-3xl p-5 sm:p-6"
+        >
           <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold text-black mb-1 truncate">Dashboard</h1>
             <p className="text-sm md:text-base text-muted-text">Welcome back! Here&apos;s your overview</p>
@@ -287,7 +292,7 @@ export default function DashboardPage() {
               <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
-        </div>
+        </motion.div>
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -295,8 +300,12 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full"
+            >
               <DashboardCard
                 title={isBuyer ? "Total Purchases" : "Total Orders"}
                 value={stats?.totalOrders.toString() || "0"}
@@ -338,11 +347,11 @@ export default function DashboardPage() {
                   isPositive: (stats?.growth || 0) >= 0
                 }}
               />
-            </div>
+            </motion.div>
 
-            <Card className="p-6">
+            <Card className="p-6 border-white/60">
               <div className="flex items-center gap-2 mb-4">
-                <div className="p-2 bg-blue-50 rounded-lg">
+                <div className="p-2 bg-white/85 rounded-2xl border border-white/70">
                   <Users className="w-5 h-5 text-primary-blue" />
                 </div>
                 <div>
@@ -352,7 +361,7 @@ export default function DashboardPage() {
               </div>
 
               {!walletAddress && (
-                <div className="rounded-lg border border-border-gray bg-white p-4 text-sm text-muted-text">
+                <div className="rounded-2xl border border-white/70 bg-white/80 p-4 text-sm text-muted-text">
                   Connect your wallet to view your referral details.
                 </div>
               )}
@@ -364,8 +373,8 @@ export default function DashboardPage() {
                       {referralError}
                     </div>
                   )}
-              <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-lg border border-border-gray bg-white p-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
                       <div className="text-xs text-muted-text">Your referral code</div>
                   <div className="mt-2 flex items-center justify-between gap-3">
                     {referralLoading ? (
@@ -386,7 +395,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-lg border border-border-gray bg-white p-4">
+                    <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
                       <div className="text-xs text-muted-text">Total referrals</div>
                       <div className="mt-1 text-2xl font-bold text-black">
                         {referralLoading ? "—" : referralSummary?.totalReferrals ?? 0}
@@ -394,7 +403,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-              <div className="rounded-lg border border-border-gray bg-white p-4">
+              <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs text-muted-text">Referral points</div>
@@ -442,7 +451,7 @@ export default function DashboardPage() {
 
             {/* Earnings & Withdraw Card (Seller Only) */}
             {!isBuyer && (
-              <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
+              <Card className="p-6 bg-white/80 border-white/70">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-green-600 rounded-lg">
