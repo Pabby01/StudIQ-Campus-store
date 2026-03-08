@@ -215,19 +215,17 @@ export default function Navbar() {
 
             {!user && (
               <div className={`transition-all ${isCompact ? "scale-95" : "scale-100"}`}>
-                <CivicAuthButton />
+                <div className="hidden sm:block">
+                  <CivicAuthButton />
+                </div>
+                <div className="sm:hidden">
+                  <CivicAuthButton />
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
-      </div>
-
-      <style jsx>{`
-        .rotate-360 {
-          transform: rotate(360deg);
-        }
-      `}</style>
     </nav>
   );
 }
