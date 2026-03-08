@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ShoppingCart, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft, Bell, User, Search } from "lucide-react";
+import { ShoppingCart, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft, Bell, User, Search, LayoutDashboard } from "lucide-react";
 import { useUser } from "@civic/auth-web3/react";
 import CivicAuthButton from "@/components/CivicAuthButton";
 import { useCart } from "@/store/cart";
@@ -136,6 +136,22 @@ export default function Navbar() {
           <div className={`flex items-center transition-all ${isCompact ? "gap-2" : "gap-3"}`}>
             {user && (
               <>
+                <Link
+                  href="/dashboard"
+                  className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
+                    isCompact ? "p-1.5" : "p-2"
+                  }`}
+                >
+                  <LayoutDashboard className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                  <span
+                    className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
+                      isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    }`}
+                  >
+                    Dashboard
+                  </span>
+                </Link>
+
                 <Link
                   href="/dashboard/notifications"
                   className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all relative ${
