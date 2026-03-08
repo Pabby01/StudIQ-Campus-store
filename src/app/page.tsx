@@ -34,8 +34,11 @@ export default function Home() {
   const [nearbyStores, setNearbyStores] = useState<StoreType[]>([]);
   const [loading, setLoading] = useState(true);
   const [mobileFeatureIndex, setMobileFeatureIndex] = useState(0);
+  const [mobileStoreIndex, setMobileStoreIndex] = useState(0);
   const [isMobileFeaturePaused, setIsMobileFeaturePaused] = useState(false);
+  const [isMobileStorePaused, setIsMobileStorePaused] = useState(false);
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resumeStoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const featureCards = [
     {
       title: "Instant Campus Delivery",
@@ -139,6 +142,14 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [featureCards.length, isMobileFeaturePaused]);
 
+  useEffect(() => {
+    if (isMobileStorePaused || nearbyStores.length <= 1) return;
+    const timer = setInterval(() => {
+      setMobileStoreIndex((prev) => (prev + 1) % nearbyStores.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [nearbyStores.length, isMobileStorePaused]);
+
   const pauseMobileFeatureCarousel = () => {
     setIsMobileFeaturePaused(true);
     if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
@@ -147,9 +158,28 @@ export default function Home() {
     }, 3000);
   };
 
+  const pauseMobileStoreCarousel = () => {
+    setIsMobileStorePaused(true);
+    if (resumeStoreTimerRef.current) clearTimeout(resumeStoreTimerRef.current);
+    resumeStoreTimerRef.current = setTimeout(() => {
+      setIsMobileStorePaused(false);
+    }, 3000);
+  };
+
+  useEffect(() => {
+    if (nearbyStores.length === 0) {
+      setMobileStoreIndex(0);
+      return;
+    }
+    if (mobileStoreIndex > nearbyStores.length - 1) {
+      setMobileStoreIndex(0);
+    }
+  }, [nearbyStores, mobileStoreIndex]);
+
   useEffect(() => {
     return () => {
       if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+      if (resumeStoreTimerRef.current) clearTimeout(resumeStoreTimerRef.current);
     };
   }, []);
 
@@ -247,7 +277,58 @@ export default function Home() {
               <p className="text-sm text-muted-text">Shop from stores on your campus</p>
             </div>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="sm:hidden">
+            {nearbyStores.length > 0 ? (
+              <>
+                <div className="relative overflow-hidden rounded-2xl">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={nearbyStores[mobileStoreIndex].id}
+                      initial={{ opacity: 0, x: 24, scale: 0.985 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: -24, scale: 0.985 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      drag="x"
+                      dragConstraints={{ left: 0, right: 0 }}
+                      dragElastic={0.2}
+                      onTouchStart={pauseMobileStoreCarousel}
+                      onMouseEnter={pauseMobileStoreCarousel}
+                      onDragEnd={(_, info) => {
+                        pauseMobileStoreCarousel();
+                        if (info.offset.x < -40) {
+                          setMobileStoreIndex((prev) => (prev + 1) % nearbyStores.length);
+                        } else if (info.offset.x > 40) {
+                          setMobileStoreIndex((prev) => (prev - 1 + nearbyStores.length) % nearbyStores.length);
+                        }
+                      }}
+                    >
+                      <StoreCard s={nearbyStores[mobileStoreIndex]} />
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+                {nearbyStores.length > 1 && (
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    {nearbyStores.map((store, index) => (
+                      <button
+                        key={store.id}
+                        onClick={() => {
+                          pauseMobileStoreCarousel();
+                          setMobileStoreIndex(index);
+                        }}
+                        className={`h-1.5 rounded-full transition-all ${mobileStoreIndex === index ? "w-6 bg-slate-900" : "w-2 bg-slate-300"}`}
+                        aria-label={`Go to ${store.name}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="rounded-2xl border border-white/60 bg-white/70 p-4 text-sm text-muted-text">
+                No nearby stores found yet.
+              </div>
+            )}
+          </div>
+          <div className="hidden sm:grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {nearbyStores.slice(0, 6).map((store) => (
               <StoreCard key={store.id} s={store} />
             ))}
