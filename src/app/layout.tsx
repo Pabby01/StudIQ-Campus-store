@@ -4,7 +4,7 @@ import "./globals.css";
 import "./scrollbar.css";
 import Providers from "@/app/providers";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import FooterWrapper from "@/components/FooterWrapper";
 import MobileNav from "@/components/MobileNav";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import InstallAppModal from "@/components/InstallAppModal";
@@ -101,7 +101,7 @@ export default function RootLayout({
                   {children}
                 </main>
               </OnboardingGuard>
-              <Footer />
+              <FooterWrapper />
               <MobileNav />
               <SupportChat />
             </Providers>

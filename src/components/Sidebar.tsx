@@ -12,7 +12,8 @@ import {
     Plus,
     X,
     Menu,
-    Wallet
+    Wallet,
+    ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
@@ -25,141 +26,74 @@ type SidebarContentProps = {
 };
 
 function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
+    const isActive = (path: string) => pathname === path || pathname?.startsWith(path + "/");
+
+    const NavLink = ({ href, icon: Icon, label, activeMatch }: { href: string; icon: any; label: string; activeMatch?: string }) => {
+        const active = activeMatch ? pathname === activeMatch : isActive(href);
+        
+        return (
+            <Link
+                href={href}
+                onClick={onNavigate}
+                className={cn(
+                    "group flex items-center justify-between px-4 py-3 mx-2 rounded-xl text-sm font-medium transition-all duration-200",
+                    active
+                        ? "bg-white text-primary-blue shadow-sm border border-slate-100"
+                        : "text-slate-500 hover:bg-white/60 hover:text-slate-900 hover:shadow-sm"
+                )}
+            >
+                <div className="flex items-center gap-3">
+                    <Icon className={cn("w-5 h-5 transition-colors", active ? "text-primary-blue" : "text-slate-400 group-hover:text-slate-600")} />
+                    <span>{label}</span>
+                </div>
+                {active && <ChevronRight className="w-4 h-4 text-primary-blue/40" />}
+            </Link>
+        );
+    };
+
     return (
-        <>
-            <nav className="flex-1 px-3 pt-4 pb-4 space-y-5 overflow-y-auto relative z-10">
+        <div className="flex flex-col h-full">
+            <nav className="flex-1 py-6 space-y-8 overflow-y-auto">
                 <div>
-                    <h3 className="px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                        Buying
+                    <h3 className="px-6 text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+                        Marketplace
                     </h3>
                     <div className="space-y-1">
-                        <Link
-                            href="/dashboard"
-                            onClick={onNavigate}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
-                                pathname === "/dashboard"
-                                    ? "bg-white text-slate-900 shadow-sm border border-white/70"
-                                    : "text-slate-500 hover:bg-white/60 hover:text-slate-900"
-                            )}
-                        >
-                            <LayoutDashboard className="w-5 h-5" />
-                            Overview
-                        </Link>
-                        <Link
-                            href="/dashboard/wallet"
-                            onClick={onNavigate}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
-                                pathname === "/dashboard/wallet"
-                                    ? "bg-white text-slate-900 shadow-sm border border-white/70"
-                                    : "text-slate-500 hover:bg-white/60 hover:text-slate-900"
-                            )}
-                        >
-                            <Wallet className="w-5 h-5" />
-                            My Wallet
-                        </Link>
-                        <Link
-                            href="/dashboard/orders"
-                            onClick={onNavigate}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
-                                pathname === "/dashboard/orders"
-                                    ? "bg-white text-slate-900 shadow-sm border border-white/70"
-                                    : "text-slate-500 hover:bg-white/60 hover:text-slate-900"
-                            )}
-                        >
-                            <ShoppingBag className="w-5 h-5" />
-                            My Purchases
-                        </Link>
-                        <Link
-                            href="/dashboard/wishlist"
-                            onClick={onNavigate}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
-                                pathname === "/dashboard/wishlist"
-                                    ? "bg-white text-slate-900 shadow-sm border border-white/70"
-                                    : "text-slate-500 hover:bg-white/60 hover:text-slate-900"
-                            )}
-                        >
-                            <Heart className="w-5 h-5" />
-                            Wishlist
-                        </Link>
+                        <NavLink href="/dashboard" icon={LayoutDashboard} label="Overview" activeMatch="/dashboard" />
+                        <NavLink href="/dashboard/wallet" icon={Wallet} label="My Wallet" />
+                        <NavLink href="/dashboard/orders" icon={ShoppingBag} label="Purchases" />
+                        <NavLink href="/dashboard/wishlist" icon={Heart} label="Wishlist" />
                     </div>
                 </div>
 
                 <div>
-                    <h3 className="px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                        Selling
+                    <h3 className="px-6 text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+                        Seller Tools
                     </h3>
                     <div className="space-y-1">
-                        <Link
-                            href="/dashboard/store"
-                            onClick={onNavigate}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
-                                pathname === "/dashboard/store"
-                                    ? "bg-white text-slate-900 shadow-sm border border-white/70"
-                                    : "text-slate-500 hover:bg-white/60 hover:text-slate-900"
-                            )}
-                        >
-                            <Store className="w-5 h-5" />
-                            My Store
-                        </Link>
-                        <Link
-                            href="/dashboard/products"
-                            onClick={onNavigate}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
-                                pathname?.startsWith("/dashboard/products")
-                                    ? "bg-white text-slate-900 shadow-sm border border-white/70"
-                                    : "text-slate-500 hover:bg-white/60 hover:text-slate-900"
-                            )}
-                        >
-                            <Package className="w-5 h-5" />
-                            Products
-                        </Link>
-                        <Link
-                            href="/dashboard/store/orders"
-                            onClick={onNavigate}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
-                                pathname === "/dashboard/store/orders"
-                                    ? "bg-white text-slate-900 shadow-sm border border-white/70"
-                                    : "text-slate-500 hover:bg-white/60 hover:text-slate-900"
-                            )}
-                        >
-                            <LayoutDashboard className="w-5 h-5" />
-                            Sales Orders
-                        </Link>
-                        <Link
-                            href="/dashboard/settings"
-                            onClick={onNavigate}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
-                                pathname === "/dashboard/settings"
-                                    ? "bg-white text-slate-900 shadow-sm border border-white/70"
-                                    : "text-slate-500 hover:bg-white/60 hover:text-slate-900"
-                            )}
-                        >
-                            <Settings className="w-5 h-5" />
-                            Settings
-                        </Link>
+                        <NavLink href="/dashboard/store" icon={Store} label="My Store" activeMatch="/dashboard/store" />
+                        <NavLink href="/dashboard/products" icon={Package} label="Products" />
+                        <NavLink href="/dashboard/store/orders" icon={LayoutDashboard} label="Sales Orders" />
+                        <NavLink href="/dashboard/settings" icon={Settings} label="Settings" />
                     </div>
                 </div>
             </nav>
 
-            <div className="p-4 border-t border-white/60 relative z-10">
-                <Button
-                    variant="primary"
-                    className="w-full rounded-2xl bg-slate-900 hover:bg-slate-800"
-                    onClick={() => window.location.href = "/dashboard/store"}
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create a Store
-                </Button>
+            <div className="p-4 mt-auto">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
+                    <h4 className="font-medium mb-1">Start Selling</h4>
+                    <p className="text-xs text-slate-300 mb-3">Create your store and reach students.</p>
+                    <Button
+                        variant="primary"
+                        className="w-full bg-white text-slate-900 hover:bg-slate-100 border-none h-9 text-sm"
+                        onClick={() => window.location.href = "/dashboard/store"}
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Store
+                    </Button>
+                </div>
             </div>
-        </>
+        </div>
     );
 }
 
@@ -169,10 +103,10 @@ export default function Sidebar() {
 
     return (
         <>
-            {/* Mobile Menu Button - ALWAYS VISIBLE ON TOP */}
+            {/* Mobile Menu Button */}
             <button
                 onClick={() => setIsMobileOpen(true)}
-                className="md:hidden fixed top-20 left-4 z-[100] p-3 bg-slate-900 text-white rounded-full shadow-lg hover:bg-slate-800 transition-colors"
+                className="md:hidden fixed top-20 left-4 z-[100] p-3 bg-white text-slate-900 border border-slate-200 rounded-full shadow-lg hover:bg-slate-50 transition-colors"
                 aria-label="Open menu"
             >
                 <Menu className="w-5 h-5" />
@@ -185,13 +119,13 @@ export default function Sidebar() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+                        className="md:hidden fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[60]"
                         onClick={() => setIsMobileOpen(false)}
                     />
                 )}
             </AnimatePresence>
 
-            {/* Mobile Sidebar - Overlay */}
+            {/* Mobile Sidebar */}
             <AnimatePresence>
                 {isMobileOpen && (
                     <motion.aside
@@ -199,16 +133,15 @@ export default function Sidebar() {
                         animate={{ x: 0 }}
                         exit={{ x: -280 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
-                        id="mobile-sidebar"
-                        className="md:hidden fixed top-0 left-0 z-[70] w-72 h-full bg-white/90 border-r border-white/70 flex flex-col shadow-2xl backdrop-blur-xl"
+                        className="md:hidden fixed top-0 left-0 z-[70] w-72 h-full bg-white border-r border-slate-200 flex flex-col shadow-2xl"
                     >
-                        <div className="flex items-center justify-between p-4 border-b border-white/70">
+                        <div className="flex items-center justify-between p-4 border-b border-slate-100">
                             <h2 className="font-semibold text-lg text-slate-900">Menu</h2>
                             <button
                                 onClick={() => setIsMobileOpen(false)}
-                                className="p-2 hover:bg-white/70 rounded-xl transition-colors"
+                                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5 text-slate-500" />
                             </button>
                         </div>
                         <SidebarContent
@@ -219,14 +152,13 @@ export default function Sidebar() {
                 )}
             </AnimatePresence>
 
-            {/* Desktop Sidebar - Always Visible */}
+            {/* Desktop Sidebar */}
             <motion.aside
                 initial={{ x: -16, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
-                className="hidden md:flex w-64 fixed left-0 top-0 h-screen bg-white/80 border-r border-white/60 flex-col shrink-0 backdrop-blur-xl shadow-xl z-40"
+                className="hidden md:flex w-64 fixed left-0 top-0 h-screen bg-slate-50/50 border-r border-slate-200/60 flex-col shrink-0 backdrop-blur-xl z-40"
             >
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/60 via-white/20 to-transparent" />
                 <div className="flex flex-col flex-1 pt-24 w-full h-full">
                     <SidebarContent pathname={pathname} />
                 </div>
