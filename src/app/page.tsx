@@ -229,20 +229,20 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="glass-panel rounded-3xl p-5 sm:p-6">
+        <section className="rounded-3xl border border-slate-200/70 bg-white/85 p-5 sm:p-7 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-black">Why Students Love StudIQ</h2>
-              <p className="text-sm text-muted-text">Premium features built for campus life.</p>
+              <h2 className="text-2xl font-bold text-slate-900">Why Students Love StudIQ</h2>
+              <p className="text-sm text-slate-500">Built for campus commerce with trust, speed, and control.</p>
             </div>
             <Link
               href="/features"
-              className="text-primary-blue font-medium text-xs px-3 py-1.5 rounded-full glass-pill hover:bg-white/90 transition-colors w-fit"
+              className="text-slate-800 font-medium text-xs px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 transition-colors w-fit"
             >
               Explore all features
             </Link>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {featureCards.map((feature, index) => {
               return (
                 <Link key={feature.slug} href={`/features#${feature.slug}`} className="block h-full">
@@ -251,42 +251,27 @@ export default function Home() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-40px" }}
                     transition={{ duration: 0.4, delay: index * 0.06 }}
-                    className="group relative h-full overflow-hidden glass-card rounded-3xl border border-white/60 p-4 hover-lift"
+                    className="group h-full rounded-2xl border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-md transition-all"
                   >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${feature.accent}`} />
-                    <div className="absolute inset-0">
-                      <Image
-                        src={feature.image}
-                        alt={feature.title}
-                        fill
-                        sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 90vw"
-                        className="object-cover opacity-70"
-                      />
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                        <Image
+                          src={feature.iconImage}
+                          alt={`${feature.title} icon`}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                        {feature.badge}
+                      </span>
                     </div>
-                    <div className="absolute inset-x-0 bottom-0 h-[48%] backdrop-blur-lg bg-white/75" />
-                    <div className="relative z-10 flex h-full flex-col justify-end gap-3 pb-2">
-                      <div className="flex items-center justify-between">
-                        <div className="relative w-9 h-9 rounded-2xl overflow-hidden border border-white/70 shadow-sm bg-white/70">
-                          <Image
-                            src={feature.iconImage}
-                            alt={`${feature.title} icon`}
-                            fill
-                            sizes="36px"
-                            className="object-cover"
-                          />
-                        </div>
-                        <span className="text-[10px] font-semibold text-primary-blue uppercase tracking-wide">
-                          {feature.badge}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="text-base font-semibold text-black">{feature.title}</h3>
-                        <p className="text-xs text-muted-text mt-1.5">{feature.description}</p>
-                      </div>
-                      <div className="flex items-center gap-2 text-primary-blue text-[11px] font-semibold">
-                        Learn more
-                        <span className="transition-transform group-hover:translate-x-1">→</span>
-                      </div>
+                    <h3 className="text-base font-semibold text-slate-900 leading-tight">{feature.title}</h3>
+                    <p className="text-xs text-slate-500 mt-2 leading-relaxed">{feature.description}</p>
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-slate-800 text-[11px] font-semibold">
+                      Learn more
+                      <span className="transition-transform group-hover:translate-x-1">→</span>
                     </div>
                   </motion.div>
                 </Link>
