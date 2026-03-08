@@ -45,18 +45,36 @@ export function ProtectedRoute({ children, requireWallet = false }: ProtectedRou
     // Not authenticated - show sign in prompt
     if (!user) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4 bg-soft-gray-bg">
-                <div className="text-center max-w-md">
-                    <div className="w-20 h-20 bg-gradient-to-br from-primary-blue to-accent-blue rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
+            <div className="min-h-screen flex items-center justify-center p-4 bg-soft-gray-bg mesh-bg">
+                <div className="glass-panel rounded-3xl p-8 md:p-12 w-full max-w-md text-center border border-white/60 shadow-xl backdrop-blur-xl relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/10 pointer-events-none" />
+                    
+                    <div className="relative z-10">
+                        <div className="w-20 h-20 bg-gradient-to-br from-primary-blue to-accent-blue rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg rotate-3 hover:rotate-6 transition-transform duration-300">
+                            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        
+                        <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">Access Denied</h2>
+                        <p className="text-slate-500 mb-8 leading-relaxed">
+                            Please sign in to access your dashboard and manage your store.
+                        </p>
+                        
+                        <div className="space-y-4">
+                            <Button 
+                                variant="primary" 
+                                onClick={() => router.push("/")}
+                                className="w-full py-6 text-lg rounded-xl shadow-lg shadow-primary-blue/20 hover:shadow-primary-blue/40 transition-all duration-300"
+                            >
+                                Go to Home
+                            </Button>
+                            
+                            <p className="text-xs text-slate-400 mt-6">
+                                Protected by StudIQ Secure Auth
+                            </p>
+                        </div>
                     </div>
-                    <h2 className="text-2xl font-bold text-black mb-3">Sign In Required</h2>
-                    <p className="text-muted-text mb-6">Please sign in to access this page</p>
-                    <Button variant="primary" onClick={() => router.push("/")}>
-                        Go to Home
-                    </Button>
                 </div>
             </div>
         );

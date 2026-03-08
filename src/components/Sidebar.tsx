@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Link from "next/link";
@@ -25,32 +26,40 @@ type SidebarContentProps = {
     onNavigate?: () => void;
 };
 
-function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
+type NavLinkProps = {
+    href: string;
+    icon: any;
+    label: string;
+    activeMatch?: string;
+    pathname: string | null;
+    onNavigate?: () => void;
+};
+
+const NavLink = ({ href, icon: Icon, label, activeMatch, pathname, onNavigate }: NavLinkProps) => {
     const isActive = (path: string) => pathname === path || pathname?.startsWith(path + "/");
+    const active = activeMatch ? pathname === activeMatch : isActive(href);
+    
+    return (
+        <Link
+            href={href}
+            onClick={onNavigate}
+            className={cn(
+                "group flex items-center justify-between px-4 py-3 mx-2 rounded-xl text-sm font-medium transition-all duration-200",
+                active
+                    ? "bg-white text-primary-blue shadow-sm border border-slate-100"
+                    : "text-slate-500 hover:bg-white/60 hover:text-slate-900 hover:shadow-sm"
+            )}
+        >
+            <div className="flex items-center gap-3">
+                <Icon className={cn("w-5 h-5 transition-colors", active ? "text-primary-blue" : "text-slate-400 group-hover:text-slate-600")} />
+                <span>{label}</span>
+            </div>
+            {active && <ChevronRight className="w-4 h-4 text-primary-blue/40" />}
+        </Link>
+    );
+};
 
-    const NavLink = ({ href, icon: Icon, label, activeMatch }: { href: string; icon: any; label: string; activeMatch?: string }) => {
-        const active = activeMatch ? pathname === activeMatch : isActive(href);
-        
-        return (
-            <Link
-                href={href}
-                onClick={onNavigate}
-                className={cn(
-                    "group flex items-center justify-between px-4 py-3 mx-2 rounded-xl text-sm font-medium transition-all duration-200",
-                    active
-                        ? "bg-white text-primary-blue shadow-sm border border-slate-100"
-                        : "text-slate-500 hover:bg-white/60 hover:text-slate-900 hover:shadow-sm"
-                )}
-            >
-                <div className="flex items-center gap-3">
-                    <Icon className={cn("w-5 h-5 transition-colors", active ? "text-primary-blue" : "text-slate-400 group-hover:text-slate-600")} />
-                    <span>{label}</span>
-                </div>
-                {active && <ChevronRight className="w-4 h-4 text-primary-blue/40" />}
-            </Link>
-        );
-    };
-
+function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
     return (
         <div className="flex flex-col h-full">
             <nav className="flex-1 py-6 space-y-8 overflow-y-auto">
@@ -59,10 +68,10 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
                         Marketplace
                     </h3>
                     <div className="space-y-1">
-                        <NavLink href="/dashboard" icon={LayoutDashboard} label="Overview" activeMatch="/dashboard" />
-                        <NavLink href="/dashboard/wallet" icon={Wallet} label="My Wallet" />
-                        <NavLink href="/dashboard/orders" icon={ShoppingBag} label="Purchases" />
-                        <NavLink href="/dashboard/wishlist" icon={Heart} label="Wishlist" />
+                        <NavLink href="/dashboard" icon={LayoutDashboard} label="Overview" activeMatch="/dashboard" pathname={pathname} onNavigate={onNavigate} />
+                        <NavLink href="/dashboard/wallet" icon={Wallet} label="My Wallet" pathname={pathname} onNavigate={onNavigate} />
+                        <NavLink href="/dashboard/orders" icon={ShoppingBag} label="Purchases" pathname={pathname} onNavigate={onNavigate} />
+                        <NavLink href="/dashboard/wishlist" icon={Heart} label="Wishlist" pathname={pathname} onNavigate={onNavigate} />
                     </div>
                 </div>
 
@@ -71,10 +80,10 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
                         Seller Tools
                     </h3>
                     <div className="space-y-1">
-                        <NavLink href="/dashboard/store" icon={Store} label="My Store" activeMatch="/dashboard/store" />
-                        <NavLink href="/dashboard/products" icon={Package} label="Products" />
-                        <NavLink href="/dashboard/store/orders" icon={LayoutDashboard} label="Sales Orders" />
-                        <NavLink href="/dashboard/settings" icon={Settings} label="Settings" />
+                        <NavLink href="/dashboard/store" icon={Store} label="My Store" activeMatch="/dashboard/store" pathname={pathname} onNavigate={onNavigate} />
+                        <NavLink href="/dashboard/products" icon={Package} label="Products" pathname={pathname} onNavigate={onNavigate} />
+                        <NavLink href="/dashboard/store/orders" icon={LayoutDashboard} label="Sales Orders" pathname={pathname} onNavigate={onNavigate} />
+                        <NavLink href="/dashboard/settings" icon={Settings} label="Settings" pathname={pathname} onNavigate={onNavigate} />
                     </div>
                 </div>
             </nav>
