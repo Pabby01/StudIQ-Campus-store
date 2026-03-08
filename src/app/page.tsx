@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
 import ProductRow from "@/components/ProductRow";
 import FeaturedStores from "@/components/FeaturedStores";
@@ -34,6 +34,8 @@ export default function Home() {
   const [nearbyStores, setNearbyStores] = useState<StoreType[]>([]);
   const [loading, setLoading] = useState(true);
   const [mobileFeatureIndex, setMobileFeatureIndex] = useState(0);
+  const [isMobileFeaturePaused, setIsMobileFeaturePaused] = useState(false);
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const featureCards = [
     {
       title: "Instant Campus Delivery",
@@ -130,11 +132,26 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (isMobileFeaturePaused) return;
     const timer = setInterval(() => {
       setMobileFeatureIndex((prev) => (prev + 1) % featureCards.length);
     }, 4500);
     return () => clearInterval(timer);
-  }, [featureCards.length]);
+  }, [featureCards.length, isMobileFeaturePaused]);
+
+  const pauseMobileFeatureCarousel = () => {
+    setIsMobileFeaturePaused(true);
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => {
+      setIsMobileFeaturePaused(false);
+    }, 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
@@ -262,7 +279,10 @@ export default function Home() {
                   drag="x"
                   dragConstraints={{ left: 0, right: 0 }}
                   dragElastic={0.2}
+                  onTouchStart={pauseMobileFeatureCarousel}
+                  onMouseEnter={pauseMobileFeatureCarousel}
                   onDragEnd={(_, info) => {
+                    pauseMobileFeatureCarousel();
                     if (info.offset.x < -40) {
                       setMobileFeatureIndex((prev) => (prev + 1) % featureCards.length);
                     } else if (info.offset.x > 40) {
@@ -305,7 +325,10 @@ export default function Home() {
               {featureCards.map((feature, index) => (
                 <button
                   key={feature.slug}
-                  onClick={() => setMobileFeatureIndex(index)}
+                  onClick={() => {
+                    pauseMobileFeatureCarousel();
+                    setMobileFeatureIndex(index);
+                  }}
                   className={`h-1.5 rounded-full transition-all ${mobileFeatureIndex === index ? "w-6 bg-slate-900" : "w-2 bg-slate-300"}`}
                   aria-label={`Go to ${feature.title}`}
                 />
