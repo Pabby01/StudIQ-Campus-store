@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+ 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Star, ShoppingCart, Minus, Plus, Loader2, Package, ChevronLeft, ChevronRight, Edit, Trash2, Share2, Heart } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { useCart } from "@/store/cart";
@@ -206,38 +207,52 @@ export default function ProductDetailPage() {
   // Deduplicate
   const uniqueImages = Array.from(new Set(galleryImages));
 
+  const handlePrevImage = () => {
+    setSelectedImageIndex((prev) => (prev === 0 ? uniqueImages.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = () => {
+    setSelectedImageIndex((prev) => (prev === uniqueImages.length - 1 ? 0 : prev + 1));
+  };
+
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <button
             onClick={() => router.back()}
-            className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm"
+            className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm active:scale-95 transition-all"
           >
             <ChevronLeft className="w-5 h-5 text-black" />
           </button>
           <div className="flex items-center gap-2">
             <button
               onClick={handleShare}
-              className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm"
+              className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm active:scale-95 transition-all"
             >
               <Share2 className="w-4 h-4 text-black" />
             </button>
             <button
               onClick={toggleWishlist}
-              className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm"
+              className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm active:scale-95 transition-all"
             >
               <Heart className={`w-4 h-4 ${isWishlisted ? "fill-red-500 text-red-500" : "text-black"}`} />
             </button>
           </div>
         </div>
+        
         <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
           {/* Product Images Gallery */}
           <div className="space-y-4">
-            <div className="rounded-3xl overflow-hidden border border-white/60 bg-white/80 shadow-sm relative group">
-              <div className="aspect-square bg-white/60 flex items-center justify-center p-4">
+            <div className="relative rounded-3xl overflow-hidden border border-white/60 bg-white shadow-sm group">
+              <div className="aspect-square bg-white flex items-center justify-center p-4 relative">
                 {uniqueImages.length > 0 ? (
-                  <img
+                  <motion.img
+                    key={selectedImageIndex}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
                     src={uniqueImages[selectedImageIndex]}
                     alt={product.name}
                     className="w-full h-full object-contain"
@@ -247,17 +262,18 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
+              {/* Navigation Arrows (Desktop Hover) */}
               {uniqueImages.length > 1 && (
                 <>
                   <button
-                    onClick={() => setSelectedImageIndex((prev) => (prev === 0 ? uniqueImages.length - 1 : prev - 1))}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handlePrevImage}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity active:scale-95 z-10"
                   >
                     <ChevronLeft className="w-5 h-5 text-black" />
                   </button>
                   <button
-                    onClick={() => setSelectedImageIndex((prev) => (prev === uniqueImages.length - 1 ? 0 : prev + 1))}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handleNextImage}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity active:scale-95 z-10"
                   >
                     <ChevronRight className="w-5 h-5 text-black" />
                   </button>
@@ -265,15 +281,35 @@ export default function ProductDetailPage() {
               )}
             </div>
 
+            {/* Seek Buttons & Indicators */}
             {uniqueImages.length > 1 && (
-              <div className="flex items-center justify-center gap-2">
-                {uniqueImages.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedImageIndex(idx)}
-                    className={`w-2 h-2 rounded-full transition-all ${selectedImageIndex === idx ? "bg-primary-blue" : "bg-slate-300"}`}
-                  />
-                ))}
+              <div className="flex items-center justify-center gap-4">
+                <button 
+                  onClick={handlePrevImage}
+                  className="p-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 hover:bg-slate-50 active:scale-95 transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                <div className="flex items-center gap-2">
+                  {uniqueImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedImageIndex(idx)}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        selectedImageIndex === idx ? "w-6 bg-primary-blue" : "w-2 bg-slate-300 hover:bg-slate-400"
+                      }`}
+                      aria-label={`Go to image ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+
+                <button 
+                  onClick={handleNextImage}
+                  className="p-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 hover:bg-slate-50 active:scale-95 transition-all"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             )}
           </div>

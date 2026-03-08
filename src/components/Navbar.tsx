@@ -57,7 +57,6 @@ export default function Navbar() {
           }`}
         >
           <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-3">
               <img
                 src="https://i.postimg.cc/VNXWGB8P/logo.jpg"
