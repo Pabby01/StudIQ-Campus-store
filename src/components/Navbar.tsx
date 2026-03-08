@@ -117,6 +117,23 @@ export default function Navbar() {
             )}
           </div>
 
+          <div className="hidden lg:flex flex-1 justify-center px-4">
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-text" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full pl-9 pr-3 py-2 glass-pill rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const query = e.currentTarget.value;
+                    if (query) window.location.href = `/search?q=${encodeURIComponent(query)}`;
+                  }
+                }}
+              />
+            </div>
+          </div>
+
           {/* Right Side */}
           <div className={`flex items-center transition-all ${isCompact ? "gap-2" : "gap-3"}`}>
             {user && (
