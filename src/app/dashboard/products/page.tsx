@@ -45,6 +45,7 @@ export default function DashboardProductsPage() {
     if (walletAddress) {
       fetchStores();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletAddress]);
 
   const fetchStores = async () => {

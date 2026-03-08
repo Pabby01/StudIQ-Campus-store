@@ -16,30 +16,18 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "My Store", href: "/dashboard/store", icon: Store },
-    { name: "Products", href: "/dashboard/products", icon: Package },
-    { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
-    { name: "Wishlist", href: "/dashboard/wishlist", icon: Heart },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings },
-];
+type SidebarContentProps = {
+    pathname: string | null;
+    onNavigate?: () => void;
+};
 
-export default function Sidebar() {
-    const pathname = usePathname();
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-    // Close sidebar when route changes on mobile
-    useEffect(() => {
-        setIsMobileOpen(false);
-    }, [pathname]);
-
-    const SidebarContent = () => (
+function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
+    return (
         <>
-            <nav className="flex-1 px-3 py-5 space-y-6 overflow-y-auto relative z-10">
+            <nav className="flex-1 px-3 pt-6 pb-4 space-y-6 overflow-y-auto relative z-10">
                 <div>
                     <h3 className="px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
                         Buying
@@ -47,6 +35,7 @@ export default function Sidebar() {
                     <div className="space-y-1">
                         <Link
                             href="/dashboard"
+                            onClick={onNavigate}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
                                 pathname === "/dashboard"
@@ -59,6 +48,7 @@ export default function Sidebar() {
                         </Link>
                         <Link
                             href="/dashboard/wallet"
+                            onClick={onNavigate}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
                                 pathname === "/dashboard/wallet"
@@ -71,6 +61,7 @@ export default function Sidebar() {
                         </Link>
                         <Link
                             href="/dashboard/orders"
+                            onClick={onNavigate}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
                                 pathname === "/dashboard/orders"
@@ -83,6 +74,7 @@ export default function Sidebar() {
                         </Link>
                         <Link
                             href="/dashboard/wishlist"
+                            onClick={onNavigate}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
                                 pathname === "/dashboard/wishlist"
@@ -103,6 +95,7 @@ export default function Sidebar() {
                     <div className="space-y-1">
                         <Link
                             href="/dashboard/store"
+                            onClick={onNavigate}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
                                 pathname === "/dashboard/store"
@@ -115,6 +108,7 @@ export default function Sidebar() {
                         </Link>
                         <Link
                             href="/dashboard/products"
+                            onClick={onNavigate}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
                                 pathname?.startsWith("/dashboard/products")
@@ -127,6 +121,7 @@ export default function Sidebar() {
                         </Link>
                         <Link
                             href="/dashboard/store/orders"
+                            onClick={onNavigate}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
                                 pathname === "/dashboard/store/orders"
@@ -139,6 +134,7 @@ export default function Sidebar() {
                         </Link>
                         <Link
                             href="/dashboard/settings"
+                            onClick={onNavigate}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all",
                                 pathname === "/dashboard/settings"
@@ -165,6 +161,11 @@ export default function Sidebar() {
             </div>
         </>
     );
+}
+
+export default function Sidebar() {
+    const pathname = usePathname();
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     return (
         <>
@@ -210,7 +211,10 @@ export default function Sidebar() {
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <SidebarContent />
+                        <SidebarContent
+                            pathname={pathname}
+                            onNavigate={() => setIsMobileOpen(false)}
+                        />
                     </motion.aside>
                 )}
             </AnimatePresence>
@@ -220,10 +224,12 @@ export default function Sidebar() {
                 initial={{ x: -16, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
-                className="hidden md:flex w-64 fixed left-0 top-20 h-[calc(100vh-5rem)] bg-white/80 border-r border-white/60 flex-col shrink-0 backdrop-blur-xl shadow-xl rounded-r-3xl relative"
+                className="hidden md:flex w-64 fixed left-0 top-0 h-screen bg-white/80 border-r border-white/60 flex-col shrink-0 backdrop-blur-xl shadow-xl rounded-r-3xl relative"
             >
                 <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/60 via-white/20 to-transparent" />
-                <SidebarContent />
+                <div className="pt-16">
+                    <SidebarContent pathname={pathname} />
+                </div>
             </motion.aside>
         </>
     );
