@@ -40,7 +40,7 @@ export default function CategoryFilter({ selected, onChange }: CategoryFilterPro
             onClick={() => handleCategoryClick(category)}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${isActive
               ? "bg-primary-blue text-white shadow-sm"
-              : "bg-white text-muted-text border border-border-gray hover:border-primary-blue hover:text-primary-blue"
+              : "glass-pill text-muted-text hover:text-primary-blue"
               }`}
           >
             {category}

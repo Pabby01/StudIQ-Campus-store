@@ -39,11 +39,11 @@ export default function StoresDirectoryPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg py-8">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto">
-          <div className="w-16 h-16 bg-blue-100 text-primary-blue rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="text-center max-w-2xl mx-auto glass-panel rounded-3xl p-6">
+          <div className="w-16 h-16 bg-blue-100 text-primary-blue rounded-2xl flex items-center justify-center mx-auto mb-4">
             <StoreIcon className="w-8 h-8" />
           </div>
           <h1 className="text-4xl font-bold text-black mb-3">Campus Store Directory</h1>
@@ -67,7 +67,7 @@ export default function StoresDirectoryPage() {
             <Loader2 className="w-8 h-8 text-primary-blue animate-spin" />
           </div>
         ) : stores.length === 0 ? (
-          <div className="text-center py-20">
+          <div className="text-center py-20 glass-panel rounded-3xl p-8">
             <h3 className="text-lg font-semibold text-black">No stores found</h3>
             <p className="text-muted-text">Be the first to open a store on campus!</p>
             <div className="mt-4">

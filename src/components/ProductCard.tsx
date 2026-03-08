@@ -177,11 +177,13 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
       : p.currency === "USDC" && solUsd
         ? `SOL ${(displayPrice / solUsd).toFixed(4)}`
         : null;
+  const fxNgnLabel = ngnEquivalent ? formatNgn(ngnEquivalent) : null;
+  const fxOtherLabel = otherCurrency;
 
   return (
     <div className="h-full">
       <div
-        className="bg-white rounded-xl border border-border-gray overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative cursor-pointer"
+        className="bg-white rounded-[18px] border border-gray-200 overflow-hidden hover-lift h-full grid grid-rows-[2.4fr_2.6fr] sm:grid-rows-[3fr_2fr] group relative cursor-pointer shadow-sm min-h-[210px] sm:min-h-[230px] lg:min-h-[190px] aspect-[4/5] sm:aspect-[3/4]"
         onClick={openDetails}
       >
 
@@ -189,49 +191,53 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
         {!isOwnProduct && (
           <button
             onClick={toggleWishlist}
-            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all shadow-sm"
+            className="absolute top-2 left-2 z-10 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition-all shadow-sm border border-white/70"
           >
-            <Heart className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500 hover:text-red-500'}`} />
+            <Heart className={`w-3 h-3 transition-colors ${isWishlisted ? "fill-red-500 text-red-500" : "text-gray-600 hover:text-red-500"}`} />
           </button>
         )}
 
         {/* Sold Out Badge */}
         {isSoldOut && (
-          <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg z-10 shadow-lg">
+          <div className="absolute top-10 left-2 bg-red-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full z-10 shadow-lg">
             SOLD OUT
           </div>
         )}
 
         {/* Discount Badge */}
         {hasDiscount && !isSoldOut && (
-          <Badge variant="green" className="absolute top-3 left-3 font-bold shadow-md">
+          <Badge variant="green" className="absolute top-10 left-2 font-bold shadow-md rounded-full text-[8px] px-2 py-0.5">
             {discountPercent}% OFF
           </Badge>
         )}
 
         {/* Image */}
-        <div className="relative w-full pt-[60%] bg-gray-100 overflow-hidden">
+        <div className="relative w-full bg-slate-50 overflow-hidden rounded-2xl m-2">
           {p.image_url ? (
             <Image
               src={p.image_url}
               alt={p.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="object-contain p-2 group-hover:scale-[1.02] transition-transform duration-300"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">
               No Image
             </div>
           )}
+          <div className="absolute top-2 right-2 flex items-center gap-0.5 rounded-full bg-white/90 px-1 py-0.5 text-[8px] font-semibold text-black shadow-sm border border-black/10">
+            <Star className="w-2 h-2 fill-black text-black" />
+            {p.rating?.toFixed?.(1) ?? "0.0"}
+          </div>
         </div>
 
         {/* Product Details */}
-        <div className="p-1.5 flex-1 flex flex-col">
+        <div className="px-3 pb-3 flex flex-col min-h-0 h-full">
           {/* Premium Badge + Category */}
           <div className="flex items-center justify-between mb-0.5">
             {p.category && (
-              <span className="text-[9px] text-muted-text uppercase tracking-wide truncate pr-1">
+              <span className="hidden sm:inline text-[7px] text-muted-text uppercase tracking-wide truncate pr-1">
                 {p.category}
               </span>
             )}
@@ -240,58 +246,52 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             )}
           </div>
 
+          <p className="font-semibold text-black text-[10px] line-clamp-1 mb-0.5 min-h-[11px] leading-tight group-hover:text-black">
+            {p.name}
+          </p>
           {p.stores?.name && (
             <Link
               href={`/store/${p.store_id}`}
-              className="text-[9px] text-primary-blue mb-1 hover:underline block w-fit"
+              className="text-[8px] text-primary-blue mb-0.5 hover:underline w-fit"
               onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
             >
-              For {p.stores.name}
+              {p.stores.name}
             </Link>
           )}
-          <p className="font-medium text-black text-xs sm:text-sm line-clamp-2 mb-0.5 min-h-[14px] leading-tight group-hover:text-primary-blue transition-colors">
-            {p.name}
-          </p>
-          <div className="flex items-center gap-0.5 mb-0.5">
-            <Star className="w-2 h-2 fill-yellow-400 text-yellow-400" />
-            <span className="text-[9px] font-medium text-black">
-              {p.rating?.toFixed?.(1) ?? "0.0"}
-            </span>
-            <span className="text-[8px] text-muted-text">({p.reviews_count || 0})</span>
-          </div>
 
           {/* Pricing */}
           <div className="space-y-0.5 mt-auto">
-            <div className="flex items-baseline gap-1 flex-wrap">
-              <span className="text-[11px] sm:text-sm font-bold text-black">
-                {formatPrice(Number(displayPrice))}
-              </span>
-              {hasDiscount && (
-                <span className="text-[9px] sm:text-[10px] text-muted-text line-through">
-                  {formatPrice(originalPrice!)}
-                </span>
-              )}
+            <div className="text-[6px] text-muted-text min-h-[10px]">
+              {fxNgnLabel && fxOtherLabel
+                ? `≈ ${fxOtherLabel} · ${fxNgnLabel}`
+                : fxOtherLabel
+                  ? `≈ ${fxOtherLabel}`
+                  : fxNgnLabel
+                    ? `≈ ${fxNgnLabel}`
+                    : ""}
             </div>
-            {(ngnEquivalent || otherCurrency) && (
-              <div className="flex flex-wrap items-center gap-1 text-[8px]">
-                <span className="px-1 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  FX
+            <div className="flex items-center gap-2">
+              <div className="w-1/2 flex items-baseline gap-1">
+                <span className="text-[11px] font-bold text-black">
+                  {formatPrice(Number(displayPrice))}
                 </span>
-                {otherCurrency && (
-                  <span className="px-1 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                    ≈ {otherCurrency}
-                  </span>
-                )}
-                {ngnEquivalent && (
-                  <span className="px-1 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    ≈ {formatNgn(ngnEquivalent)}
+                {hasDiscount && (
+                  <span className="text-[8px] text-muted-text line-through hidden sm:inline">
+                    {formatPrice(originalPrice!)}
                   </span>
                 )}
               </div>
-            )}
-
+              <Button
+                size="sm"
+                className="w-1/2 h-6 text-[9px] bg-black text-white hover:bg-black/90 focus:ring-black rounded-full"
+                onClick={handleAddToCart}
+                disabled={isSoldOut}
+              >
+                {isSoldOut ? "Sold Out" : "Buy"}
+              </Button>
+            </div>
             {hasDiscount && (
-              <div className="text-[8px] text-green-600 font-medium">
+              <div className="text-[6px] text-green-600 font-medium hidden sm:block">
                 Save {formatPrice(originalPrice! - p.price)}
               </div>
             )}
@@ -299,64 +299,42 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
 
           {/* Stock Count - Show for sellers */}
           {isOwnProduct && p.inventory !== undefined && (
-            <div className="mt-1 text-[8px] text-muted-text">
+            <div className="mt-1 text-[8px] text-muted-text hidden sm:block">
               Stock: {p.inventory}
             </div>
           )}
-
-          {/* Add to Cart Button or Sold Out / Own Product Message */}
-          <div className="mt-2">
-            {isSoldOut ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full h-8 text-xs cursor-not-allowed opacity-60"
-                disabled
-              >
-                Sold Out
-              </Button>
-            ) : isOwnProduct ? (
-              <div className="flex gap-2">
-                {onEdit && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-8 text-xs"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onEdit();
-                    }}
-                  >
-                    Edit
-                  </Button>
-                )}
-                {onDelete && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    className="flex-1 h-8 text-xs"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onDelete();
-                    }}
-                  >
-                    Delete
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                className="w-full h-8 text-xs"
-                onClick={handleAddToCart}
-              >
-                Add to cart
-              </Button>
-            )}
-          </div>
+          {isOwnProduct && (
+            <div className="mt-1 hidden sm:flex gap-1.5">
+              {onEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 h-6 text-[9px]"
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                >
+                  Edit
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="flex-1 h-6 text-[9px]"
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                >
+                  Delete
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const imageDomains: string[] = ["i.postimg.cc", "cryptologos.cc"];
+const imageDomains: string[] = ["i.postimg.cc", "cryptologos.cc", "images.unsplash.com", "source.unsplash.com"];
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 if (supabaseUrl) {

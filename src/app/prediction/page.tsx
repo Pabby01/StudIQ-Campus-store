@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { TrendingUp, TrendingDown, Clock, Users, DollarSign, Lock } from "lucide-react";
+import { TrendingUp, Clock, Users, DollarSign, Lock } from "lucide-react";
 
 // Demo prediction markets data
 const DEMO_MARKETS = [
@@ -85,12 +85,12 @@ export default function PredictionPage() {
     : DEMO_MARKETS.filter(m => m.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg p-4 md:p-8 relative">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg p-4 md:p-8 relative">
       {/* Blurred Content */}
       <div className="blur-sm pointer-events-none select-none">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center gap-3 mb-8 glass-panel rounded-3xl p-5">
             <TrendingUp className="w-8 h-8 text-primary-blue" />
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-black">Prediction Markets</h1>
@@ -100,7 +100,7 @@ export default function PredictionPage() {
 
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="p-6">
+            <Card className="p-6 glass-panel border-white/60">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-text">Active Markets</p>
@@ -109,7 +109,7 @@ export default function PredictionPage() {
                 <TrendingUp className="w-8 h-8 text-green-500" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-6 glass-panel border-white/60">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-text">Total Volume</p>
@@ -118,7 +118,7 @@ export default function PredictionPage() {
                 <DollarSign className="w-8 h-8 text-blue-500" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-6 glass-panel border-white/60">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-text">Participants</p>
@@ -127,7 +127,7 @@ export default function PredictionPage() {
                 <Users className="w-8 h-8 text-purple-500" />
               </div>
             </Card>
-            <Card className="p-6">
+            <Card className="p-6 glass-panel border-white/60">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-text">24h Volume</p>
@@ -155,7 +155,7 @@ export default function PredictionPage() {
           {/* Markets Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredMarkets.map((market) => (
-              <Card key={market.id} className="p-6 hover:shadow-lg transition-shadow">
+              <Card key={market.id} className="p-6 glass-panel border-white/60 hover-lift">
                 {/* Category & Trending Badge */}
                 <div className="flex items-center justify-between mb-3">
                   <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -176,13 +176,13 @@ export default function PredictionPage() {
 
                 {/* Price Display */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-green-50 rounded-lg p-3">
+                  <div className="bg-green-50 rounded-2xl p-3">
                     <p className="text-xs text-muted-text mb-1">YES</p>
                     <p className="text-xl font-bold text-green-600">
                       {(market.yesPrice * 100).toFixed(0)}¢
                     </p>
                   </div>
-                  <div className="bg-red-50 rounded-lg p-3">
+                  <div className="bg-red-50 rounded-2xl p-3">
                     <p className="text-xs text-muted-text mb-1">NO</p>
                     <p className="text-xl font-bold text-red-600">
                       {(market.noPrice * 100).toFixed(0)}¢
@@ -223,7 +223,7 @@ export default function PredictionPage() {
 
       {/* Coming Soon Overlay */}
       <div className="absolute inset-0 flex items-center justify-center z-10 p-4">
-        <Card className="max-w-md w-full p-8 text-center">
+        <Card className="max-w-md w-full p-8 text-center glass-panel border-white/60">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary-blue to-purple-600 mb-6">
             <Lock className="w-8 h-8 text-white" />
           </div>
@@ -233,7 +233,7 @@ export default function PredictionPage() {
             Prediction Markets are currently under development
           </p>
 
-          <div className="bg-soft-gray-bg rounded-lg p-6 mb-6">
+          <div className="glass-pill rounded-2xl p-6 mb-6">
             <h3 className="font-semibold text-black mb-3">What to expect:</h3>
             <ul className="text-left space-y-2 text-sm text-muted-text">
               <li className="flex items-start gap-2">

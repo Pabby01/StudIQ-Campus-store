@@ -19,7 +19,7 @@ interface StoreCardProps {
 function StoreCard({ store }: StoreCardProps) {
     return (
         <Link href={`/store/${store.id}`}>
-            <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden">
+            <Card className="group glass-card border-white/60 hover-lift cursor-pointer overflow-hidden">
                 {store.banner_url ? (
                     <img
                         src={store.banner_url}
@@ -36,7 +36,7 @@ function StoreCard({ store }: StoreCardProps) {
                         <h3 className="text-base font-bold text-black group-hover:text-primary-blue transition-colors truncate">
                             {store.name}
                         </h3>
-                        <span className="px-1.5 py-0.5 bg-blue-50 text-primary-blue text-[10px] font-medium rounded shrink-0">
+                        <span className="px-2 py-0.5 glass-pill text-primary-blue text-[10px] font-medium rounded-full shrink-0">
                             {store.category}
                         </span>
                     </div>
@@ -79,12 +79,8 @@ export default function FeaturedStores() {
 
     if (loading) {
         return (
-            <section className="py-16 bg-white">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="text-center">
-                        <div className="animate-pulse">Loading stores...</div>
-                    </div>
-                </div>
+            <section className="glass-panel rounded-3xl p-8 text-center">
+                <div className="animate-pulse text-muted-text">Loading stores...</div>
             </section>
         );
     }
@@ -94,26 +90,24 @@ export default function FeaturedStores() {
     }
 
     return (
-        <section className="py-12 bg-white">
-            <div className="max-w-7xl mx-auto px-4">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 className="text-2xl font-bold text-black mb-1">Featured Stores</h2>
-                        <p className="text-sm text-muted-text">Discover amazing stores from your campus community</p>
-                    </div>
-                    <Link
-                        href="/stores"
-                        className="flex items-center gap-1 text-sm text-primary-blue hover:gap-2 transition-all font-medium"
-                    >
-                        View All <ArrowRight className="w-3 h-3" />
-                    </Link>
+        <section className="glass-panel rounded-3xl p-5 sm:p-6">
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h2 className="text-2xl font-bold text-black mb-1">Featured Stores</h2>
+                    <p className="text-sm text-muted-text">Discover amazing stores from your campus community</p>
                 </div>
+                <Link
+                    href="/stores"
+                    className="flex items-center gap-2 text-xs text-primary-blue font-medium px-3 py-1.5 rounded-full glass-pill hover:bg-white/90 transition-colors"
+                >
+                    View All <ArrowRight className="w-3 h-3" />
+                </Link>
+            </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {stores.map((store) => (
-                        <StoreCard key={store.id} store={store} />
-                    ))}
-                </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {stores.map((store) => (
+                    <StoreCard key={store.id} store={store} />
+                ))}
             </div>
         </section>
     );

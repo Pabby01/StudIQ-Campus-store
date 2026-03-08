@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./scrollbar.css";
 import Providers from "@/app/providers";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import FooterWrapper from "@/components/FooterWrapper";
 import MobileNav from "@/components/MobileNav";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import InstallAppModal from "@/components/InstallAppModal";
@@ -12,11 +12,7 @@ import { OnboardingGuard } from "@/components/OnboardingGuard";
 
 import { ToastProvider } from "@/hooks/useToast";
 import SupportChat from "@/components/SupportChat";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import WelcomeTour from "@/components/WelcomeTour";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -92,7 +88,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
         <ErrorBoundary>
@@ -106,9 +102,10 @@ export default function RootLayout({
                   {children}
                 </main>
               </OnboardingGuard>
-              <Footer />
+              <FooterWrapper />
               <MobileNav />
               <SupportChat />
+              <WelcomeTour />
             </Providers>
           </ToastProvider>
         </ErrorBoundary>

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, X, Send, User, Sparkles, Loader2, GraduationCap } from "lucide-react";
+import { MessageCircle, X, Send, User, Loader2, GraduationCap } from "lucide-react";
 
 interface Message {
     role: "user" | "assistant";
@@ -96,24 +96,23 @@ export default function SupportChat() {
     ];
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none font-sans">
+        <div className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end pointer-events-none font-sans">
             {/* Chat Window */}
             {isOpen && (
-                <div className="bg-white rounded-3xl shadow-2xl w-[340px] max-w-[92vw] h-[500px] max-h-[70vh] mb-4 border border-indigo-50 pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
+                <div className="bg-white rounded-3xl shadow-2xl w-[340px] max-w-[92vw] h-[500px] max-h-[70vh] mb-4 border border-slate-200 pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
                     {/* Header with Gradient */}
-                    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 flex justify-between items-center text-white shadow-md">
+                    <div className="bg-slate-950 p-4 flex justify-between items-center text-white shadow-md">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30">
-                                <GraduationCap className="w-6 h-6 text-white" />
+                            <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                                <MessageCircle className="w-5 h-5 text-white" />
                             </div>
                             <div>
                                 <h3 className="font-bold text-base tracking-wide flex items-center gap-1">
                                     Studi
-                                    <Sparkles className="w-3 h-3 text-yellow-300" />
                                 </h3>
                                 <div className="flex items-center gap-1.5 opacity-90">
-                                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse box-content border border-white/20" />
-                                    <span className="text-xs font-medium">Campus Pal</span>
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse box-content border border-white/20" />
+                                    <span className="text-xs font-medium">Support</span>
                                 </div>
                             </div>
                         </div>
@@ -125,23 +124,23 @@ export default function SupportChat() {
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-4 min-h-0">
+                        <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-4 min-h-0">
                         {messages.map((msg, idx) => (
                             <div
                                 key={idx}
                                 className={`flex gap-3 max-w-[85%] ${msg.role === "user" ? "self-end flex-row-reverse" : "self-start"}`}
                             >
-                                <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm ${msg.role === "user" ? "bg-indigo-100" : "bg-gradient-to-br from-indigo-500 to-purple-600"
+                                <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm ${msg.role === "user" ? "bg-slate-200" : "bg-slate-900"
                                     }`}>
                                     {msg.role === "user" ? (
-                                        <User className="w-4 h-4 text-indigo-600" />
+                                        <User className="w-4 h-4 text-slate-700" />
                                     ) : (
-                                        <GraduationCap className="w-4 h-4 text-white" />
+                                        <MessageCircle className="w-4 h-4 text-white" />
                                     )}
                                 </div>
                                 <div
                                     className={`p-3.5 rounded-2xl text-sm shadow-sm leading-relaxed ${msg.role === "user"
-                                        ? "bg-indigo-600 text-white rounded-tr-none"
+                                        ? "bg-slate-900 text-white rounded-tr-none"
                                         : "bg-white text-slate-700 rounded-tl-none border border-slate-100"
                                         }`}
                                 >
@@ -153,13 +152,13 @@ export default function SupportChat() {
                         ))}
                         {isTyping && (
                             <div className="flex gap-2 self-start max-w-[85%]">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0 flex items-center justify-center shadow-sm">
-                                    <GraduationCap className="w-4 h-4 text-white" />
+                                <div className="w-8 h-8 rounded-full bg-slate-900 flex-shrink-0 flex items-center justify-center shadow-sm">
+                                    <MessageCircle className="w-4 h-4 text-white" />
                                 </div>
                                 <div className="bg-white border border-slate-100 p-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                                    <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                                    <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
+                                    <span className="w-1.5 h-1.5 bg-slate-600 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                    <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                    <span className="w-1.5 h-1.5 bg-slate-600 rounded-full animate-bounce"></span>
                                 </div>
                             </div>
                         )}
@@ -169,7 +168,7 @@ export default function SupportChat() {
                                     key={q}
                                     type="button"
                                     onClick={() => void sendMessage(q)}
-                                    className="px-3 py-1 text-xs rounded-full border border-indigo-100 bg-white text-indigo-700 hover:bg-indigo-50 font-medium transition-colors"
+                                    className="px-3 py-1 text-xs rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 font-medium transition-colors"
                                     disabled={isTyping}
                                 >
                                     {q}
@@ -185,9 +184,9 @@ export default function SupportChat() {
                             href={whatsappLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="bg-green-100 hover:bg-green-200 text-green-700 mx-auto w-full py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors border border-green-200"
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-800 mx-auto w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors border border-slate-200"
                         >
-                            <span>💬 Need a human? Chat on WhatsApp</span>
+                            <span>Need a human? Chat on WhatsApp</span>
                         </a>
                     </div>
 
@@ -199,14 +198,14 @@ export default function SupportChat() {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Ask Studi anything..."
-                                className="w-full pr-12 pl-4 py-3 bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 rounded-xl text-sm outline-none transition-all placeholder:text-slate-400 text-slate-700 font-medium resize-none min-h-[46px] max-h-32 overflow-y-auto"
+                                className="w-full pr-12 pl-4 py-3 bg-slate-50 focus:bg-white border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-200 rounded-xl text-sm outline-none transition-all placeholder:text-slate-400 text-slate-700 font-medium resize-none min-h-[46px] max-h-32 overflow-y-auto"
                                 rows={1}
                                 disabled={isTyping}
                             />
                             <button
                                 onClick={handleSendMessage}
                                 disabled={!input.trim() || isTyping}
-                                className="absolute right-1.5 bottom-1.5 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 disabled:bg-slate-300 transition-all shadow-sm active:scale-95"
+                                className="absolute right-1.5 bottom-1.5 p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg disabled:opacity-50 disabled:bg-slate-300 transition-all shadow-sm active:scale-95"
                             >
                                 <Send className="w-4 h-4" />
                             </button>
@@ -219,14 +218,11 @@ export default function SupportChat() {
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="pointer-events-auto bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-4 rounded-full shadow-lg shadow-indigo-500/40 transition-all hover:scale-110 active:scale-95 group relative border-2 border-white/20"
+                    className="pointer-events-auto bg-slate-950 text-white p-3.5 rounded-full shadow-lg shadow-black/30 transition-all hover:scale-105 active:scale-95 group relative border border-white/10"
                 >
-                    <div className="relative">
-                        <MessageSquare className="w-7 h-7" />
-                        <Sparkles className="w-4 h-4 text-yellow-300 absolute -top-2 -right-2 animate-bounce" />
-                    </div>
+                    <MessageCircle className="w-6 h-6" />
                     {hasUnread && (
-                        <span className="absolute right-0 top-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white absolute -top-1 -right-1"></span>
+                        <span className="absolute right-0 top-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white -top-1 -right-1"></span>
                     )}
                 </button>
             )}

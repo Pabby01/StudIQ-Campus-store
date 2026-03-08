@@ -30,7 +30,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search products, stores..."
-          className="w-full pl-12 pr-4 py-3 bg-white border border-border-gray rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm"
+          className="w-full pl-12 pr-4 py-3 glass-pill rounded-full text-base focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm"
         />
       </div>
     </form>

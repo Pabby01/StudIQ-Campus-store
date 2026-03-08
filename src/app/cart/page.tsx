@@ -388,9 +388,9 @@ export default function CartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+        <div className="mb-8 glass-panel rounded-3xl p-5 sm:p-6">
           <h1 className="text-3xl font-bold text-black mb-2">Shopping Cart</h1>
           <p className="text-muted-text">
             {items.length} {items.length === 1 ? "item" : "items"} in your cart
@@ -399,7 +399,7 @@ export default function CartPage() {
 
         {/* Status Messages */}
         {(checkoutStatus !== "idle" || error) && (
-          <Card className="mb-6 p-4 max-w-full overflow-hidden">
+          <Card className="mb-6 p-4 max-w-full overflow-hidden glass-panel border-white/60">
             <div className="flex items-start gap-3">
               {checkoutStatus === "success" ? (
                 <CheckCircle className="w-6 h-6 text-green-600" />
@@ -428,7 +428,7 @@ export default function CartPage() {
         )}
 
         {items.length === 0 ? (
-          <Card className="text-center py-16">
+          <Card className="text-center py-16 glass-panel border-white/60">
             <ShoppingCart className="w-16 h-16 text-muted-text mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-black mb-2">Your cart is empty</h3>
             <p className="text-muted-text mb-6">Add some products to get started</p>
@@ -442,42 +442,53 @@ export default function CartPage() {
               {/* Cart Items */}
               <div className="space-y-4">
                 {items.map((item) => (
-                  <Card key={item.id} className="p-4">
+                  <Card key={item.id} className="p-4 sm:p-5 bg-white/80 border border-white/60 rounded-3xl shadow-sm">
                     <div className="flex gap-4">
                       {item.imageUrl ? (
                         <img
                           src={item.imageUrl}
                           alt={item.name}
-                          className="w-24 h-24 object-cover rounded-lg flex-shrink-0 border border-border-gray"
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-2xl flex-shrink-0 border border-border-gray"
                         />
                       ) : (
-                        <div className="w-24 h-24 bg-soft-gray-bg rounded-lg flex-shrink-0 flex items-center justify-center text-muted-text text-xs">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-soft-gray-bg rounded-2xl flex-shrink-0 flex items-center justify-center text-muted-text text-xs">
                           No image
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-black mb-1">{item.name}</h3>
-                        <p className="text-lg font-bold text-primary-blue">
-                          {item.currency === "SOL"
-                            ? `${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)} SOL`
-                            : `$${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)}`
-                          }
-                        </p>
-                        {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
-                          <p className="text-xs text-muted-text mb-3">
-                            {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd) && (
-                              <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)} </>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-black mb-1 text-sm sm:text-base truncate">{item.name}</h3>
+                            <p className="text-base font-bold text-black">
+                              {item.currency === "SOL"
+                                ? `${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)} SOL`
+                                : `$${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)}`
+                              }
+                            </p>
+                            {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
+                              <p className="text-xs text-muted-text">
+                                {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd) && (
+                                  <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)} </>
+                                )}
+                                {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
+                                  <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)!)} </>
+                                )}
+                              </p>
                             )}
-                            {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
-                              <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)!)} </>
-                            )}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 bg-soft-gray-bg rounded-lg p-1">
+                          </div>
+                          <button
+                            onClick={() => remove(item.id)}
+                            className="w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"
+                            disabled={checkoutStatus !== "idle"}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 glass-pill rounded-full p-1">
                             <button
                               onClick={() => updateQty(item.id, Math.max(1, item.qty - 1))}
-                              className="p-1 hover:bg-white rounded transition-colors"
+                              className="p-1 hover:bg-white rounded-full transition-colors"
                               disabled={checkoutStatus !== "idle"}
                             >
                               <Minus className="w-4 h-4" />
@@ -485,48 +496,41 @@ export default function CartPage() {
                             <span className="w-8 text-center font-medium">{item.qty}</span>
                             <button
                               onClick={() => updateQty(item.id, item.qty + 1)}
-                              className="p-1 hover:bg-white rounded transition-colors"
+                              className="p-1 hover:bg-white rounded-full transition-colors"
                               disabled={checkoutStatus !== "idle"}
                             >
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
-                          <button
-                            onClick={() => remove(item.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            disabled={checkoutStatus !== "idle"}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="text-right">
+                            <p className="font-semibold text-black text-sm">
+                              {item.currency === "SOL"
+                                ? `${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)} SOL`
+                                : `$${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)}`
+                              }
+                            </p>
+                            {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
+                              <p className="text-xs text-muted-text">
+                                {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty) && (
+                                  <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty)} </>
+                                )}
+                                {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
+                                  <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)! * item.qty)} </>
+                                )}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-black">
-                          {item.currency === "SOL"
-                            ? `${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)} SOL`
-                            : `$${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)}`
-                          }
-                        </p>
-                        {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
-                          <p className="text-xs text-muted-text">
-                            {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty) && (
-                              <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty)} </>
-                            )}
-                            {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
-                              <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)! * item.qty)} </>
-                            )}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </Card>
                 ))}
               </div>
 
-              <Card className="p-6">
+              <Card className="p-6 glass-panel border-white/60">
                 <h3 className="text-lg font-semibold text-black mb-4">Delivery Method</h3>
                 {deliveryUnavailable && (
-                  <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                  <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-2xl text-sm">
                     This store is not accepting delivery or pickup orders right now.
                   </div>
                 )}
@@ -536,7 +540,7 @@ export default function CartPage() {
                     disabled={!deliveryEnabled}
                     className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${deliveryMethod === "shipping"
                       ? "border-primary-blue bg-blue-50 text-primary-blue"
-                      : "border-border-gray hover:bg-gray-50"
+                      : "border-border-gray hover:bg-white/70"
                       } ${!deliveryEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <Truck className="w-5 h-5" />
@@ -547,7 +551,7 @@ export default function CartPage() {
                     disabled={!pickupEnabled}
                     className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${deliveryMethod === "pickup"
                       ? "border-primary-blue bg-blue-50 text-primary-blue"
-                      : "border-border-gray hover:bg-gray-50"
+                      : "border-border-gray hover:bg-white/70"
                       } ${!pickupEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <MapPin className="w-5 h-5" />
@@ -555,7 +559,7 @@ export default function CartPage() {
                   </button>
                 </div>
                 {deliveryMethod === "shipping" && store?.delivery_notes && (
-                  <div className="mb-4 p-3 bg-blue-50 text-blue-800 rounded-lg text-sm">
+                  <div className="mb-4 p-3 bg-blue-50 text-blue-800 rounded-2xl text-sm">
                     {store.delivery_notes}
                   </div>
                 )}
@@ -713,7 +717,7 @@ export default function CartPage() {
                     </>
                   )}
                   {deliveryMethod === "pickup" && (
-                    <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm">
+                    <div className="bg-blue-50 text-blue-800 p-4 rounded-2xl text-sm">
                       You will pick up this order directly from the seller at the store location or agreed meeting point.
                     </div>
                   )}
@@ -723,7 +727,7 @@ export default function CartPage() {
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <Card className="sticky top-24">
+              <Card className="sticky top-24 glass-panel border-white/60">
                 <h3 className="text-lg font-semibold text-black mb-4">Order Summary</h3>
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm">

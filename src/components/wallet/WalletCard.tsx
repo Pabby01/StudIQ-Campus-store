@@ -44,40 +44,46 @@ export default function WalletCard({
     };
 
     return (
-        <Card className="p-0 overflow-hidden bg-gradient-to-br from-blue-700 to-indigo-900 text-white border-none shadow-xl relative">
+        <Card className="p-0 overflow-hidden bg-white text-slate-900 border border-slate-200 shadow-sm relative">
             {/* Background Decor */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary-blue/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
 
-            <div className="p-8 relative z-10">
+            <div className="p-6 md:p-8 relative z-10">
                 {/* Header */}
-                <div className="flex justify-between items-start mb-8">
-                    <div className="flex items-center gap-2 opacity-90">
-                        <Wallet className="w-5 h-5" />
-                        <span className="font-medium tracking-wide">Civic Wallet</span>
+                <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-2">
+                        <div className="p-2 bg-primary-blue/10 rounded-xl">
+                            <Wallet className="w-5 h-5 text-primary-blue" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-900 leading-none">Civic Wallet</h3>
+                            <span className="text-xs text-slate-500">Secure Storage</span>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-semibold border border-white/10 cursor-default">
-                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                        <span className="uppercase tracking-wider">MAINNET</span>
+                    <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full text-[10px] font-bold border border-slate-200 cursor-default">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="text-slate-600 uppercase tracking-wide">MAINNET</span>
                     </div>
                 </div>
 
                 {/* Total Balance */}
-                <div className="mb-10 text-center">
-                    <p className="text-blue-100/80 mb-2 font-medium text-sm">Total Balance (Est.)</p>
-                    <div className="flex items-center justify-center gap-3 mb-3">
-                        <div className="text-5xl font-bold tracking-tight text-white drop-shadow-sm">
+                <div className="mb-8 text-center bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                    <p className="text-slate-500 mb-1 text-sm font-medium">Total Balance (Est.)</p>
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                        <div className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900">
                             {loading ? (
                                 <span className="animate-pulse opacity-50">...</span>
                             ) : showBalance ? (
                                 <>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalUsd)}</>
                             ) : (
-                                <span className="tracking-widest opacity-80">••••••••</span>
+                                <span className="tracking-widest opacity-40 text-3xl mt-2 block">••••••••</span>
                             )}
                         </div>
                         <button
                             onClick={() => setShowBalance(!showBalance)}
-                            className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-white/50 hover:text-white"
+                            className="p-1.5 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600"
                         >
                             {showBalance ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                         </button>
@@ -85,62 +91,64 @@ export default function WalletCard({
 
                     <button
                         onClick={copyAddress}
-                        className="inline-flex items-center gap-2 text-sm text-blue-100 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 px-4 py-1.5 rounded-full transition-all cursor-pointer"
+                        className="inline-flex items-center gap-2 text-xs text-slate-500 hover:text-primary-blue bg-white border border-slate-200 hover:border-primary-blue/30 px-3 py-1 rounded-full transition-all cursor-pointer shadow-sm"
                     >
-                        <span className="font-mono opacity-90">{shortenAddress(address)}</span>
-                        <Copy className="w-3 h-3 opacity-70" />
+                        <span className="font-mono">{shortenAddress(address)}</span>
+                        <Copy className="w-3 h-3" />
                     </button>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-2xl mx-auto mb-8">
+                <div className="grid grid-cols-4 gap-2 md:gap-4 max-w-2xl mx-auto mb-6">
                     <button
                         onClick={onSend}
-                        className="group flex flex-col items-center justify-center gap-1.5 bg-white text-blue-900 hover:bg-blue-50 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-blue-900/20"
+                        className="group flex flex-col items-center justify-center gap-2"
                     >
-                        <div className="bg-blue-100 p-2 rounded-full group-hover:bg-blue-200 transition-colors">
-                            <Send className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700" />
+                        <div className="w-12 h-12 md:w-14 md:h-14 bg-blue-50 group-hover:bg-blue-100 rounded-2xl flex items-center justify-center transition-all shadow-sm group-hover:shadow-md group-active:scale-95">
+                            <Send className="w-5 h-5 md:w-6 md:h-6 text-primary-blue" />
                         </div>
-                        <span className="font-semibold text-xs sm:text-sm">Send</span>
+                        <span className="font-medium text-slate-600 text-xs">Send</span>
                     </button>
+                    
                     <button
                         onClick={onReceive}
-                        className="group flex flex-col items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 active:bg-white/5 border border-white/10 backdrop-blur-md rounded-xl p-3 sm:p-4 transition-all"
+                        className="group flex flex-col items-center justify-center gap-2"
                     >
-                        <div className="bg-white/10 p-2 rounded-full group-hover:bg-white/20 transition-colors">
-                            <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                        <div className="w-12 h-12 md:w-14 md:h-14 bg-slate-50 group-hover:bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center transition-all shadow-sm group-hover:shadow-md group-active:scale-95">
+                            <ArrowDown className="w-5 h-5 md:w-6 md:h-6 text-slate-700" />
                         </div>
-                        <span className="font-semibold text-white text-xs sm:text-sm">Receive</span>
+                        <span className="font-medium text-slate-600 text-xs">Receive</span>
                     </button>
+
                     <button
                         onClick={onSwap}
-                        className="group relative flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-purple-500/20"
+                        className="group relative flex flex-col items-center justify-center gap-2"
                     >
-                        <div className="absolute -top-1 -right-1 bg-yellow-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-20">
-                            SOON
+                        <div className="absolute top-0 right-1 md:right-2 -mt-1 -mr-1 z-10">
+                             <span className="bg-amber-100 text-amber-700 border border-amber-200 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">SOON</span>
                         </div>
-                        <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
-                            <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                        <div className="w-12 h-12 md:w-14 md:h-14 bg-purple-50 group-hover:bg-purple-100 rounded-2xl flex items-center justify-center transition-all shadow-sm group-hover:shadow-md group-active:scale-95 opacity-80">
+                            <ArrowLeftRight className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
                         </div>
-                        <span className="font-semibold text-white text-xs sm:text-sm">Swap</span>
+                        <span className="font-medium text-slate-600 text-xs">Swap</span>
                     </button>
+
                     <button
                         onClick={onOfframp}
-                        className="group relative flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 active:scale-95 rounded-xl p-3 sm:p-4 transition-all shadow-lg shadow-orange-500/20"
+                        className="group relative flex flex-col items-center justify-center gap-2"
                     >
-                        <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
-                            <ArrowUpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                        <div className="w-12 h-12 md:w-14 md:h-14 bg-orange-50 group-hover:bg-orange-100 rounded-2xl flex items-center justify-center transition-all shadow-sm group-hover:shadow-md group-active:scale-95">
+                            <ArrowUpCircle className="w-5 h-5 md:w-6 md:h-6 text-orange-600" />
                         </div>
-                        <span className="font-semibold text-white text-xs sm:text-sm">Withdraw</span>
+                        <span className="font-medium text-slate-600 text-xs">Withdraw</span>
                     </button>
                 </div>
 
-                <div className="max-w-sm mx-auto mb-8">
+                <div className="max-w-sm mx-auto">
                     <button
                         onClick={onOnramp}
-                        className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95 relative overflow-hidden group"
+                        className="w-full flex items-center justify-center gap-3 bg-slate-900 hover:bg-slate-800 text-white font-medium py-3.5 px-4 rounded-xl shadow-lg transition-all active:scale-95 relative overflow-hidden group"
                     >
-                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                         <Wallet className="w-5 h-5" />
                         <span>Deposit w/ Naira (Paj Cash)</span>
                     </button>

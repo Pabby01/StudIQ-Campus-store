@@ -1,11 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import DashboardCard from "@/components/DashboardCard";
-import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet, Users, Copy, Link2 } from "lucide-react";
+import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet, Users, Copy, Link2, Sparkles } from "lucide-react";
 import ShareStoreButton from "@/components/ShareStoreButton";
 import RevenueChart from "@/components/charts/RevenueChart";
 import OrdersChart from "@/components/charts/OrdersChart";
@@ -13,6 +15,7 @@ import PointsChart from "@/components/charts/PointsChart";
 import ActivityFeed from "@/components/ActivityFeed";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { motion } from "framer-motion";
 
 type DashboardStats = {
   totalOrders: number;
@@ -44,6 +47,7 @@ type ReferralSummary = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { walletAddress, user, email, isLoading: authLoading } = useCivicWallet();
   const [isBuyer, setIsBuyer] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -208,14 +212,17 @@ export default function DashboardPage() {
     }
   }, [isBuyer]);
 
+  // Add this empty state/CTA block inside the return statement, probably before the charts or replacing the stats if empty
+  const isNewUser = !loading && stats?.totalOrders === 0 && stats?.revenue === 0;
+
   // Only check for user, not walletAddress (wallet may still be loading)
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center">
+      <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center p-4">
+        <div className="text-center glass-panel rounded-3xl p-8 border border-white/60">
           <h2 className="text-2xl font-bold text-black mb-4">Sign In Required</h2>
           <p className="text-lg text-muted-text mb-6">Please sign in to view your dashboard</p>
-          <Button variant="primary" onClick={() => window.location.href = "/"}>
+          <Button variant="primary" onClick={() => router.push("/")}>
             Go to Home
           </Button>
         </div>
@@ -224,10 +231,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg px-4 py-4 md:px-6 md:py-6 lg:px-8 lg:py-8 w-full max-w-full overflow-x-hidden">
-      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 w-full">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 pt-0 pb-6 md:px-6 md:pt-1 md:pb-8 lg:px-8 lg:pt-2 lg:pb-10 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto space-y-4 w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between glass-panel rounded-3xl p-5 sm:p-6"
+        >
           <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold text-black mb-1 truncate">Dashboard</h1>
             <p className="text-sm md:text-base text-muted-text">Welcome back! Here&apos;s your overview</p>
@@ -235,12 +246,12 @@ export default function DashboardPage() {
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
             {/* View Toggle */}
-            <div className="bg-white rounded-lg border border-border-gray p-1 flex gap-1">
+            <div className="glass-pill rounded-2xl p-1 flex gap-1">
               <button
                 onClick={() => setIsBuyer(true)}
                 className={`flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-md text-sm font-medium transition-colors ${isBuyer
                   ? 'bg-primary-blue text-white'
-                  : 'text-muted-text hover:bg-gray-50'
+                  : 'text-muted-text hover:bg-white/70'
                   }`}
               >
                 Buyer
@@ -249,7 +260,7 @@ export default function DashboardPage() {
                 onClick={() => setIsBuyer(false)}
                 className={`flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-md text-sm font-medium transition-colors ${!isBuyer
                   ? 'bg-primary-blue text-white'
-                  : 'text-muted-text hover:bg-gray-50'
+                  : 'text-muted-text hover:bg-white/70'
                   }`}
               >
                 Seller
@@ -287,16 +298,79 @@ export default function DashboardPage() {
               <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
-        </div>
+        </motion.div>
+
+        {isNewUser && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-panel rounded-3xl p-8 border border-primary-blue/20 bg-gradient-to-br from-white/80 to-primary-blue/5 text-center shadow-lg"
+          >
+            <div className="w-16 h-16 bg-primary-blue/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 text-primary-blue" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome to your Dashboard!</h2>
+            <p className="text-slate-500 max-w-md mx-auto mb-6">
+              You&apos;re all set to start your journey. Connect your wallet to start buying or set up your store to sell.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button 
+                variant="primary" 
+                onClick={() => router.push('/search')}
+                className="rounded-xl px-8"
+              >
+                Start Browsing
+              </Button>
+              {!stats?.storeId && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push('/dashboard/store')}
+                  className="rounded-xl px-8"
+                >
+                  Create Store
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-primary-blue animate-spin" />
+          <div className="space-y-6">
+            <div className="glass-panel rounded-3xl p-6 flex items-center justify-center">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full border-2 border-primary-blue/30 border-t-primary-blue animate-spin" />
+                <div className="space-y-2">
+                  <div className="h-3 w-32 rounded-full bg-white/80" />
+                  <div className="h-3 w-24 rounded-full bg-white/70" />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full animate-pulse">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="glass-card rounded-2xl border border-white/60 p-5">
+                  <div className="h-3 w-24 rounded-full bg-white/70" />
+                  <div className="mt-4 h-6 w-28 rounded-full bg-white/80" />
+                  <div className="mt-3 h-3 w-16 rounded-full bg-white/60" />
+                </div>
+              ))}
+            </div>
+            <div className="glass-panel rounded-3xl p-6 animate-pulse">
+              <div className="h-4 w-28 rounded-full bg-white/70" />
+              <div className="mt-4 h-3 w-40 rounded-full bg-white/60" />
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="h-20 rounded-2xl bg-white/70" />
+                <div className="h-20 rounded-2xl bg-white/70" />
+              </div>
+            </div>
           </div>
         ) : (
           <>
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full"
+            >
               <DashboardCard
                 title={isBuyer ? "Total Purchases" : "Total Orders"}
                 value={stats?.totalOrders.toString() || "0"}
@@ -338,11 +412,11 @@ export default function DashboardPage() {
                   isPositive: (stats?.growth || 0) >= 0
                 }}
               />
-            </div>
+            </motion.div>
 
-            <Card className="p-6">
+            <Card className="p-6 border-white/60">
               <div className="flex items-center gap-2 mb-4">
-                <div className="p-2 bg-blue-50 rounded-lg">
+                <div className="p-2 bg-white/85 rounded-2xl border border-white/70">
                   <Users className="w-5 h-5 text-primary-blue" />
                 </div>
                 <div>
@@ -352,7 +426,7 @@ export default function DashboardPage() {
               </div>
 
               {!walletAddress && (
-                <div className="rounded-lg border border-border-gray bg-white p-4 text-sm text-muted-text">
+                <div className="rounded-2xl border border-white/70 bg-white/80 p-4 text-sm text-muted-text">
                   Connect your wallet to view your referral details.
                 </div>
               )}
@@ -364,8 +438,8 @@ export default function DashboardPage() {
                       {referralError}
                     </div>
                   )}
-              <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-lg border border-border-gray bg-white p-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
                       <div className="text-xs text-muted-text">Your referral code</div>
                   <div className="mt-2 flex items-center justify-between gap-3">
                     {referralLoading ? (
@@ -386,7 +460,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-lg border border-border-gray bg-white p-4">
+                    <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
                       <div className="text-xs text-muted-text">Total referrals</div>
                       <div className="mt-1 text-2xl font-bold text-black">
                         {referralLoading ? "—" : referralSummary?.totalReferrals ?? 0}
@@ -394,7 +468,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-              <div className="rounded-lg border border-border-gray bg-white p-4">
+              <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs text-muted-text">Referral points</div>
@@ -442,7 +516,7 @@ export default function DashboardPage() {
 
             {/* Earnings & Withdraw Card (Seller Only) */}
             {!isBuyer && (
-              <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
+              <Card className="p-6 bg-white/80 border-white/70">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-green-600 rounded-lg">
@@ -459,7 +533,7 @@ export default function DashboardPage() {
                   </div>
                   <Button
                     variant="primary"
-                    onClick={() => window.location.href = '/dashboard/earnings'}
+                    onClick={() => router.push('/dashboard/earnings')}
                     className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
                   >
                     <DollarSign className="w-4 h-4 mr-2" />

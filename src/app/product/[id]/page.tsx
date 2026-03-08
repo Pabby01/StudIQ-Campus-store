@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Star, ShoppingCart, Minus, Plus, Loader2, Package, ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
+import { Star, ShoppingCart, Minus, Plus, Loader2, Package, ChevronLeft, ChevronRight, Edit, Trash2, Share2, Heart } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { useCart } from "@/store/cart";
@@ -52,6 +52,7 @@ export default function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [ngnPerUsd, setNgnPerUsd] = useState<number | null>(cachedNgnPerUsd);
   const [solUsd, setSolUsd] = useState<number | null>(cachedSolUsd);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
@@ -89,6 +90,53 @@ export default function ProductDetailPage() {
     }
   };
 
+  const handleShare = async () => {
+    const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+    if (!shareUrl) return;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: product?.name || "StudIQ Product",
+          url: shareUrl,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Could not share link");
+    }
+  };
+
+  const toggleWishlist = async () => {
+    if (!walletAddress || !product) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    const previousState = isWishlisted;
+    setIsWishlisted(!previousState);
+
+    try {
+      if (!previousState) {
+        await fetch("/api/wishlist", {
+          method: "POST",
+          body: JSON.stringify({ address: walletAddress, productId: product.id }),
+        });
+        toast.success("Added to wishlist");
+      } else {
+        await fetch(`/api/wishlist?address=${walletAddress}&productId=${product.id}`, {
+          method: "DELETE",
+        });
+        toast.success("Removed from wishlist");
+      }
+    } catch (error) {
+      setIsWishlisted(previousState);
+      toast.error("Failed to update wishlist");
+      console.error("[Wishlist] Failed to update wishlist:", error);
+    }
+  };
+
   const handleAddToCart = () => {
     if (!product) return;
 
@@ -123,7 +171,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
+      <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary-blue animate-spin" />
       </div>
     );
@@ -131,8 +179,8 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-soft-gray-bg flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center">
+        <div className="text-center glass-panel rounded-3xl p-8">
           <Package className="w-16 h-16 text-muted-text mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-black mb-2">Product not found</h2>
           <p className="text-muted-text mb-6">This product may have been removed</p>
@@ -159,13 +207,35 @@ export default function ProductDetailPage() {
   const uniqueImages = Array.from(new Set(galleryImages));
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid md:grid-cols-2 gap-8">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="flex items-center justify-between mb-4 lg:hidden">
+          <button
+            onClick={() => router.back()}
+            className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm"
+          >
+            <ChevronLeft className="w-5 h-5 text-black" />
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleShare}
+              className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm"
+            >
+              <Share2 className="w-4 h-4 text-black" />
+            </button>
+            <button
+              onClick={toggleWishlist}
+              className="w-9 h-9 rounded-full bg-white/80 border border-white/60 flex items-center justify-center shadow-sm"
+            >
+              <Heart className={`w-4 h-4 ${isWishlisted ? "fill-red-500 text-red-500" : "text-black"}`} />
+            </button>
+          </div>
+        </div>
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
           {/* Product Images Gallery */}
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl overflow-hidden border border-border-gray relative group">
-              <div className="aspect-square bg-white flex items-center justify-center">
+            <div className="rounded-3xl overflow-hidden border border-white/60 bg-white/80 shadow-sm relative group">
+              <div className="aspect-square bg-white/60 flex items-center justify-center p-4">
                 {uniqueImages.length > 0 ? (
                   <img
                     src={uniqueImages[selectedImageIndex]}
@@ -181,13 +251,13 @@ export default function ProductDetailPage() {
                 <>
                   <button
                     onClick={() => setSelectedImageIndex((prev) => (prev === 0 ? uniqueImages.length - 1 : prev - 1))}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <ChevronLeft className="w-5 h-5 text-black" />
                   </button>
                   <button
                     onClick={() => setSelectedImageIndex((prev) => (prev === uniqueImages.length - 1 ? 0 : prev + 1))}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <ChevronRight className="w-5 h-5 text-black" />
                   </button>
@@ -195,33 +265,32 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Thumbnails */}
             {uniqueImages.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {uniqueImages.map((img, idx) => (
+              <div className="flex items-center justify-center gap-2">
+                {uniqueImages.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}
-                    className={`relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx ? 'border-primary-blue opacity-100 ring-2 ring-primary-blue/20' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                  >
-                    <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
-                  </button>
+                    className={`w-2 h-2 rounded-full transition-all ${selectedImageIndex === idx ? "bg-primary-blue" : "bg-slate-300"}`}
+                  />
                 ))}
               </div>
             )}
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6">
-            {/* Category Badge */}
+          <div className="space-y-6 bg-white/80 border border-white/60 rounded-3xl p-6 shadow-sm">
             {product.category && (
               <Badge variant="blue">{product.category}</Badge>
             )}
 
-            {/* Title */}
-            <h1 className="text-3xl font-bold text-black">{product.name}</h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-black">{product.name}</h1>
+              {product.stores?.name && (
+                <p className="text-sm text-primary-blue mt-1">{product.stores.name}</p>
+              )}
+            </div>
 
-            {/* Rating */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
                 <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
@@ -234,25 +303,37 @@ export default function ProductDetailPage() {
               </span>
             </div>
 
-            {/* Price */}
-            <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-bold text-primary-blue">
-                {product.currency === "USDC" ? "USDC" : "SOL"} {displayPrice.toFixed(2)}
-              </span>
-              {product.original_price && product.original_price > product.price && (
-                <span className="text-xl text-muted-text line-through">
-                  {product.currency === "USDC" ? "USDC" : "SOL"} {product.original_price.toFixed(2)}
-                </span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-3xl font-bold text-black">
+                    {product.currency === "USDC" ? "USDC" : "SOL"} {displayPrice.toFixed(2)}
+                  </span>
+                  {product.original_price && product.original_price > product.price && (
+                    <span className="text-base text-muted-text line-through">
+                      {product.currency === "USDC" ? "USDC" : "SOL"} {product.original_price.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="px-6"
+                  onClick={handleAddToCart}
+                  disabled={!inStock}
+                >
+                  {inStock ? "Add to Cart" : "Out of Stock"}
+                </Button>
+              </div>
+              {ngnEquivalent && (
+                <p className="text-sm text-muted-text">≈ ₦{ngnEquivalent.toFixed(2)}</p>
               )}
               {product.is_pod_enabled && (
-                <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
+                <div className="w-fit px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200">
                   Cash on Delivery Available
                 </div>
               )}
             </div>
-            {ngnEquivalent && (
-              <p className="text-sm text-muted-text">≈ ₦{ngnEquivalent.toFixed(2)}</p>
-            )}
 
             {/* Stock Status */}
             <div>
@@ -265,7 +346,6 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Description */}
             <div>
               <h3 className="font-semibold text-black mb-2">Description</h3>
               <p className="text-muted-text leading-relaxed whitespace-pre-line">
@@ -273,18 +353,16 @@ export default function ProductDetailPage() {
               </p>
             </div>
 
-            {/* Store Info */}
             {product.stores && (
-              <div className="p-4 bg-soft-gray-bg rounded-lg">
+              <div className="p-4 glass-pill rounded-2xl">
                 <p className="text-sm text-muted-text mb-1">Sold by</p>
                 <p className="font-semibold text-black">{product.stores.name}</p>
               </div>
             )}
 
-            {/* Actions: Edit/Delete for Owner, Add to Cart for Buyer */}
             {isOwner ? (
               <div className="space-y-4">
-                <div className="p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100">
+                <div className="p-4 bg-blue-50 text-blue-800 rounded-2xl border border-blue-100">
                   <p className="font-medium flex items-center gap-2">
                     <Edit className="w-4 h-4" />
                     You are the owner of this product
@@ -313,7 +391,6 @@ export default function ProductDetailPage() {
               </div>
             ) : (
               <>
-                {/* Quantity Selector */}
                 {inStock && (
                   <div>
                     <label className="block text-sm font-medium text-black mb-2">
@@ -322,7 +399,7 @@ export default function ProductDetailPage() {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-10 h-10 bg-soft-gray-bg rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                        className="w-10 h-10 glass-pill rounded-full flex items-center justify-center hover:bg-white/80 transition-colors"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
@@ -333,32 +410,20 @@ export default function ProductDetailPage() {
                         onClick={() =>
                           setQuantity(Math.min(product.inventory || 1, quantity + 1))
                         }
-                        className="w-10 h-10 bg-soft-gray-bg rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+                        className="w-10 h-10 glass-pill rounded-full flex items-center justify-center hover:bg-white/80 transition-colors"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 )}
-
-                {/* Add to Cart Button */}
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
-                  onClick={handleAddToCart}
-                  disabled={!inStock}
-                >
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  {inStock ? "Add to Cart" : "Out of Stock"}
-                </Button>
               </>
             )}
           </div>
         </div>
 
         {/* Reviews Section */}
-        <div className="border-t border-border-gray mt-12 pt-8">
+        <div className="border-t border-white/50 mt-12 pt-8">
           <ProductReviews productId={product.id} onReviewAdded={fetchProduct} />
         </div>
       </div>

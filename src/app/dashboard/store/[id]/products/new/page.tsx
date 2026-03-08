@@ -5,28 +5,36 @@ import Card from "@/components/ui/Card";
 import { ArrowLeft, Package } from "lucide-react";
 import Link from "next/link";
 import ProductForm from "@/components/ProductForm";
+import { motion } from "framer-motion";
 
 export default function NewProductPage() {
     const params = useParams();
     const router = useRouter();
 
     return (
-        <div className="min-h-screen bg-soft-gray-bg p-8">
-            <div className="max-w-3xl mx-auto space-y-6">
-                <Link
-                    href={`/dashboard/store/${params.id}/products`}
-                    className="inline-flex items-center gap-2 text-muted-text hover:text-black transition-colors"
+        <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 sm:px-6 lg:px-8 w-full max-w-full overflow-x-hidden">
+            <div className="max-w-3xl mx-auto space-y-6 w-full">
+                <motion.div
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="glass-panel rounded-3xl p-5 sm:p-6"
                 >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Products
-                </Link>
+                    <Link
+                        href={`/dashboard/store/${params.id}/products`}
+                        className="inline-flex items-center gap-2 text-muted-text hover:text-black transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Products
+                    </Link>
 
-                <div>
-                    <h1 className="text-3xl font-bold text-black mb-2">Add New Product</h1>
-                    <p className="text-muted-text">
-                        Fill in the details below to add a product to your store
-                    </p>
-                </div>
+                    <div className="mt-4">
+                        <h1 className="text-2xl sm:text-3xl font-semibold text-black mb-1">Add New Product</h1>
+                        <p className="text-sm text-muted-text">
+                            Fill in the details below to add a product to your store
+                        </p>
+                    </div>
+                </motion.div>
 
                 {/* Using reusable ProductForm component which handles Multi-Image and Currency logic */}
                 <ProductForm
@@ -37,7 +45,7 @@ export default function NewProductPage() {
                     }}
                 />
 
-                <Card className="p-6 bg-blue-50 border-blue-200">
+                <Card className="p-6 bg-white/80 border-white/70">
                     <h3 className="font-semibold text-black mb-2 flex items-center gap-2">
                         <Package className="w-5 h-5 text-primary-blue" />
                         Tips for Great Product Listings

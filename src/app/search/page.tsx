@@ -30,11 +30,17 @@ function SearchPageContent() {
   const [total, setTotal] = useState(0);
   const cacheRef = useRef(new Map<string, { products: Product[]; total: number }>());
   const inflightRef = useRef<AbortController | null>(null);
+  const sortConfig: Record<string, { sortBy: string; order: "asc" | "desc" }> = {
+    created_at: { sortBy: "created_at", order: "desc" },
+    price: { sortBy: "price", order: "asc" },
+    name: { sortBy: "name", order: "asc" },
+    rating: { sortBy: "rating", order: "desc" },
+  };
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 640px)");
     const handleChange = () => {
-      setLimit(mediaQuery.matches ? 9 : 64);
+      setLimit(mediaQuery.matches ? 10 : 64);
     };
     handleChange();
     mediaQuery.addEventListener("change", handleChange);
@@ -49,10 +55,12 @@ function SearchPageContent() {
     const currentOffset = (page - 1) * limit;
 
     try {
+      const activeSort = sortConfig[sortBy] || sortConfig.created_at;
       const params = new URLSearchParams({
         limit: limit.toString(),
         offset: currentOffset.toString(),
-        sortBy,
+        sortBy: activeSort.sortBy,
+        order: activeSort.order,
       });
 
       if (searchQuery) params.set("q", searchQuery);
@@ -90,7 +98,8 @@ function SearchPageContent() {
           const nextParams = new URLSearchParams({
             limit: limit.toString(),
             offset: nextOffset.toString(),
-            sortBy,
+            sortBy: activeSort.sortBy,
+            order: activeSort.order,
           });
           if (searchQuery) nextParams.set("q", searchQuery);
           if (selectedCategory) nextParams.set("category", selectedCategory);
@@ -127,21 +136,31 @@ function SearchPageContent() {
   };
 
   const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
+    setSelectedCategory(category === "All" ? "" : category);
     setPage(1);
   };
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 sm:pt-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-black mb-4">Search Products</h1>
+        <div className="mb-6 glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-black mb-2">Search Products</h1>
+              <p className="text-sm text-muted-text">Find campus essentials, fast.</p>
+            </div>
+            {!loading && (
+              <div className="glass-pill rounded-full px-4 py-2 text-xs font-semibold text-muted-text">
+                {total > 0 ? `${total} results` : "No results"}
+              </div>
+            )}
+          </div>
           <SearchBar onSearch={handleSearch} />
         </div>
 
         {/* Filters */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mb-6 glass-panel rounded-3xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <CategoryFilter
             selected={selectedCategory}
             onChange={handleCategoryChange}
@@ -153,7 +172,7 @@ function SearchPageContent() {
               setSortBy(e.target.value);
               setPage(1);
             }}
-            className="px-4 py-2 bg-white border border-border-gray rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            className="px-4 py-2.5 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue border border-white/60"
           >
             <option value="created_at">Newest First</option>
             <option value="price">Price: Low to High</option>
@@ -164,16 +183,16 @@ function SearchPageContent() {
 
         {/* Results */}
         {loading && page === 1 ? (
-          <div className="grid gap-3 grid-cols-3 lg:grid-cols-8">
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-8">
             {[...Array(8)].map((_, i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl border border-border-gray h-80 animate-pulse"
+                className="glass-card rounded-2xl border border-white/60 h-80 animate-pulse"
               />
             ))}
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl border border-border-gray">
+          <div className="text-center py-16 glass-panel rounded-3xl border border-white/60">
             <Package className="w-16 h-16 text-muted-text mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-black mb-2">No products found</h3>
             <p className="text-muted-text mb-6">
@@ -191,7 +210,7 @@ function SearchPageContent() {
           </div>
         ) : (
           <>
-            <div className="grid gap-3 grid-cols-3 lg:grid-cols-8">
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-8">
               {products.map((product) => (
                 <ProductCard key={product.id} p={product} />
               ))}

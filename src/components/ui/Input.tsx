@@ -1,6 +1,5 @@
 import { InputHTMLAttributes, forwardRef } from "react";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
@@ -21,7 +20,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 <div className="relative">
                     <input
                         className={cn(
-                            "w-full px-4 py-2.5 bg-white border border-border-gray rounded-lg text-black placeholder:text-muted-text focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all duration-200",
+                            "w-full px-4 py-2.5 glass-pill rounded-2xl text-black placeholder:text-muted-text focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all duration-200",
                             suffix && "pr-12",
                             error && "border-red-500 focus:ring-red-500",
                             className

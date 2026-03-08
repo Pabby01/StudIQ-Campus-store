@@ -5,9 +5,45 @@ import { Facebook, Twitter, Instagram, Linkedin, Mail, MapPin, Phone } from "luc
 
 export default function Footer() {
     return (
-        <footer className="bg-white border-t border-border-gray pt-16 pb-8">
+        <footer className="bg-white border-t border-border-gray pt-10 sm:pt-16 pb-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div className="sm:hidden space-y-6 mb-8">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-lg">S</span>
+                        </div>
+                        <span className="text-lg font-bold text-black">StudIQ Store</span>
+                    </div>
+                    <div className="flex gap-4">
+                        <a href="#" className="text-gray-400 hover:text-primary-blue transition-colors">
+                            <Twitter className="w-5 h-5" />
+                        </a>
+                        <a href="#" className="text-gray-400 hover:text-primary-blue transition-colors">
+                            <Instagram className="w-5 h-5" />
+                        </a>
+                        <a href="#" className="text-gray-400 hover:text-primary-blue transition-colors">
+                            <Linkedin className="w-5 h-5" />
+                        </a>
+                    </div>
+                    <div className="space-y-2 text-sm text-muted-text">
+                        <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-primary-blue shrink-0" />
+                            <span>support@studiq.com</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-primary-blue shrink-0" />
+                            <span>+234 902 025 0260</span>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-sm text-muted-text">
+                        <Link href="/pricing" className="hover:text-primary-blue transition-colors">Pricing</Link>
+                        <Link href="/faq" className="hover:text-primary-blue transition-colors">FAQ</Link>
+                        <Link href="/search" className="hover:text-primary-blue transition-colors">All Products</Link>
+                        <Link href="/privacy" className="hover:text-primary-blue transition-colors">Privacy</Link>
+                    </div>
+                </div>
+
+                <div className="hidden sm:grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
 
                     {/* Brand Column */}
                     <div className="space-y-4">

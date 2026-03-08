@@ -14,7 +14,7 @@ type Store = Readonly<{
 
 export default function StoreCard({ s }: { s: Store }) {
   return (
-    <div className="bg-white rounded-xl border border-border-gray shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden group">
+    <div className="glass-card rounded-2xl border border-white/60 hover-lift overflow-hidden group">
       {/* Store Banner */}
       <div className="relative h-28 sm:h-36 bg-gradient-to-br from-primary-blue to-accent-blue overflow-hidden">
         {s.banner_url ? (
@@ -42,7 +42,7 @@ export default function StoreCard({ s }: { s: Store }) {
           )}
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-border-gray">
+        <div className="flex items-center justify-between pt-2 border-t border-white/60">
           <div className="flex items-center gap-1">
             <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
             <span className="text-xs font-medium text-black">

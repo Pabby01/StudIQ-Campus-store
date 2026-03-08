@@ -27,7 +27,7 @@ export default function DashboardCard({
     return (
         <div
             className={cn(
-                "bg-white rounded-xl border border-border-gray shadow-sm p-4 md:p-6 hover:shadow-md transition-shadow w-full max-w-full",
+                "glass-card rounded-2xl border border-white/60 p-4 md:p-6 hover-lift w-full max-w-full",
                 className
             )}
             {...props}
@@ -48,7 +48,7 @@ export default function DashboardCard({
                         </p>
                     )}
                 </div>
-                <div className={cn("p-2 md:p-3 bg-blue-50 rounded-lg shrink-0", iconColor)}>
+            <div className={cn("p-2 md:p-3 bg-white/80 border border-white/70 rounded-2xl shrink-0", iconColor)}>
                     <Icon className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
             </div>

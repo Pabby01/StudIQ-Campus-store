@@ -123,11 +123,11 @@ export default function TrackOrderPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-soft-gray-bg mesh-bg py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto space-y-8">
                 {/* Header */}
-                <div className="text-center space-y-4">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-400 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+                <div className="text-center space-y-4 glass-panel rounded-3xl p-6">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-400 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
                         <Package className="w-10 h-10 text-white" />
                     </div>
                     <h1 className="text-4xl font-bold text-black">Track Your Order</h1>
@@ -137,7 +137,7 @@ export default function TrackOrderPage() {
                 </div>
 
                 {/* Search Card */}
-                <Card className="p-8">
+                <Card className="p-8 glass-panel border-white/60">
                     <div className="flex gap-3">
                         <div className="flex-1">
                             <Input
@@ -166,7 +166,7 @@ export default function TrackOrderPage() {
                         </Button>
                     </div>
                     {error && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
                             <XCircle className="w-5 h-5 text-red-600 mt-0.5" />
                             <p className="text-sm text-red-600">{error}</p>
                         </div>
@@ -177,7 +177,7 @@ export default function TrackOrderPage() {
                 {order && (
                     <div className="space-y-6">
                         {/* Status Timeline */}
-                        <Card className="p-8">
+                        <Card className="p-8 glass-panel border-white/60">
                             <h2 className="text-xl font-bold text-black mb-8">Order Status</h2>
                             <StatusTimeline status={order.status} />
                         </Card>
@@ -185,7 +185,7 @@ export default function TrackOrderPage() {
                         {/* Order Information Grid */}
                         <div className="grid md:grid-cols-2 gap-6">
                             {/* Order Details */}
-                            <Card className="p-6">
+                            <Card className="p-6 glass-panel border-white/60">
                                 <h3 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
                                     <Package className="w-5 h-5 text-blue-600" />
                                     Order Details
@@ -222,7 +222,7 @@ export default function TrackOrderPage() {
                             </Card>
 
                             {/* Delivery Info */}
-                            <Card className="p-6">
+                            <Card className="p-6 glass-panel border-white/60">
                                 <h3 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
                                     <MapPin className="w-5 h-5 text-blue-600" />
                                     Delivery Information
@@ -248,7 +248,7 @@ export default function TrackOrderPage() {
                                         </div>
                                     )}
                                     {order.delivery_method === 'shipping' && order.status === 'shipped' && (
-                                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-2xl">
                                             <p className="text-sm text-blue-800">
                                                 📦 Your order is on the way! Expected delivery: 2-3 business days
                                             </p>
@@ -259,19 +259,19 @@ export default function TrackOrderPage() {
                         </div>
 
                         {/* Order Items */}
-                        <Card className="p-6">
+                        <Card className="p-6 glass-panel border-white/60">
                             <h3 className="text-lg font-bold text-black mb-4">Order Items</h3>
                             <div className="space-y-3">
                                 {order.items.map((item) => (
-                                    <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div key={item.id} className="flex items-center gap-4 p-4 bg-white/70 rounded-2xl border border-white/60">
                                         {item.product.image_url ? (
                                             <img
                                                 src={item.product.image_url}
                                                 alt={item.product.name}
-                                                className="w-16 h-16 object-cover rounded-md border border-gray-300"
+                                                className="w-16 h-16 object-cover rounded-2xl border border-white/60"
                                             />
                                         ) : (
-                                            <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center">
+                                            <div className="w-16 h-16 bg-white/60 rounded-2xl flex items-center justify-center">
                                                 <Package className="w-8 h-8 text-gray-400" />
                                             </div>
                                         )}

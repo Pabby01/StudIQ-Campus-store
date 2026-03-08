@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import PremiumBadge from "@/components/PremiumBadge";
 import { Settings, Crown, TrendingUp, CreditCard, AlertCircle, Check, Bell, Users, Copy, Link2 } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { motion } from "framer-motion";
 
 type SubscriptionData = {
   plan: {
@@ -45,7 +46,7 @@ function NotificationsCard({ walletAddress }: { walletAddress: string }) {
   if (!isSupported) return null;
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 border-white/60">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-semibold text-black mb-2 flex items-center gap-2">
@@ -251,8 +252,8 @@ function SettingsContent() {
   // Only check for user authentication, not wallet address
   if (!user) {
     return (
-      <div className="min-h-screen bg-soft-gray-bg p-8 flex items-center justify-center">
-        <Card className="p-8 text-center">
+      <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 flex items-center justify-center">
+        <Card className="p-8 text-center border-white/60">
           <h2 className="text-xl font-bold mb-4">Sign In Required</h2>
           <p className="text-muted-text mb-6">Please sign in to manage your settings</p>
           <Button variant="primary" onClick={() => router.push("/")}>
@@ -267,21 +268,25 @@ function SettingsContent() {
   const currentPlan = subscription?.plan;
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg px-4 py-6 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <Settings className="w-6 h-6 text-primary-blue" />
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 sm:px-6 lg:px-8 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-4xl mx-auto space-y-6 w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="glass-panel rounded-3xl p-5 sm:p-6 flex items-center gap-3"
+        >
+          <div className="p-2 bg-white/85 rounded-2xl border border-white/70">
+            <Settings className="w-5 h-5 text-primary-blue" />
           </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-black">Settings</h1>
-            <p className="text-sm md:text-base text-muted-text">Manage your account and subscription</p>
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-black">Settings</h1>
+            <p className="text-sm text-muted-text">Manage your account and subscription</p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Current Subscription */}
-        <Card className="p-6">
+        <Card className="p-6 border-white/60">
           <div className="flex items-start justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold text-black mb-2 flex items-center gap-2">
@@ -298,19 +303,19 @@ function SettingsContent() {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-white/80 rounded-2xl p-4 border border-white/70">
                   <p className="text-sm text-muted-text mb-1">Plan</p>
                   <p className="text-2xl font-bold text-black">{currentPlan?.display_name || "Free"}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-white/80 rounded-2xl p-4 border border-white/70">
                   <p className="text-sm text-muted-text mb-1">Platform Fee</p>
                   <p className="text-2xl font-bold text-green-600">{currentPlan?.platform_fee_percentage || 5}%</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-white/80 rounded-2xl p-4 border border-white/70">
                   <p className="text-sm text-muted-text mb-1">Monthly Cost</p>
                   <p className="text-2xl font-bold text-black">${currentPlan?.price_usd?.toFixed(2) || "0.00"}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-white/80 rounded-2xl p-4 border border-white/70">
                   <p className="text-sm text-muted-text mb-1">Status</p>
                   <p className="text-2xl font-bold text-green-600 capitalize">{subscription?.status || "Active"}</p>
                 </div>
@@ -333,10 +338,10 @@ function SettingsContent() {
 
               {/* Upgrade CTA */}
               {subscription?.isFreeTier && (
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
+                <div className="bg-white/80 rounded-2xl p-6 border border-white/70">
                   <div className="flex items-start gap-4">
-                    <div className="p-3 bg-blue-100 rounded-lg">
-                      <TrendingUp className="w-6 h-6 text-blue-600" />
+                    <div className="p-3 bg-white rounded-2xl border border-white/70">
+                      <TrendingUp className="w-6 h-6 text-primary-blue" />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold text-black mb-2">Upgrade to Premium</h4>
@@ -386,9 +391,9 @@ function SettingsContent() {
         {/* Notifications */}
         <NotificationsCard walletAddress={walletAddress || ''} />
 
-        <Card className="p-6">
+        <Card className="p-6 border-white/60">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-2 bg-blue-50 rounded-lg">
+            <div className="p-2 bg-white/85 rounded-2xl border border-white/70">
               <Users className="w-5 h-5 text-primary-blue" />
             </div>
             <div>
@@ -398,7 +403,7 @@ function SettingsContent() {
           </div>
 
           {!walletAddress && (
-            <div className="rounded-lg border border-border-gray bg-white p-4 text-sm text-muted-text">
+            <div className="rounded-2xl border border-white/70 bg-white/80 p-4 text-sm text-muted-text">
               Connect your wallet to view your referral details.
             </div>
           )}
@@ -411,7 +416,7 @@ function SettingsContent() {
                 </div>
               )}
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border border-border-gray bg-white p-4">
+                <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
                   <div className="text-xs text-muted-text">Your referral code</div>
                   <div className="mt-2 flex items-center justify-between gap-3">
                     {referralLoading ? (
@@ -432,7 +437,7 @@ function SettingsContent() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-border-gray bg-white p-4">
+                <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
                   <div className="text-xs text-muted-text">Total referrals</div>
                   <div className="mt-1 text-2xl font-bold text-black">
                     {referralLoading ? "—" : referralSummary?.totalReferrals ?? 0}
@@ -440,7 +445,7 @@ function SettingsContent() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border-gray bg-white p-4">
+              <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs text-muted-text">Referral points</div>

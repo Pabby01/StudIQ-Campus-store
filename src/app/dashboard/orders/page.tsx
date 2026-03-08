@@ -1,11 +1,14 @@
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useState } from "react";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import Card from "@/components/ui/Card";
-import { ShoppingBag, Loader2, ExternalLink } from "lucide-react";
+import { ShoppingBag, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import { motion } from "framer-motion";
 
 type OrderItem = {
   id: string;
@@ -66,21 +69,30 @@ export default function DashboardOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <ShoppingBag className="w-6 h-6 text-primary-blue" />
+    <div className="min-h-screen bg-soft-gray-bg mesh-bg px-4 py-6 sm:px-6 lg:px-8 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto space-y-6 w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="glass-panel rounded-3xl p-5 sm:p-6 flex items-center gap-3"
+        >
+          <div className="p-2 bg-white/80 rounded-2xl border border-white/70">
+            <ShoppingBag className="w-5 h-5 text-primary-blue" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-black">My Purchases</h1>
-            <p className="text-muted-text">Track your order history and status</p>
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-black truncate">My Purchases</h1>
+            <p className="text-sm text-muted-text">Track your order history and status</p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Orders List */}
-        <div className="space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+          className="space-y-4"
+        >
           {orders.length === 0 ? (
             <Card>
               <div className="text-center py-12">
@@ -94,9 +106,9 @@ export default function DashboardOrdersPage() {
             </Card>
           ) : (
             orders.map((order) => (
-              <Card key={order.id} className="p-0 overflow-hidden">
+              <Card key={order.id} className="p-0 overflow-hidden border-white/60">
                 {/* Order Header */}
-                <div className="bg-gray-50 px-6 py-4 border-b border-border-gray flex flex-wrap gap-4 justify-between items-center text-sm">
+                <div className="bg-white/70 px-5 sm:px-6 py-4 border-b border-white/60 flex flex-wrap gap-4 justify-between items-center text-sm">
                   <div className="flex gap-8 text-muted-text">
                     <div>
                       <span className="block text-xs uppercase font-bold">Order Placed</span>
@@ -135,14 +147,14 @@ export default function DashboardOrdersPage() {
                 </div>
 
                 {/* Order Items */}
-                <div className="p-6">
+                <div className="p-5 sm:p-6">
                   <div className="space-y-6">
                     {order.items.map((item) => (
                       <div key={item.id} className="flex gap-4 items-start">
                         {item.product.image_url ? (
-                          <img src={item.product.image_url} alt={item.product.name} className="w-20 h-20 object-cover rounded-md border border-border-gray" />
+                          <img src={item.product.image_url} alt={item.product.name} className="w-20 h-20 object-cover rounded-xl border border-white/70" />
                         ) : (
-                          <div className="w-20 h-20 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">
+                          <div className="w-20 h-20 bg-white/70 rounded-xl flex items-center justify-center text-gray-400 border border-white/70">
                             <ShoppingBag className="w-8 h-8" />
                           </div>
                         )}
@@ -168,7 +180,7 @@ export default function DashboardOrdersPage() {
               </Card>
             ))
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );

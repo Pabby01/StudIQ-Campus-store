@@ -2,36 +2,45 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 
 const slides = [
     {
         id: 1,
-        title: "Campus Deals Extended!",
-        subtitle: "Save up to 50% on electronics, books & more",
-        cta: "Shop now",
-        image: "/carousel_bg_1.png",
+        title: "Flash Deal: Campus Tech Week",
+        subtitle: "Up to 60% off new smartphones & accessories",
+        cta: "Shop deal",
+        image: "/tech.jpg",
+        badge: "Limited time",
+        accent: "from-indigo-100 via-white to-blue-100",
         link: "/search?category=Electronics",
     },
     {
         id: 2,
-        title: "Pay with Solana",
-        subtitle: "Fast, secure blockchain payments on campus",
-        cta: "Learn more",
-        image: "/carousel_bg_2.png",
-        link: "/connect",
+        title: "Flash Deal: Study Beats",
+        subtitle: "Noise‑canceling headphones from ₦9,999",
+        cta: "Grab now",
+        image: "/beat.jpg",
+        badge: "Hot pick",
+        accent: "from-purple-100 via-white to-pink-100",
+        link: "/search?category=Electronics",
     },
     {
         id: 3,
-        title: "New Arrivals",
-        subtitle: "Fresh products from your favorite campus stores",
-        cta: "Browse",
-        image: "/carousel_bg_3.png",
-        link: "/search",
+        title: "Flash Deal: Sneaker Drops",
+        subtitle: "Fresh kicks for campus, up to 40% off",
+        cta: "View drops",
+        image: "/happy.jpg",
+        badge: "Just landed",
+        accent: "from-emerald-100 via-white to-teal-100",
+        link: "/search?category=Fashion%20%26%20Clothing",
     },
 ];
 
 export default function HeroCarousel() {
+    const router = useRouter();
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
@@ -54,7 +63,7 @@ export default function HeroCarousel() {
     };
 
     return (
-        <div className="relative w-full h-[320px] md:h-[380px] overflow-hidden rounded-2xl">
+        <div className="relative w-full h-[320px] md:h-[380px] overflow-hidden rounded-3xl">
             {/* Slides */}
             <div
                 className="flex h-full transition-transform duration-500 ease-out"
@@ -65,37 +74,43 @@ export default function HeroCarousel() {
                         key={slide.id}
                         className="min-w-full h-full relative flex items-center justify-center"
                     >
-                        {/* Background Image */}
-                        <div className="absolute inset-0">
-                            <img
-                                src={slide.image}
-                                alt={slide.title}
-                                className="w-full h-full object-cover"
-                            />
-                            {/* Gradient Overlay for better text readability */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
-                        </div>
+                        <div className={`absolute inset-0 bg-gradient-to-r ${slide.accent}`} />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.2),transparent_55%)]" />
 
-                        {/* Content with Glassmorphism */}
-                        <div className="relative z-10 text-left px-8 md:px-16 max-w-2xl">
-                            {/* Glass Card */}
-                            <div className="backdrop-blur-md bg-white/10 rounded-2xl p-8 border border-white/20 shadow-2xl">
-                                <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white drop-shadow-lg">
+                        <div className="relative z-10 grid h-full w-full grid-cols-1 md:grid-cols-12 gap-6 px-6 md:px-12 py-8">
+                            <div className="md:col-span-6 flex flex-col justify-center">
+                                <div className="inline-flex w-fit items-center gap-2 rounded-full glass-pill px-3 py-1 text-xs font-semibold text-primary-blue">
+                                    {slide.badge}
+                                </div>
+                                <h2 className="mt-4 text-3xl md:text-5xl font-bold text-black">
                                     {slide.title}
                                 </h2>
-                                <p className="text-lg md:text-xl mb-6 text-white/90 drop-shadow-md">
+                                <p className="mt-3 text-base md:text-lg text-muted-text max-w-md">
                                     {slide.subtitle}
                                 </p>
-                                <Button
-                                    variant="secondary"
-                                    size="lg"
-                                    onClick={() => (window.location.href = slide.link)}
-                                    className="bg-white text-primary-blue hover:bg-gray-100 shadow-lg"
-                                >
-                                    {slide.cta}
-                                </Button>
+                            </div>
+                            <div className="md:col-span-6 flex items-center justify-center">
+                                <div className="relative w-full max-w-[520px] h-[220px] md:h-[300px]">
+                                    <Image
+                                        src={slide.image}
+                                        alt={slide.title}
+                                        fill
+                                        sizes="(min-width: 768px) 50vw, 90vw"
+                                        className="object-cover rounded-[32px] shadow-2xl"
+                                        priority={slide.id === 1}
+                                    />
+                                </div>
                             </div>
                         </div>
+
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => router.push(slide.link)}
+                            className="absolute bottom-5 left-5 rounded-full bg-white/90 text-primary-blue hover:bg-white shadow-md"
+                        >
+                            {slide.cta}
+                        </Button>
                     </div>
                 ))}
             </div>
@@ -103,13 +118,13 @@ export default function HeroCarousel() {
             {/* Navigation Arrows */}
             <button
                 onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all backdrop-blur-sm"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 glass-pill rounded-full flex items-center justify-center border border-white/60 shadow-lg transition-all hover:bg-white/90"
             >
                 <ChevronLeft className="w-5 h-5 text-black" />
             </button>
             <button
                 onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all backdrop-blur-sm"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 glass-pill rounded-full flex items-center justify-center border border-white/60 shadow-lg transition-all hover:bg-white/90"
             >
                 <ChevronRight className="w-5 h-5 text-black" />
             </button>
