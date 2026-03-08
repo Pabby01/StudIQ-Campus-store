@@ -30,6 +30,12 @@ function SearchPageContent() {
   const [total, setTotal] = useState(0);
   const cacheRef = useRef(new Map<string, { products: Product[]; total: number }>());
   const inflightRef = useRef<AbortController | null>(null);
+  const sortConfig: Record<string, { sortBy: string; order: "asc" | "desc" }> = {
+    created_at: { sortBy: "created_at", order: "desc" },
+    price: { sortBy: "price", order: "asc" },
+    name: { sortBy: "name", order: "asc" },
+    rating: { sortBy: "rating", order: "desc" },
+  };
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 640px)");
@@ -49,10 +55,12 @@ function SearchPageContent() {
     const currentOffset = (page - 1) * limit;
 
     try {
+      const activeSort = sortConfig[sortBy] || sortConfig.created_at;
       const params = new URLSearchParams({
         limit: limit.toString(),
         offset: currentOffset.toString(),
-        sortBy,
+        sortBy: activeSort.sortBy,
+        order: activeSort.order,
       });
 
       if (searchQuery) params.set("q", searchQuery);
@@ -90,7 +98,8 @@ function SearchPageContent() {
           const nextParams = new URLSearchParams({
             limit: limit.toString(),
             offset: nextOffset.toString(),
-            sortBy,
+            sortBy: activeSort.sortBy,
+            order: activeSort.order,
           });
           if (searchQuery) nextParams.set("q", searchQuery);
           if (selectedCategory) nextParams.set("category", selectedCategory);
@@ -127,7 +136,7 @@ function SearchPageContent() {
   };
 
   const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
+    setSelectedCategory(category === "All" ? "" : category);
     setPage(1);
   };
 

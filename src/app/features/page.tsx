@@ -11,6 +11,7 @@ const features = [
     slug: "delivery",
     title: "Instant Campus Delivery",
     description: "Get essentials delivered in hours with real‑time tracking and reliable handoff.",
+    details: "Track every order from confirmation to handoff. Delivery windows are optimized for campus routes, and students receive clear status updates in real time for dependable arrival.",
     image: "/tech.jpg",
     iconImage: "/tech.jpg",
     accent: "from-slate-50 via-white to-slate-100",
@@ -20,6 +21,7 @@ const features = [
     slug: "verified",
     title: "Verified Student Stores",
     description: "Shop trusted campus sellers with transparent ratings, reviews, and badges.",
+    details: "Every seller profile includes reputation signals, recent reviews, and verification context so buyers can choose confidently. Clear quality signals reduce risk and improve trust.",
     image: "/happy.jpg",
     iconImage: "/happy.jpg",
     accent: "from-slate-50 via-white to-slate-100",
@@ -29,6 +31,7 @@ const features = [
     slug: "payments",
     title: "Secure Wallet Payments",
     description: "Pay with Solana in seconds or choose flexible pay‑on‑delivery options.",
+    details: "Use fast wallet checkout with secure transaction flow and instant feedback. Flexible payment options support both digital-first buyers and students who prefer pay-on-delivery.",
     image: "/carousel_bg_2.png",
     iconImage: "/carousel_bg_2.png",
     accent: "from-slate-50 via-white to-slate-100",
@@ -38,6 +41,7 @@ const features = [
     slug: "rewards",
     title: "Rewards & Cashback",
     description: "Earn points on every order and unlock perks crafted for campus life.",
+    details: "Students accumulate rewards as they shop and can redeem benefits across supported stores. The system is designed to increase value over time and encourage smart repeat purchases.",
     image: "/beat.jpg",
     iconImage: "/beat.jpg",
     accent: "from-slate-50 via-white to-slate-100",
@@ -136,14 +140,26 @@ export default function FeaturesPage() {
                     <h2 className="text-lg font-semibold text-slate-900 leading-tight">{feature.title}</h2>
                     <p className="text-sm text-slate-500 leading-relaxed">{feature.description}</p>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <Link href={`#${feature.slug}-details`} className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-700">View details</span>
                     <ChevronRight className="w-4 h-4 text-slate-500 transition-transform group-hover:translate-x-1" />
-                  </div>
+                  </Link>
                 </div>
               </motion.div>
             );
           })}
+        </div>
+
+        <div className="space-y-4 sm:space-y-5">
+          {features.map((feature) => (
+            <section key={`${feature.slug}-details`} id={`${feature.slug}-details`} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold text-slate-900">{feature.title}</h3>
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{feature.highlight}</span>
+              </div>
+              <p className="text-sm text-slate-500 mt-2 leading-relaxed">{feature.details}</p>
+            </section>
+          ))}
         </div>
       </div>
     </div>
