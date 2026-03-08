@@ -295,8 +295,33 @@ export default function DashboardPage() {
         </motion.div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-primary-blue animate-spin" />
+          <div className="space-y-6">
+            <div className="glass-panel rounded-3xl p-6 flex items-center justify-center">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full border-2 border-primary-blue/30 border-t-primary-blue animate-spin" />
+                <div className="space-y-2">
+                  <div className="h-3 w-32 rounded-full bg-white/80" />
+                  <div className="h-3 w-24 rounded-full bg-white/70" />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full animate-pulse">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="glass-card rounded-2xl border border-white/60 p-5">
+                  <div className="h-3 w-24 rounded-full bg-white/70" />
+                  <div className="mt-4 h-6 w-28 rounded-full bg-white/80" />
+                  <div className="mt-3 h-3 w-16 rounded-full bg-white/60" />
+                </div>
+              ))}
+            </div>
+            <div className="glass-panel rounded-3xl p-6 animate-pulse">
+              <div className="h-4 w-28 rounded-full bg-white/70" />
+              <div className="mt-4 h-3 w-40 rounded-full bg-white/60" />
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="h-20 rounded-2xl bg-white/70" />
+                <div className="h-20 rounded-2xl bg-white/70" />
+              </div>
+            </div>
           </div>
         ) : (
           <>

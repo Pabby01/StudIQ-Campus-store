@@ -71,50 +71,48 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {!user && (
-              <div className={`hidden md:flex items-center transition-all ${isCompact ? "gap-1" : "gap-2"}`}>
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isExternal = item.href.startsWith("http");
+            <div className={`hidden md:flex items-center transition-all ${isCompact ? "gap-1" : "gap-2"}`}>
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isExternal = item.href.startsWith("http");
 
-                  return isExternal ? (
-                    <a
-                      key={item.label}
-                      href={item.href}
-                      className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
-                        isCompact ? "p-1.5" : "p-2"
+                return isExternal ? (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
+                      isCompact ? "p-1.5" : "p-2"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                    <span
+                      className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
+                        isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       }`}
                     >
-                      <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                      <span
-                        className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
-                          isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                        }`}
-                      >
-                        {item.label}
-                      </span>
-                    </a>
-                  ) : (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
-                        isCompact ? "p-1.5" : "p-2"
+                      {item.label}
+                    </span>
+                  </a>
+                ) : (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
+                      isCompact ? "p-1.5" : "p-2"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+                    <span
+                      className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
+                        isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       }`}
                     >
-                      <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                      <span
-                        className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
-                          isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                        }`}
-                      >
-                        {item.label}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
           <div className="hidden lg:flex flex-1 justify-center px-4">

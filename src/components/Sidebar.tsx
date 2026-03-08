@@ -39,7 +39,7 @@ export default function Sidebar() {
 
     const SidebarContent = () => (
         <>
-            <nav className="flex-1 px-3 py-5 space-y-6 overflow-y-auto">
+            <nav className="flex-1 px-3 py-5 space-y-6 overflow-y-auto relative z-10">
                 <div>
                     <h3 className="px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
                         Buying
@@ -153,7 +153,7 @@ export default function Sidebar() {
                 </div>
             </nav>
 
-            <div className="p-4 border-t border-white/60">
+            <div className="p-4 border-t border-white/60 relative z-10">
                 <Button
                     variant="primary"
                     className="w-full rounded-2xl bg-slate-900 hover:bg-slate-800"
@@ -220,8 +220,9 @@ export default function Sidebar() {
                 initial={{ x: -16, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
-                className="hidden md:flex w-64 bg-white/75 border-r border-white/60 min-h-screen flex-col shrink-0 backdrop-blur-xl shadow-lg"
+                className="hidden md:flex w-64 fixed left-0 top-20 h-[calc(100vh-5rem)] bg-white/80 border-r border-white/60 flex-col shrink-0 backdrop-blur-xl shadow-xl rounded-r-3xl relative"
             >
+                <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/60 via-white/20 to-transparent" />
                 <SidebarContent />
             </motion.aside>
         </>
