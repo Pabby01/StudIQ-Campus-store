@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 
 const slides = [
@@ -39,6 +40,7 @@ const slides = [
 ];
 
 export default function HeroCarousel() {
+    const router = useRouter();
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
@@ -104,7 +106,7 @@ export default function HeroCarousel() {
                         <Button
                             size="sm"
                             variant="secondary"
-                            onClick={() => (window.location.href = slide.link)}
+                            onClick={() => router.push(slide.link)}
                             className="absolute bottom-5 left-5 rounded-full bg-white/90 text-primary-blue hover:bg-white shadow-md"
                         >
                             {slide.cta}

@@ -12,6 +12,7 @@ import { OnboardingGuard } from "@/components/OnboardingGuard";
 
 import { ToastProvider } from "@/hooks/useToast";
 import SupportChat from "@/components/SupportChat";
+import WelcomeTour from "@/components/WelcomeTour";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -104,6 +105,7 @@ export default function RootLayout({
               <FooterWrapper />
               <MobileNav />
               <SupportChat />
+              <WelcomeTour />
             </Providers>
           </ToastProvider>
         </ErrorBoundary>

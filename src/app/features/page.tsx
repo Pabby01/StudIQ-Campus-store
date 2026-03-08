@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Sparkles, ChevronRight } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -50,6 +51,7 @@ const features = [
 ];
 
 export default function FeaturesPage() {
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12 space-y-6 sm:space-y-8">
@@ -71,7 +73,7 @@ export default function FeaturesPage() {
               <Link href="/search" className="rounded-full px-4 py-2 text-xs font-semibold text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
                 Browse marketplace
               </Link>
-              <Button variant="primary" className="bg-slate-900 hover:bg-slate-800" onClick={() => (window.location.href = "/dashboard")}>
+              <Button variant="primary" className="bg-slate-900 hover:bg-slate-800" onClick={() => router.push("/dashboard")}>
                 Get started
               </Button>
             </div>

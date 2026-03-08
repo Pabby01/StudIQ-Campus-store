@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
     Store,
@@ -60,6 +60,7 @@ const NavLink = ({ href, icon: Icon, label, activeMatch, pathname, onNavigate }:
 };
 
 function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
+    const router = useRouter();
     return (
         <div className="flex flex-col h-full">
             <nav className="flex-1 py-6 space-y-8 overflow-y-auto">
@@ -95,7 +96,7 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
                     <Button
                         variant="primary"
                         className="w-full bg-white text-slate-900 hover:bg-slate-100 border-none h-9 text-sm"
-                        onClick={() => window.location.href = "/dashboard/store"}
+                        onClick={() => router.push("/dashboard/store")}
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Create Store

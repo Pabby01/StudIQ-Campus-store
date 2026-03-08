@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
 import ProductRow from "@/components/ProductRow";
@@ -30,6 +31,7 @@ type StoreType = Readonly<{
 }>;
 
 export default function Home() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [nearbyStores, setNearbyStores] = useState<StoreType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -461,7 +463,7 @@ export default function Home() {
             Join hundreds of student entrepreneurs earning with StudIQ
           </p>
           <button
-            onClick={() => (window.location.href = "/dashboard/store")}
+            onClick={() => router.push("/dashboard/store")}
             className="px-8 py-3 bg-white text-primary-blue font-semibold rounded-full hover:bg-gray-100 transition-colors"
           >
             Create Your Store

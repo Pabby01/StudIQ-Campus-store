@@ -3,6 +3,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ShoppingCart, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft, Bell, User, Search, LayoutDashboard } from "lucide-react";
 import { useUser } from "@civic/auth-web3/react";
@@ -10,6 +11,7 @@ import CivicAuthButton from "@/components/CivicAuthButton";
 import { useCart } from "@/store/cart";
 
 export default function Navbar() {
+  const router = useRouter();
   const { user } = useUser();
   const items = useCart((s) => s.items);
   const fetchSolPrice = useCart((s) => s.fetchSolPrice);
@@ -125,7 +127,7 @@ export default function Navbar() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     const query = e.currentTarget.value;
-                    if (query) window.location.href = `/search?q=${encodeURIComponent(query)}`;
+                    if (query) router.push(`/search?q=${encodeURIComponent(query)}`);
                   }
                 }}
               />

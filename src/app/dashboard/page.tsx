@@ -3,10 +3,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import DashboardCard from "@/components/DashboardCard";
-import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet, Users, Copy, Link2 } from "lucide-react";
+import { ShoppingBag, DollarSign, Award, TrendingUp, Loader2, BarChart3, RefreshCw, Wallet, Users, Copy, Link2, Sparkles } from "lucide-react";
 import ShareStoreButton from "@/components/ShareStoreButton";
 import RevenueChart from "@/components/charts/RevenueChart";
 import OrdersChart from "@/components/charts/OrdersChart";
@@ -46,6 +47,7 @@ type ReferralSummary = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { walletAddress, user, email, isLoading: authLoading } = useCivicWallet();
   const [isBuyer, setIsBuyer] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -210,6 +212,9 @@ export default function DashboardPage() {
     }
   }, [isBuyer]);
 
+  // Add this empty state/CTA block inside the return statement, probably before the charts or replacing the stats if empty
+  const isNewUser = !loading && stats?.totalOrders === 0 && stats?.revenue === 0;
+
   // Only check for user, not walletAddress (wallet may still be loading)
   if (!user) {
     return (
@@ -217,7 +222,7 @@ export default function DashboardPage() {
         <div className="text-center glass-panel rounded-3xl p-8 border border-white/60">
           <h2 className="text-2xl font-bold text-black mb-4">Sign In Required</h2>
           <p className="text-lg text-muted-text mb-6">Please sign in to view your dashboard</p>
-          <Button variant="primary" onClick={() => window.location.href = "/"}>
+          <Button variant="primary" onClick={() => router.push("/")}>
             Go to Home
           </Button>
         </div>
@@ -294,6 +299,40 @@ export default function DashboardPage() {
             </Button>
           </div>
         </motion.div>
+
+        {isNewUser && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-panel rounded-3xl p-8 border border-primary-blue/20 bg-gradient-to-br from-white/80 to-primary-blue/5 text-center shadow-lg"
+          >
+            <div className="w-16 h-16 bg-primary-blue/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 text-primary-blue" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome to your Dashboard!</h2>
+            <p className="text-slate-500 max-w-md mx-auto mb-6">
+              You&apos;re all set to start your journey. Connect your wallet to start buying or set up your store to sell.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button 
+                variant="primary" 
+                onClick={() => router.push('/search')}
+                className="rounded-xl px-8"
+              >
+                Start Browsing
+              </Button>
+              {!stats?.storeId && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push('/dashboard/store')}
+                  className="rounded-xl px-8"
+                >
+                  Create Store
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        )}
 
         {loading ? (
           <div className="space-y-6">
@@ -494,7 +533,7 @@ export default function DashboardPage() {
                   </div>
                   <Button
                     variant="primary"
-                    onClick={() => window.location.href = '/dashboard/earnings'}
+                    onClick={() => router.push('/dashboard/earnings')}
                     className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
                   >
                     <DollarSign className="w-4 h-4 mr-2" />
