@@ -30,7 +30,7 @@ type NavLinkProps = {
     href: string;
     icon: any;
     label: string;
-    activeMatch?: string;
+    activeMatch?: string;   
     pathname: string | null;
     onNavigate?: () => void;
 };
@@ -115,10 +115,10 @@ export default function Sidebar() {
             {/* Mobile Menu Button */}
             <button
                 onClick={() => setIsMobileOpen(true)}
-                className="md:hidden fixed top-20 left-4 z-[100] p-3 bg-white text-slate-900 border border-slate-200 rounded-full shadow-lg hover:bg-slate-50 transition-colors"
+                className="md:hidden fixed bottom-6 right-6 z-[100] p-4 bg-slate-900 text-white rounded-full shadow-xl hover:bg-slate-800 transition-all active:scale-95"
                 aria-label="Open menu"
             >
-                <Menu className="w-5 h-5" />
+                <Menu className="w-6 h-6" />
             </button>
 
             {/* Mobile Backdrop */}
