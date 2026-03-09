@@ -40,6 +40,17 @@ export default function DashboardProductsPage() {
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const { walletAddress, isAuthenticated, isLoading: authLoading } = useCivicWallet();
   const toast = useToast();
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+  
+  // Computed products for current page
+  const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
+  const paginatedProducts = products.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE, 
+    currentPage * ITEMS_PER_PAGE
+  );
 
   useEffect(() => {
     if (walletAddress) {
@@ -76,6 +87,7 @@ export default function DashboardProductsPage() {
       const res = await fetch(`/api/product/search?storeId=${storeId}&limit=100`);
       const data = await res.json();
       setProducts(data.products || []);
+      setCurrentPage(1); // Reset to first page
     } catch (error) {
       console.error("Failed to fetch products", error);
     } finally {
@@ -226,29 +238,56 @@ export default function DashboardProductsPage() {
             </div>
           </Card>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {products.map(product => {
-              // Pass seller's address so ProductCard knows these are their own products
-              const productWithOwner = {
-                ...product,
-                owner_address: sellerAddress
-              };
+          <div className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
+            >
+              {paginatedProducts.map(product => {
+                // Pass seller's address so ProductCard knows these are their own products
+                const productWithOwner = {
+                  ...product,
+                  owner_address: sellerAddress
+                };
 
-              return (
-                <ProductCard
-                  key={product.id}
-                  p={productWithOwner}
-                  onEdit={() => router.push(`/dashboard/products/edit/${product.id}`)}
-                  onDelete={() => handleDeleteProduct(product.id)}
-                />
-              );
-            })}
-          </motion.div>
+                return (
+                  <ProductCard
+                    key={product.id}
+                    p={productWithOwner}
+                    onEdit={() => router.push(`/dashboard/products/edit/${product.id}`)}
+                    onDelete={() => handleDeleteProduct(product.id)}
+                  />
+                );
+              })}
+            </motion.div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm font-medium text-slate-600 px-4">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

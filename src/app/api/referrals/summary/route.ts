@@ -69,29 +69,61 @@ export async function GET(req: Request) {
 
   const { data: existingReferralRows } = await supabase
     .from("points_log")
-    .select("id, reason, created_at")
+    .select("id, reason, created_at, points")
     .eq("address", address)
     .ilike("reason", "Referral bonus - %");
 
   const referralRows = existingReferralRows || [];
-  const rowsByReason = new Map<string, typeof referralRows>();
+  
+  // Logic to identify duplicates (same referred user, multiple entries)
+  // We normalize the "reason" to extract the identifier (address or name)
+  const rowsByReferredUser = new Map<string, typeof referralRows>();
+  
   for (const row of referralRows) {
-    const reason = row.reason || "";
-    if (!reason) continue;
-    const list = rowsByReason.get(reason) || [];
+    const identifier = row.reason?.replace("Referral bonus - ", "") || "";
+    if (!identifier) continue;
+    
+    // Check if this identifier matches a profile name or address we know about
+    // This helps unify "Referral bonus - John Doe" and "Referral bonus - 0x123..." if they are the same person
+    // Ideally we prefer the address format.
+    
+    // For now, let's group strictly by the reason string first to catch exact duplicates
+    const list = rowsByReferredUser.get(identifier) || [];
     list.push(row);
-    rowsByReason.set(reason, list);
+    rowsByReferredUser.set(identifier, list);
   }
 
   const duplicateIds: string[] = [];
-  for (const list of rowsByReason.values()) {
+  
+  // 1. Clean up exact string duplicates
+  for (const list of rowsByReferredUser.values()) {
     if (list.length <= 1) continue;
+    // Keep the oldest one, delete others
     const sorted = [...list].sort((a, b) => {
       const aTime = new Date(a.created_at || 0).getTime();
       const bTime = new Date(b.created_at || 0).getTime();
       return aTime - bTime;
     });
     duplicateIds.push(...sorted.slice(1).map((row) => row.id));
+  }
+  
+  // 2. Cross-reference Name vs Address duplicates
+  // If we have "Referral bonus - [Name]" AND "Referral bonus - [Address]" for the same person, delete the Name one.
+  const awardedIdentifiers = new Set(rowsByReferredUser.keys());
+  
+  for (const profile of referredProfiles || []) {
+      if (profile.name && profile.address) {
+          const hasNameAward = awardedIdentifiers.has(profile.name);
+          const hasAddressAward = awardedIdentifiers.has(profile.address);
+          
+          if (hasNameAward && hasAddressAward) {
+              // We have both! Delete the name one.
+              const nameRows = rowsByReferredUser.get(profile.name);
+              if (nameRows) {
+                  duplicateIds.push(...nameRows.map(r => r.id));
+              }
+          }
+      }
   }
 
   if (duplicateIds.length > 0) {
