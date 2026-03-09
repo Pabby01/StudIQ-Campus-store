@@ -21,14 +21,16 @@ export async function GET(req: Request) {
             const parsedAmount = parseFloat(amount);
             try {
                 // Use public onramp rate for USD->NGN conversion to avoid session-token 401s
+                // Prefer external oracle first for more accurate market rate (Paj might be outdated/fixed)
+                const fallback = await getFallbackNgnPerUsd();
+                if (fallback) {
+                    return NextResponse.json({ success: true, tokenValue: { rate: fallback * parsedAmount } });
+                }
+
                 const rates = await getAllRate();
                 const ngnPerUsd = Number(rates?.onRampRate?.rate);
                 if (ngnPerUsd && !Number.isNaN(ngnPerUsd)) {
                     return NextResponse.json({ success: true, tokenValue: { rate: ngnPerUsd * parsedAmount } });
-                }
-                const fallback = await getFallbackNgnPerUsd();
-                if (fallback) {
-                    return NextResponse.json({ success: true, tokenValue: { rate: fallback * parsedAmount } });
                 }
                 throw new Error("Failed to fetch rates");
             } catch {
