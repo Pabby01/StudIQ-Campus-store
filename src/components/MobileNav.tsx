@@ -12,13 +12,14 @@ export default function MobileNav() {
         { icon: Home, label: "Home", href: "/", match: "/" },
         { icon: LayoutDashboard, label: "Dash", href: "/dashboard", match: "/dashboard" },
         { icon: TrendingUp, label: "Predict", href: "/prediction", match: "/prediction" },
+        { icon: Trophy, label: "Board", href: "/leaderboard", match: "/leaderboard" },
         { icon: Package, label: "Track", href: "/track", match: "/track" },
         { icon: User, label: "Profile", href: "/dashboard/settings", match: "/dashboard/settings" }
     ];
 
     return (
-        <nav className="md:hidden fixed bottom-6 left-6 right-6 z-50">
-            <div className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-[2rem] px-2 py-2">
+        <nav className="md:hidden fixed bottom-6 left-4 right-4 z-50">
+            <div className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-[2rem] px-1 py-2">
                 <ul className="flex justify-between items-center relative">
                     {tabs.map((tab) => {
                         const isActive = pathname === tab.match || (tab.match !== '/' && pathname.startsWith(tab.match));

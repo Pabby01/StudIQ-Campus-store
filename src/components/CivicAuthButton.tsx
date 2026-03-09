@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useUser, SignInButton, UserButton } from "@civic/auth-web3/react";
@@ -19,15 +20,15 @@ export default function CivicAuthButton() {
         );
     }
 
-    // Authenticated - show Civic's UserButton
+    // Authenticated - return null (handled by custom UI)
     if (user) {
-        return (
-            <div className="civic-user-button">
-                <UserButton />
-            </div>
-        );
+        return null;
     }
 
-    // Not authenticated - use Civic's SignInButton
-    return <SignInButton />;
+    // Not authenticated - use Civic's SignInButton with custom UI wrapper
+    return (
+        <div className="flex items-center">
+            <SignInButton />
+        </div>
+    );
 }

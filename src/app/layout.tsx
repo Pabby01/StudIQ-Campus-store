@@ -68,15 +68,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  icons: {
-    icon: [
-      { url: 'https://i.postimg.cc/VNXWGB8P/logo.jpg' },
-      { url: 'https://i.postimg.cc/VNXWGB8P/logo.jpg', sizes: '32x32', type: 'image/jpeg' },
-    ],
-    apple: [
-      { url: 'https://i.postimg.cc/VNXWGB8P/logo.jpg' },
-    ],
-  },
   manifest: '/manifest.json',
 };
 

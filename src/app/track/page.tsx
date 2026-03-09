@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState } from "react";
@@ -123,64 +125,75 @@ export default function TrackOrderPage() {
     };
 
     return (
-        <div className="min-h-screen bg-soft-gray-bg mesh-bg py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto space-y-8">
+        <div className="min-h-screen bg-soft-gray-bg mesh-bg py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl mx-auto space-y-8">
                 {/* Header */}
-                <div className="text-center space-y-4 glass-panel rounded-3xl p-6">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-400 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
-                        <Package className="w-10 h-10 text-white" />
+                <div className="text-center space-y-4">
+                    <div className="inline-flex items-center justify-center p-3 bg-white rounded-2xl shadow-sm border border-slate-100">
+                        <Package className="w-8 h-8 text-primary-blue" />
                     </div>
-                    <h1 className="text-4xl font-bold text-black">Track Your Order</h1>
-                    <p className="text-muted-text max-w-md mx-auto">
-                        Enter your Order ID to see real-time updates on your delivery
+                    <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">Track Your Order</h1>
+                    <p className="text-slate-500 max-w-md mx-auto text-sm sm:text-base">
+                        Enter your Order ID to see real-time updates on your delivery status.
                     </p>
                 </div>
 
                 {/* Search Card */}
-                <Card className="p-8 glass-panel border-white/60">
-                    <div className="flex gap-3">
-                        <div className="flex-1">
-                            <Input
+                <div className="bg-white rounded-[2rem] p-2 shadow-xl shadow-slate-200/50 border border-slate-100">
+                    <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                <Search className="w-5 h-5" />
+                            </div>
+                            <input
                                 type="text"
                                 placeholder="Enter Order ID (e.g., EACE0812)"
                                 value={orderId}
                                 onChange={(e) => setOrderId(e.target.value.toUpperCase())}
                                 onKeyPress={(e) => e.key === 'Enter' && trackOrder()}
-                                className="text-lg"
+                                className="w-full h-14 pl-12 pr-4 bg-slate-50 border-none rounded-3xl focus:ring-2 focus:ring-primary-blue/20 text-lg font-medium placeholder:text-slate-400 transition-all outline-none"
                             />
                         </div>
                         <Button
                             variant="primary"
                             onClick={trackOrder}
                             disabled={loading}
-                            className="px-8"
+                            className="h-14 px-8 rounded-3xl shadow-lg shadow-primary-blue/20 text-base font-semibold"
                         >
                             {loading ? (
                                 <Clock className="w-5 h-5 animate-spin" />
                             ) : (
-                                <>
-                                    <Search className="w-5 h-5 mr-2" />
-                                    Track
-                                </>
+                                "Track"
                             )}
                         </Button>
                     </div>
                     {error && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
-                            <XCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                            <p className="text-sm text-red-600">{error}</p>
+                        <div className="mt-2 mx-2 p-3 bg-red-50 text-red-600 text-sm font-medium rounded-2xl flex items-center justify-center gap-2 animate-in slide-in-from-top-2">
+                            <XCircle className="w-4 h-4" />
+                            {error}
                         </div>
                     )}
-                </Card>
+                </div>
 
                 {/* Order Details */}
                 {order && (
-                    <div className="space-y-6">
+                    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                         {/* Status Timeline */}
-                        <Card className="p-8 glass-panel border-white/60">
-                            <h2 className="text-xl font-bold text-black mb-8">Order Status</h2>
+                        <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-sm border border-slate-100">
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900">Order Status</h2>
+                                    <p className="text-sm text-slate-500 font-mono mt-1">ID: #{order.id.slice(0, 8).toUpperCase()}</p>
+                                </div>
+                                <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                                    order.status === 'completed' ? 'bg-green-100 text-green-700' : 
+                                    order.status === 'processing' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                    {order.status}
+                                </div>
+                            </div>
                             <StatusTimeline status={order.status} />
-                        </Card>
+                        </div>
 
                         {/* Order Information Grid */}
                         <div className="grid md:grid-cols-2 gap-6">

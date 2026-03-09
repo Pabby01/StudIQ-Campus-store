@@ -119,14 +119,14 @@ export default function DashboardWishlistPage() {
             className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
           >
             {items.map((item) => (
-              <div key={item.id} className="relative group">
+              <div key={item.id} className="relative">
                 <ProductCard p={item.product} />
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                     removeFromWishlist(item.product.id);
                   }}
-                  className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 text-red-500 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 text-slate-400 hover:text-red-500 z-20 transition-all active:scale-95 border border-white/50"
                   title="Remove from wishlist"
                 >
                   <Trash2 className="w-4 h-4" />
