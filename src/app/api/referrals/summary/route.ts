@@ -131,8 +131,7 @@ export async function GET(req: Request) {
   }
 
   const awardedAddresses = new Set(
-    Array.from(rowsByReason.keys())
-      .map((reason) => reason.replace("Referral bonus - ", ""))
+    Array.from(rowsByReferredUser.keys())
       .filter(Boolean)
   );
 

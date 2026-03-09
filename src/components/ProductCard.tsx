@@ -184,7 +184,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   return (
     <div className="h-full">
       <div
-        className="bg-white rounded-[18px] border border-gray-200 overflow-hidden hover-lift h-full grid grid-rows-[2.4fr_2.6fr] sm:grid-rows-[3fr_2fr] group relative cursor-pointer shadow-sm min-h-[180px] sm:min-h-[230px] lg:min-h-[190px] aspect-[4/5] sm:aspect-[3/4]"
+        className="bg-white rounded-[18px] border border-gray-200 overflow-hidden hover-lift h-full grid grid-rows-[2.4fr_2.6fr] sm:grid-rows-[3fr_2fr] group relative cursor-pointer shadow-sm min-h-[200px] sm:min-h-[230px] lg:min-h-[190px] aspect-[4/5] sm:aspect-[3/4]"
         onClick={openDetails}
       >
 
