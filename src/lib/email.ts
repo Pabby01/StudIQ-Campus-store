@@ -2,6 +2,9 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'StudIQ Campus Store <noreply@studiq.fun>';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun';
+
+// --- Types ---
 
 interface OrderDetails {
   orderId: string;
@@ -43,555 +46,305 @@ interface SellerNotification {
   currency: string;
 }
 
-/**
- * Send order confirmation email to buyer
- */
+// --- Helper: Base Email Template ---
+
+function getEmailTemplate(
+  title: string,
+  content: string,
+  themeColor: 'primary' | 'success' | 'warning' | 'danger' = 'primary'
+) {
+  // Theme configuration
+  const themes = {
+    primary: {
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      mainColor: '#667eea',
+      lightBg: '#EEF2FF',
+      borderColor: '#C7D2FE',
+      textColor: '#4338CA'
+    },
+    success: {
+      gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+      mainColor: '#10B981',
+      lightBg: '#ECFDF5',
+      borderColor: '#A7F3D0',
+      textColor: '#047857'
+    },
+    warning: {
+      gradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+      mainColor: '#F59E0B',
+      lightBg: '#FFFBEB',
+      borderColor: '#FDE68A',
+      textColor: '#B45309'
+    },
+    danger: {
+      gradient: 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)',
+      mainColor: '#EF4444',
+      lightBg: '#FEF2F2',
+      borderColor: '#FECACA',
+      textColor: '#B91C1C'
+    }
+  };
+
+  const theme = themes[themeColor];
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+          .header { background: ${theme.gradient}; padding: 40px 30px; text-align: center; }
+          .content { padding: 40px 30px; color: #334155; line-height: 1.6; }
+          .footer { background-color: #f1f5f9; padding: 30px; text-align: center; color: #64748b; font-size: 13px; }
+          .btn { display: inline-block; background: ${theme.gradient}; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; margin-top: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+          .info-box { background-color: ${theme.lightBg}; border-left: 4px solid ${theme.mainColor}; padding: 20px; border-radius: 8px; margin: 25px 0; }
+          .info-label { font-size: 13px; font-weight: 600; text-transform: uppercase; color: ${theme.textColor}; letter-spacing: 0.05em; margin-bottom: 4px; }
+          .info-value { font-size: 18px; font-weight: 700; color: ${theme.textColor}; }
+          .product-table { width: 100%; border-collapse: collapse; margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+          .product-table th { background-color: #f8fafc; padding: 12px; text-align: left; font-size: 13px; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+          .product-table td { padding: 16px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #334155; }
+          .product-table tr:last-child td { border-bottom: none; }
+          .total-row td { background-color: #f8fafc; font-weight: 700; color: #0f172a; font-size: 16px; }
+        </style>
+      </head>
+      <body>
+        <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 0;">
+          <tr>
+            <td align="center">
+              <div class="container">
+                <!-- Header -->
+                <div class="header">
+                  <img src="https://i.postimg.cc/FRJMZQbz/logo.jpg" alt="StudIQ" style="width: 60px; height: 60px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                  <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.025em; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">${title}</h1>
+                </div>
+
+                <!-- Content -->
+                <div class="content">
+                  ${content}
+                </div>
+
+                <!-- Footer -->
+                <div class="footer">
+                  <p style="margin: 0 0 10px 0;">
+                    Need help? Contact us at <a href="mailto:support@studiq.fun" style="color: ${theme.mainColor}; text-decoration: none; font-weight: 600;">support@studiq.fun</a>
+                  </p>
+                  <p style="margin: 0;">© ${new Date().getFullYear()} StudIQ Campus Store. All rights reserved.</p>
+                  <p style="margin: 8px 0 0 0; opacity: 0.7;">Powering campus commerce 🎓</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+}
+
+// --- Order Emails ---
+
 export async function sendOrderConfirmation(details: OrderDetails) {
   try {
-    console.log('[Email] Sending order confirmation to:', details.buyerEmail);
-
     const productsHtml = details.products.map(p => `
       <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;">
-          ${p.imageUrl ? `<img src="${p.imageUrl}" alt="${p.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; margin-right: 12px;">` : ''}
-          <strong>${p.name}</strong>
+        <td>
+          <div style="display: flex; align-items: center;">
+            ${p.imageUrl ? `<img src="${p.imageUrl}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover; margin-right: 12px;">` : ''}
+            <span>${p.name}</span>
+          </div>
         </td>
-        <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center;">${p.qty}</td>
-        <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: right;">${p.price.toFixed(2)} ${details.currency}</td>
+        <td style="text-align: center;">${p.qty}</td>
+        <td style="text-align: right;">${p.price.toFixed(2)} ${details.currency}</td>
       </tr>
     `).join('');
 
-    const deliveryInfo = details.deliveryMethod === 'shipping' && details.deliveryAddress
-      ? `
-        <p><strong>Delivery Address:</strong></p>
-        <p>${details.deliveryAddress.address}<br>
-        ${details.deliveryAddress.city}, ${details.deliveryAddress.zip}</p>
-      `
-      : '<p><strong>Delivery Method:</strong> Pickup</p>';
+    const content = `
+      <p style="font-size: 16px;">Hi <strong>${details.buyerName}</strong>,</p>
+      <p>Your order has been confirmed! We're getting it ready for you.</p>
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
-            <tr>
-              <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                  
-                  <!-- Header with Logo -->
-                  <tr>
-                    <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/FRJMZQbz/logo.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Order Confirmed!</h1>
-                      <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Thank you for shopping with us 🎉</p>
-                    </td>
-                  </tr>
+      <div class="info-box">
+        <div class="info-label">Order ID</div>
+        <div class="info-value">#${details.orderId}</div>
+      </div>
 
-                  <!-- Body Content -->
-                  <tr>
-                    <td style="padding: 40px 30px;">
-                      <p style="font-size: 16px; color: #333333; margin: 0 0 10px 0;">Hi <strong>${details.buyerName}</strong>,</p>
-                      <p style="font-size: 15px; color: #666666; line-height: 1.6; margin: 0 0 25px 0;">
-                        Your order has been successfully confirmed and is being processed. We'll notify you once your items are ready for ${details.deliveryMethod === 'shipping' ? 'shipment' : 'pickup'}.
-                      </p>
+      <h3 style="margin-top: 30px; font-size: 18px; color: #1e293b;">Order Summary</h3>
+      <table class="product-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${productsHtml}
+          <tr class="total-row">
+            <td colspan="2" style="text-align: right;">Total</td>
+            <td style="text-align: right;">${details.total.toFixed(2)} ${details.currency}</td>
+          </tr>
+        </tbody>
+      </table>
 
-                      <!-- Order ID Box -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-left: 4px solid #667eea; border-radius: 6px; margin: 25px 0;">
-                        <tr>
-                          <td style="padding: 20px;">
-                            <p style="margin: 0; font-size: 14px; color: #666666;">Order ID</p>
-                            <p style="margin: 5px 0 0 0; font-size: 18px; font-weight: 600; color: #667eea;">${details.orderId}</p>
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- Order Details -->
-                      <h2 style="font-size: 20px; color: #333333; margin: 35px 0 20px 0; font-weight: 600;">Order Summary</h2>
-                      
-                      <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #E5E7EB; border-radius: 6px; overflow: hidden;">
-                        <thead>
-                          <tr style="background-color: #F9FAFB;">
-                            <th style="padding: 14px 16px; text-align: left; font-size: 14px; font-weight: 600; color: #4B5563;">Product</th>
-                            <th style="padding: 14px 16px; text-align: center; font-size: 14px; font-weight: 600; color: #4B5563;">Qty</th>
-                            <th style="padding: 14px 16px; text-align: right; font-size: 14px; font-weight: 600; color: #4B5563;">Price</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${productsHtml}
-                        </tbody>
-                        <tfoot>
-                          <tr style="background-color: #F9FAFB;">
-                            <td colspan="2" style="padding: 18px 16px; text-align: right; font-size: 16px; font-weight: 600; color: #333333; border-top: 2px solid #E5E7EB;">Total Amount:</td>
-                            <td style="padding: 18px 16px; text-align: right; font-size: 18px; font-weight: 700; color: #667eea; border-top: 2px solid #E5E7EB;">${details.total.toFixed(2)} ${details.currency}</td>
-                          </tr>
-                        </tfoot>
-                      </table>
-
-                      <!-- Delivery Info -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 25px 0;">
-                        <tr>
-                          <td style="background: #F9FAFB; padding: 20px; border-radius: 6px;">
-                            ${deliveryInfo}
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- CTA Button -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 35px 0;">
-                        <tr>
-                          <td align="center">
-                            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun'}/track" 
-                               style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
-                              Track Your Order →
-                            </a>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-
-                  <!-- Footer -->
-                  <tr>
-                    <td style="background-color: #F9FAFB; padding: 30px; border-top: 1px solid #E5E7EB;">
-                      <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; text-align: center;">
-                        Need help? Contact us at <a href="mailto:support@studiq.fun" style="color: #667eea; text-decoration: none; font-weight: 600;">support@studiq.fun</a>
-                      </p>
-                      <p style="margin: 15px 0 0 0; font-size: 13px; color: #999999; text-align: center;">
-                        © ${new Date().getFullYear()} StudIQ Campus Store. All rights reserved.
-                      </p>
-                      <p style="margin: 10px 0 0 0; font-size: 13px; color: #999999; text-align: center;">
-                        Powering campus commerce, one order at a time 🎓
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-      </html>
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${APP_URL}/track" class="btn">Track Order Status</a>
+      </div>
     `;
 
-    const { data, error } = await resend.emails.send({
+    const html = getEmailTemplate('Order Confirmed! 🎉', content, 'primary');
+
+    await resend.emails.send({
       from: FROM_EMAIL,
       to: details.buyerEmail,
       subject: `Order Confirmed - #${details.orderId}`,
       html,
     });
 
-    if (error) {
-      console.error('[Email] Order confirmation failed:', error);
-      throw error;
-    }
-
-    console.log('[Email] Order confirmation sent successfully:', data);
-    return { success: true, data };
+    return { success: true };
   } catch (error) {
     console.error('[Email] Failed to send order confirmation:', error);
     return { success: false, error };
   }
 }
 
-/**
- * Send new order notification to seller
- */
 export async function sendSellerNotification(details: SellerNotification) {
   try {
-    console.log('[Email] Sending seller notification to:', details.sellerEmail);
-
     const productsHtml = details.products.map(p => `
       <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #E5E7EB;"><strong>${p.name}</strong></td>
-        <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: center;">${p.qty}</td>
-        <td style="padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: right;">${p.price.toFixed(2)} ${details.currency}</td>
+        <td><strong>${p.name}</strong></td>
+        <td style="text-align: center;">${p.qty}</td>
+        <td style="text-align: right;">${p.price.toFixed(2)} ${details.currency}</td>
       </tr>
     `).join('');
 
-    const deliveryInfo = details.deliveryAddress
-      ? `
-        <h3 style="color: #1F2937; font-size: 18px; margin-top: 24px;">Delivery Details</h3>
-        <p><strong>Name:</strong> ${details.deliveryAddress.name}<br>
-        <strong>Address:</strong> ${details.deliveryAddress.address}<br>
-        ${details.deliveryAddress.city}, ${details.deliveryAddress.zip}</p>
-      `
-      : '<p><strong>Delivery:</strong> Customer will pick up</p>';
+    const content = `
+      <p style="font-size: 16px;">Hello <strong>${details.storeName}</strong>,</p>
+      <p>Cha-ching! 💰 You have a new order to fulfill.</p>
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
-            <tr>
-              <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                  
-                  <!-- Header with Logo -->
-                  <tr>
-                    <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/FRJMZQbz/logo.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">New Order Received!</h1>
-                      <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">You have a new order to fulfill 🛍️</p>
-                    </td>
-                  </tr>
+      <div class="info-box">
+        <div class="info-label">Order ID</div>
+        <div class="info-value">#${details.orderId}</div>
+      </div>
 
-                  <!-- Body Content -->
-                  <tr>
-                    <td style="padding: 40px 30px;">
-                      <p style="font-size: 16px; color: #333333; margin: 0 0 10px 0;">Hello <strong>${details.storeName}</strong>,</p>
-                      <p style="font-size: 15px; color: #666666; line-height: 1.6; margin: 0 0 25px 0;">
-                        A new order has been placed! Please review the details below and prepare the items for the customer.
-                      </p>
+      <h3 style="margin-top: 30px; font-size: 18px; color: #1e293b;">Items to Pack</h3>
+      <table class="product-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${productsHtml}
+          <tr class="total-row">
+            <td colspan="2" style="text-align: right;">Total Revenue</td>
+            <td style="text-align: right;">${details.total.toFixed(2)} ${details.currency}</td>
+          </tr>
+        </tbody>
+      </table>
 
-                      <!-- Order ID Box -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background: #FEF3C7; border-left: 4px solid #F59E0B; border-radius: 6px; margin: 25px 0;">
-                        <tr>
-                          <td style="padding: 20px;">
-                            <p style="margin: 0; font-size: 14px; color: #92400E;">Order ID</p>
-                            <p style="margin: 5px 0 0 0; font-size: 18px; font-weight: 600; color: #F59E0B;">${details.orderId}</p>
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- Order Items -->
-                      <h2 style="font-size: 20px; color: #333333; margin: 35px 0 20px 0; font-weight: 600;">Order Items</h2>
-                      
-                      <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #E5E7EB; border-radius: 6px; overflow: hidden;">
-                        <thead>
-                          <tr style="background-color: #F9FAFB;">
-                            <th style="padding: 14px 16px; text-align: left; font-size: 14px; font-weight: 600; color: #4B5563;">Product</th>
-                            <th style="padding: 14px 16px; text-align: center; font-size: 14px; font-weight: 600; color: #4B5563;">Qty</th>
-                            <th style="padding: 14px 16px; text-align: right; font-size: 14px; font-weight: 600; color: #4B5563;">Price</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${productsHtml}
-                        </tbody>
-                        <tfoot>
-                          <tr style="background-color: #F9FAFB;">
-                            <td colspan="2" style="padding: 18px 16px; text-align: right; font-size: 16px; font-weight: 600; color: #333333; border-top: 2px solid #E5E7EB;">Total Amount:</td>
-                            <td style="padding: 18px 16px; text-align: right; font-size: 18px; font-weight: 700; color: #10B981; border-top: 2px solid #E5E7EB;">${details.total.toFixed(2)} ${details.currency}</td>
-                          </tr>
-                        </tfoot>
-                      </table>
-
-                      <!-- Delivery Info -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 25px 0;">
-                        <tr>
-                          <td style="background: #F9FAFB; padding: 20px; border-radius: 6px;">
-                            ${deliveryInfo}
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- Action Required Box -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background: #EFF6FF; border-left: 4px solid #3B82F6; border-radius: 6px; margin: 25px 0;">
-                        <tr>
-                          <td style="padding: 20px;">
-                            <p style="margin: 0; font-size: 15px; font-weight: 600; color: #1E40AF;">⏰ Action Required</p>
-                            <p style="margin: 8px 0 0 0; font-size: 14px; color: #1E40AF;">Please prepare the items and update the order status in your dashboard.</p>
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- CTA Button -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 35px 0;">
-                        <tr>
-                          <td align="center">
-                            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun'}/dashboard/orders" 
-                               style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);">
-                              View Order in Dashboard →
-                            </a>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-
-                  <!-- Footer -->
-                  <tr>
-                    <td style="background-color: #F9FAFB; padding: 30px; border-top: 1px solid #E5E7EB;">
-                      <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; text-align: center;">
-                        Need help? Contact us at <a href="mailto:support@studiq.fun" style="color: #10B981; text-decoration: none; font-weight: 600;">support@studiq.fun</a>
-                      </p>
-                      <p style="margin: 15px 0 0 0; font-size: 13px; color: #999999; text-align: center;">
-                        © ${new Date().getFullYear()} StudIQ Campus Store. All rights reserved.
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-      </html>
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${APP_URL}/dashboard/orders" class="btn">Manage Order</a>
+      </div>
     `;
 
-    const { data, error } = await resend.emails.send({
+    const html = getEmailTemplate('New Order! 🛍️', content, 'success');
+
+    await resend.emails.send({
       from: FROM_EMAIL,
       to: details.sellerEmail,
-      subject: `New Order #${details.orderId} - ${details.storeName}`,
+      subject: `New Order #${details.orderId}`,
       html,
     });
 
-    if (error) {
-      console.error('[Email] Seller notification failed:', error);
-      throw error;
-    }
-
-    console.log('[Email] Seller notification sent successfully:', data);
-    return { success: true, data };
+    return { success: true };
   } catch (error) {
     console.error('[Email] Failed to send seller notification:', error);
     return { success: false, error };
   }
 }
 
-/**
- * Send shipping confirmation to buyer
- */
-export async function sendShippingConfirmation(
-  orderId: string,
-  buyerName: string,
-  buyerEmail: string
+// --- Subscription Emails ---
+
+export async function sendSubscriptionExpiredEmail(
+  userEmail: string,
+  userName: string,
+  planName: string
 ) {
   try {
-    console.log('[Email] Sending shipping confirmation to:', buyerEmail);
+    const content = `
+      <p style="font-size: 16px;">Hi <strong>${userName}</strong>,</p>
+      <p>Your <strong>${planName}</strong> subscription has expired.</p>
+      <p>To keep enjoying premium features like lower fees, analytics, and priority support, please renew your subscription.</p>
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
-            <tr>
-              <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                  
-                  <!-- Header with Logo -->
-                  <tr>
-                    <td style="background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/FRJMZQbz/logo.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Your Order is On Its Way!</h1>
-                      <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">It's being shipped to you 📦</p>
-                    </td>
-                  </tr>
+      <div class="info-box" style="background-color: #FEF2F2; border-left-color: #EF4444;">
+        <div class="info-label" style="color: #B91C1C;">Status</div>
+        <div class="info-value" style="color: #EF4444;">Expired</div>
+      </div>
 
-                  <!-- Body Content -->
-                  <tr>
-                    <td style="padding: 40px 30px;">
-                      <p style="font-size: 16px; color: #333333; margin: 0 0 10px 0;">Hi <strong>${buyerName}</strong>,</p>
-                      <p style="font-size: 15px; color: #666666; line-height: 1.6; margin: 0 0 25px 0;">
-                        Great news! Your order has been shipped and is on its way to you. You can track your order status anytime.
-                      </p>
-
-                      <!-- Order ID Box -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background: #DBEAFE; border-left: 4px solid #3B82F6; border-radius: 6px; margin: 25px 0;">
-                        <tr>
-                          <td style="padding: 20px;">
-                            <p style="margin: 0; font-size: 14px; color: #1E40AF;">Order ID</p>
-                            <p style="margin: 5px 0 0 0; font-size: 18px; font-weight: 600; color: #3B82F6;">${orderId}</p>
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- Shipping Status -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background: #F9FAFB; padding: 25px; border-radius: 6px; margin: 25px 0;">
-                        <tr>
-                          <td align="center">
-                            <p style="margin: 0 0 15px 0; font-size: 16px; color: #333333; font-weight: 600;">📍 Shipping Status</p>
-                            <p style="margin: 0; font-size: 14px; color: #666666;">Your package is on its way and will arrive soon!</p>
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- CTA Button -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 35px 0;">
-                        <tr>
-                          <td align="center">
-                            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun'}/track" 
-                               style="display: inline-block; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); color: #ffffff; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">
-                              Track Your Order →
-                            </a>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-
-                  <!-- Footer -->
-                  <tr>
-                    <td style="background-color: #F9FAFB; padding: 30px; border-top: 1px solid #E5E7EB;">
-                      <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; text-align: center;">
-                        Need help? Contact us at <a href="mailto:support@studiq.fun" style="color: #3B82F6; text-decoration: none; font-weight: 600;">support@studiq.fun</a>
-                      </p>
-                      <p style="margin: 15px 0 0 0; font-size: 13px; color: #999999; text-align: center;">
-                        © ${new Date().getFullYear()} StudIQ Campus Store. All rights reserved.
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-      </html>
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${APP_URL}/pricing" class="btn" style="background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%);">Renew Subscription</a>
+      </div>
     `;
 
-    const { data, error } = await resend.emails.send({
+    const html = getEmailTemplate('Subscription Expired ⚠️', content, 'danger');
+
+    await resend.emails.send({
       from: FROM_EMAIL,
-      to: buyerEmail,
-      subject: `Order Shipped - #${orderId}`,
+      to: userEmail,
+      subject: `Your ${planName} subscription has expired`,
       html,
     });
 
-    if (error) {
-      console.error('[Email] Shipping confirmation failed:', error);
-      throw error;
-    }
-
-    console.log('[Email] Shipping confirmation sent successfully:', data);
-    return { success: true, data };
+    return { success: true };
   } catch (error) {
-    console.error('[Email] Failed to send shipping confirmation:', error);
+    console.error('[Email] Failed to send subscription expired email:', error);
     return { success: false, error };
   }
 }
 
-/**
- * Send order completion email to buyer
- */
-export async function sendOrderCompleted(
-  orderId: string,
-  buyerName: string,
-  buyerEmail: string
+export async function sendSubscriptionReminderEmail(
+  userEmail: string,
+  userName: string,
+  planName: string,
+  daysLeft: number
 ) {
   try {
-    console.log('[Email] Sending order completion to:', buyerEmail);
+    const content = `
+      <p style="font-size: 16px;">Hi <strong>${userName}</strong>,</p>
+      <p>Your <strong>${planName}</strong> subscription will expire in <strong>${daysLeft} days</strong>.</p>
+      <p>Don't lose access to your premium benefits! Renew now to ensure uninterrupted service.</p>
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
-            <tr>
-              <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                  
-                  <!-- Header with Logo -->
-                  <tr>
-                    <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center;">
-                      <img src="https://i.postimg.cc/FRJMZQbz/logo.jpg" alt="StudIQ Campus Store" style="max-width: 180px; height: auto; margin-bottom: 15px; border-radius: 12px;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Order Delivered!</h1>
-                      <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Enjoy your purchase! ✨</p>
-                    </td>
-                  </tr>
+      <div class="info-box" style="background-color: #FFFBEB; border-left-color: #F59E0B;">
+        <div class="info-label" style="color: #B45309;">Expires In</div>
+        <div class="info-value" style="color: #F59E0B;">${daysLeft} Days</div>
+      </div>
 
-                  <!-- Body Content -->
-                  <tr>
-                    <td style="padding: 40px 30px;">
-                      <p style="font-size: 16px; color: #333333; margin: 0 0 10px 0;">Hi <strong>${buyerName}</strong>,</p>
-                      <p style="font-size: 15px; color: #666666; line-height: 1.6; margin: 0 0 25px 0;">
-                        Your order has been successfully delivered! We hope you love your purchase and that it serves you well.
-                      </p>
-
-                      <!-- Order ID Box -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background: #D1FAE5; border-left: 4px solid #10B981; border-radius: 6px; margin: 25px 0;">
-                        <tr>
-                          <td style="padding: 20px;">
-                            <p style="margin: 0; font-size: 14px; color: #065F46;">Order ID</p>
-                            <p style="margin: 5px 0 0 0; font-size: 18px; font-weight: 600; color: #10B981;">${orderId}</p>
-                            <p style="margin: 8px 0 0 0; font-size: 14px; color: #065F46; font-weight: 600;">✓ Completed</p>
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- Review Request -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background: #F9FAFB; border-radius: 6px; margin: 30px 0;">
-                        <tr>
-                          <td style="padding: 30px;">
-                            <h3 style="margin: 0 0 12px 0; color: #333333; font-size: 18px; font-weight: 600;">Love Your Purchase?</h3>
-                            <p style="margin: 0 0 20px 0; color: #666666; font-size: 14px; line-height: 1.6;">Share your experience and help other students make informed decisions!</p>
-                            <table cellpadding="0" cellspacing="0">
-                              <tr>
-                                <td>
-                                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun'}/dashboard/orders" 
-                                     style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
-                                    Write a Review ⭐
-                                  </a>
-                                </td>
-                              </tr>
-                            </table>
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- Thank You Message -->
-                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 25px 0;">
-                        <tr>
-                          <td align="center" style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); padding: 20px; border-radius: 6px;">
-                            <p style="margin: 0; font-size: 15px; color: #667eea; font-weight: 600;">🎓 Thank you for shopping with StudIQ Campus Store!</p>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-
-                  <!-- Footer -->
-                  <tr>
-                    <td style="background-color: #F9FAFB; padding: 30px; border-top: 1px solid #E5E7EB;">
-                      <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; text-align: center;">
-                        Need help? Contact us at <a href="mailto:support@studiq.fun" style="color: #667eea; text-decoration: none; font-weight: 600;">support@studiq.fun</a>
-                      </p>
-                      <p style="margin: 15px 0 0 0; font-size: 13px; color: #999999; text-align: center;">
-                        © ${new Date().getFullYear()} StudIQ Campus Store. All rights reserved.
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-      </html>
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${APP_URL}/pricing" class="btn" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">Renew Now</a>
+      </div>
     `;
 
-    const { data, error } = await resend.emails.send({
+    const html = getEmailTemplate('Subscription Expiring Soon ⏳', content, 'warning');
+
+    await resend.emails.send({
       from: FROM_EMAIL,
-      to: buyerEmail,
-      subject: `Order Delivered - #${orderId}`,
+      to: userEmail,
+      subject: `Reminder: Your subscription expires in ${daysLeft} days`,
       html,
     });
 
-    if (error) {
-      console.error('[Email] Order completion failed:', error);
-      throw error;
-    }
-
-    console.log('[Email] Order completion sent successfully:', data);
-    return { success: true, data };
+    return { success: true };
   } catch (error) {
-    console.error('[Email] Failed to send order completion:', error);
+    console.error('[Email] Failed to send subscription reminder email:', error);
     return { success: false, error };
   }
 }
-/**
- * Send withdrawal notification to admin
- */
+
+// --- Withdrawal Emails ---
+
 export async function sendWithdrawalAdminNotification(
   requestId: string,
   sellerName: string,
@@ -601,37 +354,22 @@ export async function sendWithdrawalAdminNotification(
 ) {
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@studiq.fun';
-    console.log('[Email] Sending withdrawal notification to admin:', adminEmail);
+    
+    const content = `
+      <p><strong>Seller:</strong> ${sellerName} (${sellerEmail})</p>
+      <p><strong>Amount:</strong> ${amount.toFixed(4)} ${currency}</p>
+      
+      <div class="info-box" style="background-color: #F1F5F9; border-left-color: #64748B;">
+        <div class="info-label" style="color: #475569;">Request ID</div>
+        <div class="info-value" style="color: #334155;">${requestId}</div>
+      </div>
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
-            <tr>
-              <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                  <tr>
-                    <td style="background-color: #333; padding: 30px; text-align: center;">
-                       <h1 style="color: #ffffff; margin: 0; font-size: 24px;">New Withdrawal Request 💰</h1>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 40px 30px;">
-                      <p><strong>Seller:</strong> ${sellerName} (${sellerEmail})</p>
-                      <p><strong>Amount:</strong> ${amount.toFixed(4)} ${currency}</p>
-                      <p><strong>Request ID:</strong> ${requestId}</p>
-                      <br/>
-                      <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://store.studiq.fun'}/admin" style="background-color: #333; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Process in Admin Panel</a>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-      </html>
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${APP_URL}/admin" class="btn" style="background: #334155;">Process Request</a>
+      </div>
     `;
+
+    const html = getEmailTemplate('Withdrawal Request 💸', content, 'primary');
 
     await resend.emails.send({
       from: FROM_EMAIL,
@@ -647,9 +385,6 @@ export async function sendWithdrawalAdminNotification(
   }
 }
 
-/**
- * Send withdrawal confirmation to seller
- */
 export async function sendWithdrawalConfirmation(
   sellerEmail: string,
   amount: number,
@@ -657,35 +392,17 @@ export async function sendWithdrawalConfirmation(
   estimatedDate: string
 ) {
   try {
-    console.log('[Email] Sending withdrawal confirmation to seller:', sellerEmail);
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
-            <tr>
-              <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                  <tr>
-                    <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center;">
-                       <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Withdrawal Requested ✅</h1>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 40px 30px;">
-                      <p>Your request to withdraw <strong>${amount.toFixed(4)} ${currency}</strong> has been received.</p>
-                      <p>Funds will be sent to your connected wallet within <strong>24-48 hours</strong>.</p>
-                      <p>Thank you for selling on StudIQ!</p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-      </html>
+    const content = `
+      <p>Your request to withdraw <strong>${amount.toFixed(4)} ${currency}</strong> has been received.</p>
+      <p>Funds will be sent to your connected wallet within <strong>24-48 hours</strong>.</p>
+      
+      <div class="info-box" style="background-color: #ECFDF5; border-left-color: #10B981;">
+        <div class="info-label" style="color: #047857;">Status</div>
+        <div class="info-value" style="color: #10B981;">Processing</div>
+      </div>
     `;
+
+    const html = getEmailTemplate('Withdrawal Received ✅', content, 'success');
 
     await resend.emails.send({
       from: FROM_EMAIL,
@@ -697,6 +414,79 @@ export async function sendWithdrawalConfirmation(
     return { success: true };
   } catch (error) {
     console.error('[Email] Failed to send withdrawal confirmation:', error);
+    return { success: false, error };
+  }
+}
+
+export async function sendShippingConfirmation(
+  orderId: string,
+  buyerName: string,
+  buyerEmail: string
+) {
+  try {
+    const content = `
+      <p style="font-size: 16px;">Hi <strong>${buyerName}</strong>,</p>
+      <p>Great news! Your order has been shipped and is on its way to you.</p>
+
+      <div class="info-box">
+        <div class="info-label">Order ID</div>
+        <div class="info-value">#${orderId}</div>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${APP_URL}/track" class="btn">Track Package</a>
+      </div>
+    `;
+
+    const html = getEmailTemplate('Order Shipped! 🚚', content, 'primary');
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: buyerEmail,
+      subject: `Order Shipped - #${orderId}`,
+      html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email] Failed to send shipping confirmation:', error);
+    return { success: false, error };
+  }
+}
+
+export async function sendOrderCompleted(
+  orderId: string,
+  buyerName: string,
+  buyerEmail: string
+) {
+  try {
+    const content = `
+      <p style="font-size: 16px;">Hi <strong>${buyerName}</strong>,</p>
+      <p>Your order has been delivered! We hope you love your purchase.</p>
+
+      <div class="info-box" style="background-color: #ECFDF5; border-left-color: #10B981;">
+        <div class="info-label" style="color: #047857;">Status</div>
+        <div class="info-value" style="color: #10B981;">Delivered</div>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <p>How was your experience?</p>
+        <a href="${APP_URL}/dashboard/orders" class="btn">Write a Review</a>
+      </div>
+    `;
+
+    const html = getEmailTemplate('Order Delivered! 🎁', content, 'success');
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: buyerEmail,
+      subject: `Order Delivered - #${orderId}`,
+      html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email] Failed to send order completion:', error);
     return { success: false, error };
   }
 }

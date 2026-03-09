@@ -4,7 +4,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ShoppingCart, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft, Bell, User, Search, LayoutDashboard, LogOut, ChevronDown } from "lucide-react";
 import { useUser } from "@civic/auth-web3/react";
@@ -13,8 +13,10 @@ import { useCart } from "@/store/cart";
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const userContext = useUser();
   const { user } = userContext;
+  
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const signOut = (userContext as any).signOut;
   
@@ -48,6 +50,8 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  if (pathname?.startsWith("/admin")) return null;
 
   const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
 

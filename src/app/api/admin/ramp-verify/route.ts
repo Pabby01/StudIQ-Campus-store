@@ -1,15 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSessionWallet } from "@/lib/session";
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {
     try {
         const address = await getSessionWallet(req);
 
         await requireAdmin(address);
 
-        const { searchParams } = new URL(req.url);
-        const code = searchParams.get("code");
+        const body = await req.json();
+        const code = body.reference;
 
         if (!code) {
             return Response.json(
@@ -72,12 +73,12 @@ export async function GET(req: Request) {
 
         return Response.json({
             ok: true,
-            transaction,
+            data: transaction, // Changed from transaction to data: transaction to match frontend expectation
         });
     } catch (error: any) {
         console.error("[Admin Paj Verify] Error:", error);
 
-        if (error.message?.includes("Unauthorized")) {
+        if (error?.message?.includes("Unauthorized")) {
             return Response.json(
                 { ok: false, error: "Unauthorized" },
                 { status: 401 }
@@ -90,4 +91,3 @@ export async function GET(req: Request) {
         );
     }
 }
-

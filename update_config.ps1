@@ -1,0 +1,1 @@
+Set-Content -Path "C:\Users\Admin\.bubblewrap\config.json" -Value '{"jdkPath":"C:\\Users\\Admin\\jdk17","androidSdkPath":"C:\\Users\\Admin\\.bubblewrap\\android_sdk"}'

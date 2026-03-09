@@ -1,0 +1,1 @@
+New-Item -ItemType Junction -Path "C:\Users\Admin\jdk17" -Target "C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot"
