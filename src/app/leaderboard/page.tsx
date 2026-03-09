@@ -57,45 +57,63 @@ export default function LeaderboardPage() {
     };
 
     const getRankStyle = (rank: number) => {
-        if (rank === 1) return "bg-yellow-100 text-yellow-700 border-yellow-200 ring-4 ring-yellow-50";
-        if (rank === 2) return "bg-slate-100 text-slate-700 border-slate-200 ring-4 ring-slate-50";
-        if (rank === 3) return "bg-orange-100 text-orange-700 border-orange-200 ring-4 ring-orange-50";
+        if (rank === 1) return "bg-gradient-to-b from-yellow-100 to-yellow-50 text-yellow-900 border-yellow-300 shadow-yellow-200/50";
+        if (rank === 2) return "bg-gradient-to-b from-slate-100 to-slate-50 text-slate-900 border-slate-300 shadow-slate-200/50";
+        if (rank === 3) return "bg-gradient-to-b from-orange-100 to-orange-50 text-orange-900 border-orange-300 shadow-orange-200/50";
         return "bg-white text-slate-600 border-slate-100";
     };
 
-    const TopThree = ({ entry }: { entry: LeaderboardEntry }) => (
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`relative flex flex-col items-center p-6 rounded-[2rem] border ${getRankStyle(entry.rank)} ${entry.rank === 1 ? 'order-2 -mt-8 z-10 shadow-xl' : entry.rank === 2 ? 'order-1 mt-4 shadow-lg' : 'order-3 mt-8 shadow-lg'} w-full sm:w-1/3 min-w-[140px]`}
-        >
-            {entry.rank === 1 && (
-                <div className="absolute -top-6">
-                    <Crown className="w-12 h-12 text-yellow-500 fill-yellow-200 animate-bounce" />
+    const TopThree = ({ entry }: { entry: LeaderboardEntry }) => {
+        // Height configuration for podium effect
+        const heightClass = entry.rank === 1 ? 'h-[280px] sm:h-[320px]' : entry.rank === 2 ? 'h-[240px] sm:h-[270px]' : 'h-[210px] sm:h-[240px]';
+        const orderClass = entry.rank === 1 ? 'order-2' : entry.rank === 2 ? 'order-1' : 'order-3';
+        
+        return (
+            <motion.div 
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: entry.rank * 0.1 }}
+                className={`relative flex flex-col items-center justify-end p-4 rounded-t-[2.5rem] border-x border-t shadow-2xl ${getRankStyle(entry.rank)} ${orderClass} ${heightClass} w-1/3 min-w-[100px] max-w-[180px]`}
+            >
+                {entry.rank === 1 && (
+                    <div className="absolute -top-8 animate-bounce">
+                        <Crown className="w-14 h-14 text-yellow-400 fill-yellow-200 drop-shadow-lg" />
+                    </div>
+                )}
+                
+                <div className="mb-auto mt-4 flex flex-col items-center w-full">
+                    <div className="relative w-16 h-16 sm:w-24 sm:h-24 mb-3">
+                        <div className={`relative w-full h-full rounded-full overflow-hidden border-4 shadow-md ${entry.rank === 1 ? 'border-yellow-400' : entry.rank === 2 ? 'border-slate-300' : 'border-orange-300'}`}>
+                            <Image 
+                                src={entry.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(entry.name)}`}
+                                alt={entry.name}
+                                fill
+                                className="object-cover"
+                                unoptimized
+                            />
+                        </div>
+                        <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold border-2 shadow-sm z-10 ${
+                            entry.rank === 1 ? 'bg-yellow-400 border-yellow-200 text-yellow-900' : 
+                            entry.rank === 2 ? 'bg-slate-300 border-slate-100 text-slate-800' : 
+                            'bg-orange-300 border-orange-100 text-orange-900'
+                        }`}>
+                            {entry.rank}
+                        </div>
+                    </div>
+                    
+                    <h3 className="font-bold text-sm sm:text-lg text-center truncate w-full px-1 leading-tight mb-1">{entry.name}</h3>
+                    
+                    <div className="flex flex-col items-center">
+                        <span className="font-black text-lg sm:text-2xl tracking-tight">{entry.points.toLocaleString()}</span>
+                        <span className="text-[10px] sm:text-xs uppercase tracking-wider opacity-70 font-semibold">pts</span>
+                    </div>
                 </div>
-            )}
-            <div className="relative w-20 h-20 mb-3">
-                <div className={`relative w-full h-full rounded-full overflow-hidden border-4 ${entry.rank === 1 ? 'border-yellow-400' : entry.rank === 2 ? 'border-slate-300' : 'border-orange-300'}`}>
-                    <Image 
-                        src={entry.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(entry.name)}`}
-                        alt={entry.name}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                    />
-                </div>
-                <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1.5 shadow-sm border border-slate-100">
-                    <span className="text-lg font-bold">#{entry.rank}</span>
-                </div>
-            </div>
-            <h3 className="font-bold text-slate-900 text-center truncate w-full">{entry.name}</h3>
-            <p className="text-sm text-slate-500 mb-2 truncate w-full text-center">{entry.address.slice(0, 4)}...{entry.address.slice(-4)}</p>
-            <div className="bg-white/50 px-4 py-1 rounded-full border border-black/5">
-                <span className="font-bold text-primary-blue">{entry.points.toLocaleString()}</span>
-                <span className="text-xs text-slate-500 ml-1">pts</span>
-            </div>
-        </motion.div>
-    );
+
+                {/* Podium Base Decoration */}
+                <div className="w-full h-2 rounded-full bg-black/5 mt-2"></div>
+            </motion.div>
+        );
+    };
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] pb-20">
