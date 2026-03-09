@@ -75,12 +75,13 @@ export default function LeaderboardPage() {
                 </div>
             )}
             <div className="relative w-20 h-20 mb-3">
-                <div className={`w-full h-full rounded-full overflow-hidden border-4 ${entry.rank === 1 ? 'border-yellow-400' : entry.rank === 2 ? 'border-slate-300' : 'border-orange-300'}`}>
+                <div className={`relative w-full h-full rounded-full overflow-hidden border-4 ${entry.rank === 1 ? 'border-yellow-400' : entry.rank === 2 ? 'border-slate-300' : 'border-orange-300'}`}>
                     <Image 
-                        src={entry.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.name}`}
+                        src={entry.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(entry.name)}`}
                         alt={entry.name}
                         fill
                         className="object-cover"
+                        unoptimized
                     />
                 </div>
                 <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1.5 shadow-sm border border-slate-100">
@@ -109,7 +110,7 @@ export default function LeaderboardPage() {
                         <Trophy className="w-4 h-4 text-yellow-400" />
                         <span className="text-xs font-medium text-white/90">Season 1 Leaderboard</span>
                     </div>
-                    <h1 className="text-4xl sm:text-5xl font-bold mb-4 tracking-tight">Top Performers</h1>
+                    <h1 className="text-4xl sm:text-5xl text-white font-bold mb-4 tracking-tight">Top Performers</h1>
                     <p className="text-slate-300 text-lg max-w-xl mx-auto">
                         Earn points by referring friends, selling products, and being an active member of the community.
                     </p>
@@ -169,10 +170,11 @@ export default function LeaderboardPage() {
                                         </div>
                                         <div className="relative w-10 h-10 mr-4 shrink-0">
                                             <Image 
-                                                src={entry.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.name}`}
+                                                src={entry.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(entry.name)}`}
                                                 alt={entry.name}
                                                 fill
                                                 className="rounded-full object-cover bg-slate-100"
+                                                unoptimized
                                             />
                                         </div>
                                         <div className="flex-1 min-w-0 mr-4">
