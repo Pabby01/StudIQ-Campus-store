@@ -8,6 +8,9 @@ import { motion } from "framer-motion";
 
 export default function MobileNav() {
     const pathname = usePathname();
+
+    if (pathname?.startsWith("/admin")) return null;
+
     const tabs = [
         { icon: Home, label: "Home", href: "/", match: "/" },
         { icon: LayoutDashboard, label: "Dash", href: "/dashboard", match: "/dashboard" },
