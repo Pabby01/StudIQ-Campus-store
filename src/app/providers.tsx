@@ -49,6 +49,8 @@ export default function Providers({ children }: { children: ReactNode }) {
       // Enable embedded wallet mode for seamless in-app experience
       // @ts-ignore - Prop might not be typed in all versions but is supported
       iframeMode="embedded"
+      autoRedirect={false}
+      redirectUrl={typeof window !== 'undefined' ? window.location.origin : undefined}
       onSignIn={async (user) => {
         // Sign in handled
       }}
