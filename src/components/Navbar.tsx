@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
@@ -49,80 +50,51 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4">
-        <div
-          className={`nav-glass border border-white/60 shadow-lg transition-all duration-300 ${
-            isCompact ? "rounded-full px-4 sm:px-6 py-2" : "rounded-3xl px-4 sm:px-6 py-3"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <img
-                src="https://i.postimg.cc/VNXWGB8P/logo.jpg"
-                alt="StudIQ Campus Store Logo"
-                className={`object-contain rounded-xl transition-all duration-300 ${isCompact ? "h-8 w-8" : "h-10 w-10"}`}
-              />
-              <span
-                className={`font-bold text-black transition-all duration-300 hidden sm:block ${
-                  isCompact ? "text-base" : "text-xl"
-                }`}
-              >
-                StudIQ Campus Store
+    <nav className="sticky top-0 z-50 py-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 bg-white/80 backdrop-blur-md border border-white/60 shadow-sm rounded-full px-6 transition-all duration-300">
+          
+          {/* Logo Section */}
+          <div className="flex-shrink-0 flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="relative w-10 h-10 overflow-hidden rounded-xl shadow-sm group-hover:shadow-md transition-all duration-300">
+                <img
+                  src="https://i.postimg.cc/VNXWGB8P/logo.jpg"
+                  alt="StudIQ Logo"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="font-bold text-xl tracking-tight text-slate-900 hidden sm:block group-hover:text-primary-blue transition-colors">
+                StudIQ
               </span>
             </Link>
-
-            <div className={`hidden md:flex items-center transition-all ${isCompact ? "gap-1" : "gap-2"}`}>
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isExternal = item.href.startsWith("http");
-
-                return isExternal ? (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
-                      isCompact ? "p-1.5" : "p-2"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                    <span
-                      className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
-                        isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                  </a>
-                ) : (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
-                      isCompact ? "p-1.5" : "p-2"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                    <span
-                      className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
-                        isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
           </div>
 
-          <div className="hidden lg:flex flex-1 justify-center px-4">
-            <div className="relative w-full max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-text" />
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-primary-blue hover:bg-slate-50 rounded-full transition-all duration-200"
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Search (Mobile/Tablet Icon only, Desktop Expanded) */}
+            <div className="relative hidden lg:block w-64">
               <input
                 type="text"
-                placeholder="Search..."
-                className="w-full pl-9 pr-3 py-2 glass-pill rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all shadow-sm"
+                placeholder="Search products..."
+                className="w-full bg-slate-100 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary-blue/20 focus:bg-white transition-all"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     const query = e.currentTarget.value;
@@ -130,98 +102,66 @@ export default function Navbar() {
                   }
                 }}
               />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             </div>
-          </div>
-
-          {/* Right Side */}
-          <div className={`flex items-center transition-all ${isCompact ? "gap-2" : "gap-3"}`}>
-            {user && (
-              <>
-                <Link
-                  href="/dashboard"
-                  className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
-                    isCompact ? "p-1.5" : "p-2"
-                  }`}
-                >
-                  <LayoutDashboard className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                  <span
-                    className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
-                      isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    }`}
-                  >
-                    Dashboard
-                  </span>
-                </Link>
-
-                <Link
-                  href="/dashboard/notifications"
-                  className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all relative ${
-                    isCompact ? "p-1.5" : "p-2"
-                  }`}
-                >
-                  <div className="relative">
-                    <Bell className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                    {/* Placeholder for unread count - we could use useNotifications() here but it might cause hydration mismatch if not handled carefully */}
-                    {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-3 h-3 flex items-center justify-center"></span> */}
-                  </div>
-                  <span
-                    className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
-                      isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    }`}
-                  >
-                    Alerts
-                  </span>
-                </Link>
-
-                <Link
-                  href="/dashboard/settings"
-                  className={`group flex flex-col items-center gap-1 rounded-2xl hover:bg-white/70 transition-all ${
-                    isCompact ? "p-1.5" : "p-2"
-                  }`}
-                >
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt="Profile"
-                      className="w-6 h-6 rounded-full object-cover border border-white/60"
-                    />
-                  ) : (
-                    <User className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
-                  )}
-                  <span
-                    className={`text-xs font-medium text-muted-text group-hover:text-primary-blue absolute translate-y-8 ${
-                      isCompact ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    }`}
-                  >
-                    Profile
-                  </span>
-                </Link>
-              </>
-            )}
+            
+            <Link href="/search" className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+              <Search className="w-5 h-5" />
+            </Link>
 
             {/* Cart */}
             <Link
               href="/cart"
-              className={`group relative hover:bg-white/70 rounded-2xl transition-all ${isCompact ? "p-1.5" : "p-2"}`}
+              className="relative p-2 text-slate-600 hover:text-primary-blue hover:bg-slate-100 rounded-full transition-all duration-200"
             >
-              <ShoppingCart className="w-5 h-5 text-muted-text group-hover:text-primary-blue transition-all duration-500 group-hover:rotate-360" />
+              <ShoppingCart className="w-5 h-5" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
+                <span className="absolute top-0 right-0 bg-primary-blue text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-sm border border-white">
                   {cartCount}
                 </span>
               )}
             </Link>
 
-            {!user && (
-              <div className={`transition-all ${isCompact ? "scale-95" : "scale-100"}`}>
-                <div className="hidden sm:block">
-                  <CivicAuthButton />
-                </div>
-                <div className="sm:hidden">
-                  <CivicAuthButton />
-                </div>
-              </div>
+            {user && (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="p-2 text-slate-600 hover:text-primary-blue hover:bg-slate-100 rounded-full transition-all duration-200"
+                  title="Dashboard"
+                >
+                  <LayoutDashboard className="w-5 h-5" />
+                </Link>
+
+                <Link
+                  href="/dashboard/notifications"
+                  className="p-2 text-slate-600 hover:text-primary-blue hover:bg-slate-100 rounded-full transition-all duration-200 relative"
+                  title="Notifications"
+                >
+                  <Bell className="w-5 h-5" />
+                </Link>
+
+                <Link
+                  href="/dashboard/settings"
+                  className="p-2 text-slate-600 hover:text-primary-blue hover:bg-slate-100 rounded-full transition-all duration-200"
+                  title="Settings"
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Profile"
+                      className="w-5 h-5 rounded-full object-cover border border-slate-200"
+                    />
+                  ) : (
+                    <User className="w-5 h-5" />
+                  )}
+                </Link>
+              </>
             )}
+
+            {/* Auth Button / User Profile */}
+            <div className="pl-2 border-l border-slate-200">
+               <CivicAuthButton />
+            </div>
           </div>
         </div>
       </div>
