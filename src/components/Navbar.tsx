@@ -78,10 +78,14 @@ export default function Navbar() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-primary-blue hover:bg-slate-50 rounded-full transition-all duration-200"
+                  className="group flex flex-col items-center justify-center w-12 h-12 rounded-full hover:bg-slate-50 transition-all duration-300 relative"
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  <Icon className="w-5 h-5 text-slate-500 group-hover:text-primary-blue group-hover:rotate-12 transition-all duration-300" />
+                  
+                  {/* Tooltip Label */}
+                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs font-medium text-slate-700 bg-white px-2 py-1 rounded-md shadow-md opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-200 pointer-events-none whitespace-nowrap z-50">
+                    {item.label}
+                  </span>
                 </Link>
               );
             })}
