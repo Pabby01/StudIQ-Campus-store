@@ -111,15 +111,25 @@ export async function GET(req: Request) {
   const missingAwards = eligibleReferred
     .map((profile) => profile.address)
     .filter(
-      (refAddress): refAddress is string =>
-        !!refAddress && refAddress !== address && !awardedAddresses.has(refAddress)
+      (refAddress): refAddress is string => {
+        if (!refAddress || refAddress === address) return false;
+        
+        // Check if address is already awarded
+        if (awardedAddresses.has(refAddress)) return false;
+
+        // Check if the user's name is already in the awarded list (legacy data support)
+        const profile = eligibleReferred.find(p => p.address === refAddress);
+        if (profile?.name && awardedAddresses.has(profile.name)) return false;
+
+        return true;
+      }
     );
 
   if (missingAwards.length > 0) {
     await supabase.from("points_log").insert(
       missingAwards.map((refAddress) => ({
         address,
-        points: POINTS.REFERRAL,
+        points: POINTS.REFERRAL, // This is 100 in constants.ts
         reason: `Referral bonus - ${refAddress}`,
       }))
     );
