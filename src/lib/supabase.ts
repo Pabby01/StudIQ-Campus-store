@@ -21,14 +21,8 @@ export function getSupabaseServerClient() {
       persistSession: false,
       autoRefreshToken: false,
     },
-    global: {
-      fetch: (url, options = {}) => {
-        return fetch(url, {
-          ...options,
-          // Increase timeout to 30 seconds
-          signal: AbortSignal.timeout(30000),
-        });
-      },
-    },
+    // Fix: Remove custom fetch with AbortSignal.timeout if it's causing compatibility issues in some environments
+    // or simply rely on default fetch which usually has adequate timeouts.
+    // If explicit timeout is needed, ensure it's handled correctly.
   });
 }
