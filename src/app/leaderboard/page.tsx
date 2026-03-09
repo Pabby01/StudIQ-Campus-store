@@ -1,3 +1,4 @@
+ 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
@@ -57,60 +58,76 @@ export default function LeaderboardPage() {
     };
 
     const getRankStyle = (rank: number) => {
-        if (rank === 1) return "bg-gradient-to-b from-yellow-100 to-yellow-50 text-yellow-900 border-yellow-300 shadow-yellow-200/50";
-        if (rank === 2) return "bg-gradient-to-b from-slate-100 to-slate-50 text-slate-900 border-slate-300 shadow-slate-200/50";
-        if (rank === 3) return "bg-gradient-to-b from-orange-100 to-orange-50 text-orange-900 border-orange-300 shadow-orange-200/50";
-        return "bg-white text-slate-600 border-slate-100";
+        if (rank === 1) return "bg-gradient-to-b from-yellow-500/20 to-yellow-500/5 border-yellow-500/50 shadow-[0_0_30px_-10px_rgba(234,179,8,0.3)] backdrop-blur-md";
+        if (rank === 2) return "bg-gradient-to-b from-slate-400/20 to-slate-400/5 border-slate-400/50 shadow-[0_0_30px_-10px_rgba(148,163,184,0.3)] backdrop-blur-md";
+        if (rank === 3) return "bg-gradient-to-b from-orange-500/20 to-orange-500/5 border-orange-500/50 shadow-[0_0_30px_-10px_rgba(249,115,22,0.3)] backdrop-blur-md";
+        return "bg-white/50 border-white/50";
     };
 
     const TopThree = ({ entry }: { entry: LeaderboardEntry }) => {
-        // Height configuration for podium effect
-        const heightClass = entry.rank === 1 ? 'h-[280px] sm:h-[320px]' : entry.rank === 2 ? 'h-[240px] sm:h-[270px]' : 'h-[210px] sm:h-[240px]';
+        // Height configuration for podium effect - reduced sizes for mobile to fit on one line
+        const heightClass = entry.rank === 1 ? 'h-[180px] sm:h-[300px]' : entry.rank === 2 ? 'h-[150px] sm:h-[250px]' : 'h-[130px] sm:h-[220px]';
         const orderClass = entry.rank === 1 ? 'order-2' : entry.rank === 2 ? 'order-1' : 'order-3';
         
         return (
             <motion.div 
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: entry.rank * 0.1 }}
-                className={`relative flex flex-col items-center justify-end p-4 rounded-t-[2.5rem] border-x border-t shadow-2xl ${getRankStyle(entry.rank)} ${orderClass} ${heightClass} w-1/3 min-w-[100px] max-w-[180px]`}
+                initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.6, type: "spring", bounce: 0.3, delay: entry.rank * 0.15 }}
+                className={`relative flex flex-col items-center justify-end p-1 rounded-t-3xl border-t border-x ${getRankStyle(entry.rank)} ${orderClass} ${heightClass} w-[30%] min-w-[90px] max-w-[160px] group hover:-translate-y-2 transition-transform duration-300`}
             >
-                {entry.rank === 1 && (
-                    <div className="absolute -top-8 animate-bounce">
-                        <Crown className="w-14 h-14 text-yellow-400 fill-yellow-200 drop-shadow-lg" />
+                {/* Floating Rank Badge */}
+                <div className={`absolute -top-3 sm:-top-5 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center`}>
+                    <div className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-xl rotate-45 shadow-lg border-2 ${
+                        entry.rank === 1 ? 'bg-yellow-500 border-yellow-300 text-white' : 
+                        entry.rank === 2 ? 'bg-slate-400 border-slate-200 text-white' : 
+                        'bg-orange-500 border-orange-300 text-white'
+                    }`}>
+                        <span className="-rotate-45 font-bold text-xs sm:text-sm">{entry.rank}</span>
                     </div>
-                )}
-                
-                <div className="mb-auto mt-4 flex flex-col items-center w-full">
-                    <div className="relative w-16 h-16 sm:w-24 sm:h-24 mb-3">
-                        <div className={`relative w-full h-full rounded-full overflow-hidden border-4 shadow-md ${entry.rank === 1 ? 'border-yellow-400' : entry.rank === 2 ? 'border-slate-300' : 'border-orange-300'}`}>
+                </div>
+
+                <div className="flex flex-col items-center justify-between h-full w-full pt-6 sm:pt-10 pb-2 sm:pb-4">
+                    {/* Avatar with Glow */}
+                    <div className="relative w-12 h-12 sm:w-20 sm:h-20 mb-2 group-hover:scale-110 transition-transform duration-300">
+                        <div className={`absolute inset-0 rounded-full blur-md opacity-60 ${
+                            entry.rank === 1 ? 'bg-yellow-400' : entry.rank === 2 ? 'bg-slate-400' : 'bg-orange-400'
+                        }`}></div>
+                        <div className={`relative w-full h-full rounded-full overflow-hidden border-2 bg-white z-10 ${
+                            entry.rank === 1 ? 'border-yellow-500' : entry.rank === 2 ? 'border-slate-400' : 'border-orange-500'
+                        }`}>
                             <Image 
-                                src={entry.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(entry.name)}`}
+                                src={entry.avatar_url || `https://robohash.org/${encodeURIComponent(entry.name)}?set=set4&bgset=bg1`}
                                 alt={entry.name}
                                 fill
                                 className="object-cover"
                                 unoptimized
                             />
                         </div>
-                        <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold border-2 shadow-sm z-10 ${
-                            entry.rank === 1 ? 'bg-yellow-400 border-yellow-200 text-yellow-900' : 
-                            entry.rank === 2 ? 'bg-slate-300 border-slate-100 text-slate-800' : 
-                            'bg-orange-300 border-orange-100 text-orange-900'
-                        }`}>
-                            {entry.rank}
-                        </div>
                     </div>
                     
-                    <h3 className="font-bold text-sm sm:text-lg text-center truncate w-full px-1 leading-tight mb-1">{entry.name}</h3>
-                    
-                    <div className="flex flex-col items-center">
-                        <span className="font-black text-lg sm:text-2xl tracking-tight">{entry.points.toLocaleString()}</span>
-                        <span className="text-[10px] sm:text-xs uppercase tracking-wider opacity-70 font-semibold">pts</span>
+                    {/* User Details */}
+                    <div className="text-center w-full px-1">
+                        <h3 className="font-bold text-[10px] sm:text-sm text-slate-800 truncate w-full mb-1">{entry.name}</h3>
+                        <p className="text-[8px] sm:text-[10px] text-slate-500 mb-1 sm:mb-2 truncate w-full opacity-70 font-mono hidden sm:block">
+                            {entry.address.slice(0, 4)}...{entry.address.slice(-4)}
+                        </p>
+                        
+                        <div className={`inline-flex flex-col items-center justify-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg w-full bg-white/60 backdrop-blur-sm border border-white/40 shadow-sm`}>
+                            <span className={`font-black text-xs sm:text-base ${
+                                entry.rank === 1 ? 'text-yellow-700' : entry.rank === 2 ? 'text-slate-600' : 'text-orange-700'
+                            }`}>
+                                {entry.points.toLocaleString()}
+                            </span>
+                            <span className="text-[6px] sm:text-[8px] uppercase tracking-widest text-slate-400 font-bold">Pts</span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Podium Base Decoration */}
-                <div className="w-full h-2 rounded-full bg-black/5 mt-2"></div>
+                {/* Decorative Bottom Gradient Fade */}
+                <div className={`absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t ${
+                     entry.rank === 1 ? 'from-yellow-500/10' : entry.rank === 2 ? 'from-slate-400/10' : 'from-orange-500/10'
+                } to-transparent rounded-b-none pointer-events-none`}></div>
             </motion.div>
         );
     };
@@ -188,7 +205,7 @@ export default function LeaderboardPage() {
                                         </div>
                                         <div className="relative w-10 h-10 mr-4 shrink-0">
                                             <Image 
-                                                src={entry.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(entry.name)}`}
+                                                src={entry.avatar_url || `https://robohash.org/${encodeURIComponent(entry.name)}?set=set4&bgset=bg1`}
                                                 alt={entry.name}
                                                 fill
                                                 className="rounded-full object-cover bg-slate-100"
