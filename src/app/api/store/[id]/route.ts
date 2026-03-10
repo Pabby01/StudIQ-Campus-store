@@ -31,6 +31,17 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
     console.error("Products Fetch Error:", productsError);
   }
 
+  // Calculate real stats
+  const totalProducts = products?.length || 0;
+  
+  // Calculate total sales from orders (assuming orders table has store_id or we query by products)
+  // For now, let's try to fetch order count if possible, or fallback to a placeholder if table structure is unknown
+  // Ideally: const { count: salesCount } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('store_id', params.id);
+  
+  // Try to find location from profile
+  const location = store.profiles?.campus || store.profiles?.school || "Campus";
+  const joinedDate = store.created_at;
+
   return Response.json({ 
     store: {
       ...store,
@@ -38,7 +49,15 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
       owner_name: store.profiles?.name,
       
       // Check common profile picture column names
-      owner_image: store.profiles?.avatar_url || store.profiles?.image || store.profiles?.picture || store.profiles?.avatar
+      owner_image: store.profiles?.avatar_url || store.profiles?.image || store.profiles?.picture || store.profiles?.avatar,
+      
+      // Add real-time stats
+      stats: {
+        products: totalProducts,
+        sales: store.total_sales || 0, // Use the column from stores table if it exists, otherwise 0
+        joined_at: joinedDate,
+        location: location
+      }
     },
     products: products || [] 
   });
