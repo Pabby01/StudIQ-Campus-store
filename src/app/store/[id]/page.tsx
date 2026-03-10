@@ -23,6 +23,8 @@ type Store = {
   rating?: number | null;
   owner_address?: string;
   total_sales?: number;
+  owner_name?: string;
+  owner_image?: string;
 };
 
 // ... existing types ...
@@ -35,7 +37,23 @@ export default function StoreDetailPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  // ... useEffect logic ...
+  useEffect(() => {
+    async function fetchStoreData() {
+      if (!params.id) return;
+      try {
+        const res = await fetch(`/api/store/${params.id}`);
+        if (!res.ok) throw new Error("Failed to fetch store");
+        const data = await res.json();
+        setStore(data.store);
+        setProducts(data.products || []);
+      } catch (error) {
+        console.error("Error fetching store:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStoreData();
+  }, [params.id]);
 
   const handleShare = () => {
     const url = window.location.href;
@@ -79,7 +97,7 @@ export default function StoreDetailPage() {
           <div className="flex flex-col md:flex-row gap-6 md:items-start">
             
             {/* Store Logo/Icon */}
-            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] bg-white shadow-lg p-2 -mt-16 sm:-mt-20 flex-shrink-0">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] bg-white shadow-lg p-2 -mt-16 sm:-mt-20 flex-shrink-0 relative group">
               {store?.logo_url ? (
                 <div className="w-full h-full rounded-[1.5rem] overflow-hidden relative">
                    <Image src={store.logo_url} alt={store.name} fill className="object-cover" />
@@ -87,6 +105,12 @@ export default function StoreDetailPage() {
               ) : (
                 <div className="w-full h-full rounded-[1.5rem] bg-gradient-to-br from-primary-blue to-blue-600 flex items-center justify-center text-white">
                   <span className="text-3xl font-bold">{store?.name.charAt(0)}</span>
+                </div>
+              )}
+              {/* Owner Avatar Badge */}
+              {store?.owner_image && (
+                <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full border-2 border-white shadow-md overflow-hidden bg-gray-100">
+                  <Image src={store.owner_image} alt="Owner" fill className="object-cover" />
                 </div>
               )}
             </div>

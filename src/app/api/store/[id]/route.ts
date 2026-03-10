@@ -1,3 +1,4 @@
+ 
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSessionWallet } from "@/lib/session";
 
@@ -5,17 +6,38 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
   const params = await props.params;
   const supabase = getSupabaseServerClient();
 
-  const { data, error } = await supabase
+  // Fetch store details
+  const { data: store, error: storeError } = await supabase
     .from("stores")
-    .select("*")
+    .select("*, profiles(name, image)")
     .eq("id", params.id)
     .single();
 
-  if (error || !data) {
-    return Response.json({ error: "Store not found" }, { status: 404 });
+  if (storeError || !store) {
+    console.error("Store Fetch Error:", storeError);
+    return Response.json({ error: "Store not found", details: storeError }, { status: 404 });
   }
 
-  return Response.json({ store: data });
+  // Fetch store products
+  const { data: products, error: productsError } = await supabase
+    .from("products")
+    .select("*")
+    .eq("store_id", params.id)
+    .order("created_at", { ascending: false });
+
+  if (productsError) {
+    console.error("Products Fetch Error:", productsError);
+  }
+
+  return Response.json({ 
+    store: {
+      ...store,
+      owner_name: store.profiles?.name,
+      
+      owner_image: store.profiles?.image
+    },
+    products: products || [] 
+  });
 }
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
