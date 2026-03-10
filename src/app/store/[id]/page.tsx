@@ -134,8 +134,14 @@ export default function StoreDetailPage() {
                    <Image src={store.logo_url} alt={store.name} fill className="object-cover" />
                 </div>
               ) : (
-                <div className="w-full h-full rounded-[1.5rem] bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white">
-                  <span className="text-3xl font-bold">{store.name.charAt(0)}</span>
+                <div className="w-full h-full rounded-[1.5rem] overflow-hidden relative bg-slate-100">
+                  <Image 
+                    src={`https://robohash.org/${encodeURIComponent(store.name)}?set=set4&bgset=bg1`}
+                    alt={store.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
                 </div>
               )}
               {/* Owner Avatar Badge */}
