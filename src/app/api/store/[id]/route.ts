@@ -7,9 +7,11 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
   const supabase = getSupabaseServerClient();
 
   // Fetch store details
+  // Note: We're not selecting specific columns from profiles because the column names might vary
+  // and cause 404s if incorrect. We'll fetch all profile fields and map them safely.
   const { data: store, error: storeError } = await supabase
     .from("stores")
-    .select("*, profiles(name, image)")
+    .select("*, profiles(*)")
     .eq("id", params.id)
     .single();
 
@@ -32,9 +34,11 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
   return Response.json({ 
     store: {
       ...store,
+      
       owner_name: store.profiles?.name,
       
-      owner_image: store.profiles?.image
+      // Check common profile picture column names
+      owner_image: store.profiles?.avatar_url || store.profiles?.image || store.profiles?.picture || store.profiles?.avatar
     },
     products: products || [] 
   });
