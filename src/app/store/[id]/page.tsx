@@ -23,6 +23,14 @@ type Store = {
   rating?: number | null;
   owner_address?: string;
   total_sales?: number;
+  owner_name?: string;
+  owner_image?: string;
+  stats?: {
+    products: number;
+    sales: number;
+    joined_at: string;
+    location: string;
+  };
 };
 
 // ... existing types ...
@@ -35,22 +43,63 @@ export default function StoreDetailPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  // ... useEffect logic ...
+  useEffect(() => {
+    async function fetchStoreData() {
+      if (!params.id) return;
+      try {
+        const res = await fetch(`/api/store/${params.id}`);
+        if (!res.ok) throw new Error("Failed to fetch store");
+        const data = await res.json();
+        setStore(data.store);
+        setProducts(data.products || []);
+      } catch (error) {
+        console.error("Error fetching store:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStoreData();
+  }, [params.id]);
 
   const handleShare = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
+    if (typeof window === 'undefined') return;
+    navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // ... loading states ...
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric"
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!store) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-slate-900">Store Not Found</h2>
+          <Button onClick={() => router.back()} className="mt-4">Go Back</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-soft-gray-bg mesh-bg pb-20">
+    <div className="min-h-screen bg-slate-50 pb-20">
       {/* Header / Banner */}
       <div className="relative h-48 sm:h-64 bg-slate-900 overflow-hidden">
-        {store?.banner_url ? (
+        {store.banner_url ? (
           <Image
             src={store.banner_url}
             alt={store.name}
@@ -79,100 +128,119 @@ export default function StoreDetailPage() {
           <div className="flex flex-col md:flex-row gap-6 md:items-start">
             
             {/* Store Logo/Icon */}
-            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] bg-white shadow-lg p-2 -mt-16 sm:-mt-20 flex-shrink-0">
-              {store?.logo_url ? (
+            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] bg-white shadow-lg p-2 -mt-16 sm:-mt-20 flex-shrink-0 relative group">
+              {store.logo_url ? (
                 <div className="w-full h-full rounded-[1.5rem] overflow-hidden relative">
                    <Image src={store.logo_url} alt={store.name} fill className="object-cover" />
                 </div>
               ) : (
-                <div className="w-full h-full rounded-[1.5rem] bg-gradient-to-br from-primary-blue to-blue-600 flex items-center justify-center text-white">
-                  <span className="text-3xl font-bold">{store?.name.charAt(0)}</span>
+                <div className="w-full h-full rounded-[1.5rem] overflow-hidden relative bg-slate-100">
+                  <Image 
+                    src={`https://robohash.org/${encodeURIComponent(store.name)}?set=set4&bgset=bg1`}
+                    alt={store.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+              )}
+              {/* Owner Avatar Badge */}
+              {store.owner_image && (
+                <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full border-2 border-white shadow-md overflow-hidden bg-gray-100">
+                  <Image src={store.owner_image} alt="Owner" fill className="object-cover" />
                 </div>
               )}
             </div>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0 pt-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            {/* Store Info */}
+            <div className="flex-1 pt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 truncate">{store?.name}</h1>
-                  <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
-                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 font-medium text-slate-700 border border-slate-200">
-                      {store?.category}
-                    </span>
-                    <span>•</span>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">{store.name}</h1>
+                  <div className="flex items-center gap-3 text-sm text-slate-600">
+                    <Badge variant="blue" className="bg-blue-50 text-blue-700 border-blue-100">
+                      {store.category}
+                    </Badge>
                     <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium text-slate-900">4.8</span>
-                      <span className="text-slate-400">(120)</span>
+                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                      <span className="font-medium text-slate-900">{store.rating || "New"}</span>
+                      {store.rating && <span className="text-slate-400">({store.total_sales || 0})</span>}
                     </div>
                   </div>
                 </div>
-
+                
                 <div className="flex items-center gap-3">
-                   <Button 
-                     variant="outline" 
-                     className="rounded-full h-10 px-5 border-slate-200 hover:bg-slate-50"
-                     onClick={handleShare}
-                   >
-                     {copied ? <Check className="w-4 h-4 mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
-                     {copied ? "Copied" : "Share"}
-                   </Button>
-                   <Button variant="primary" className="rounded-full h-10 px-6 shadow-lg shadow-primary-blue/20">
-                     Follow Store
-                   </Button>
+                    <button 
+                        onClick={handleShare}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 font-medium hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                    >
+                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                        {copied ? "Copied" : "Share"}
+                    </button>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-600/20">
+                        <MapPin className="w-4 h-4" />
+                        <span>{store.stats?.location || "Campus"}</span>
+                    </div>
                 </div>
               </div>
 
-              {store?.description && (
-                <p className="text-slate-600 leading-relaxed max-w-3xl">{store.description}</p>
-              )}
+              <p className="text-slate-600 leading-relaxed mb-6 max-w-2xl">
+                {store.description || "Welcome to our campus store! Check out our latest products and deals."}
+              </p>
 
-              <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 max-w-lg">
-                <div>
-                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Products</p>
-                   <p className="text-xl font-bold text-slate-900 mt-1">{products.length}</p>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 gap-4 border-t border-slate-100 pt-6">
+                <div className="text-center sm:text-left">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Products</p>
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900">{store.stats?.products || 0}</p>
                 </div>
-                <div>
-                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Sales</p>
-                   <p className="text-xl font-bold text-slate-900 mt-1">{store?.total_sales || '240+'}</p>
+                <div className="text-center sm:text-left border-l border-slate-100 pl-4 sm:pl-0 sm:border-l-0">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Sales</p>
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900">{store.stats?.sales || "0"}+</p>
                 </div>
-                <div>
-                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Joined</p>
-                   <p className="text-xl font-bold text-slate-900 mt-1">Mar 2024</p>
+                <div className="text-center sm:text-left border-l border-slate-100 pl-4 sm:pl-0 sm:border-l-0">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Joined</p>
+                  <p className="text-xl sm:text-2xl font-bold text-slate-900">{formatDate(store.stats?.joined_at)}</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Products Grid */}
-        <div className="mt-10">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-primary-blue" />
-              Store Products
-            </h2>
-            
-            {/* Optional: Filter/Sort could go here */}
-          </div>
-
-          {products.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((p) => (
-                <ProductCard key={p.id} p={p} />
-              ))}
+      {/* Products Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+        <div className="flex items-center gap-3 mb-8">
+            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                <ShoppingBag className="w-5 h-5" />
             </div>
-          ) : (
-            <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-sm">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Package className="w-8 h-8 text-slate-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-1">No products yet</h3>
-              <p className="text-slate-500">This store hasn&apos;t added any items to their catalog.</p>
-            </div>
-          )}
+            <h2 className="text-2xl font-bold text-slate-900">Store Products</h2>
         </div>
+
+        {products.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+            {products.map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <ProductCard p={product} />
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-sm">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Package className="w-8 h-8 text-slate-400" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">No products yet</h3>
+            <p className="text-slate-500 max-w-sm mx-auto">
+              This store hasnt added any items to their catalog.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
