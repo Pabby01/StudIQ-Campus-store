@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { X, Loader2, Send, CheckCircle2, AlertCircle, ArrowRight, Wallet, Info } from "lucide-react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
@@ -81,6 +82,10 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
             );
 
             setStatus("signing");
+
+            // Delay to allow modal to adjust before signing
+            await new Promise(resolve => setTimeout(resolve, 300));
+
             const signedTx = await signTransaction(tx as any);
 
             setStatus("sending");
@@ -99,9 +104,16 @@ export default function SendModal({ isOpen, onClose, onSuccess, cluster }: SendM
                 setStatus("idle");
             }, 3000);
 
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError(err instanceof Error ? err.message : "Failed to send funds. Please check the address and balance.");
+
+            // Decode Solana error #-32002 for better message
+            if (err?.message?.includes("-32002")) {
+                setError("Transaction failed due to missing or invalid accounts/instructions. Please verify the recipient address and try again.");
+            } else {
+                setError(err instanceof Error ? err.message : "Failed to send funds. Please check the address and balance.");
+            }
+
             setStatus("error");
         }
     };
