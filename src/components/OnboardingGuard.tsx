@@ -1,51 +1,118 @@
 "use client";
 
-import { useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useRef } from "react";
 import { useUser } from "@civic/auth-web3/react";
 import { useRouter, usePathname } from "next/navigation";
 
 /**
- * Component that ensures new users are redirected to onboarding
- * Place this inside your layout to automatically handle redirects
+ * Component that ensures new users are redirected to onboarding.
+ * Establishes a server session first if the cookie is missing, then
+ * checks whether the profile exists and is complete.
  */
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     const { user, isLoading } = useUser();
     const router = useRouter();
     const pathname = usePathname();
+    const hasChecked = useRef(false);
 
     useEffect(() => {
-        // Skip if loading or no user
+        // Skip if still loading Civic auth
         if (isLoading || !user) return;
 
-        // Skip if already on onboarding page
-        if (pathname === "/onboarding") return;
+        // Skip auth/onboarding pages and admin to avoid redirect loops
+        if (
+            pathname === "/onboarding" ||
+            pathname === "/auth" ||
+            pathname?.startsWith("/admin")
+        ) return;
 
-        // Get email from user
-        const userEmail = 'email' in user ? user.email : null;
-        if (!userEmail) return;
+        // Prevent running the check more than once per session load
+        if (hasChecked.current) return;
+        hasChecked.current = true;
 
-        // Check if profile exists
+        const userAny = user as any;
+        const userEmail: string | null = userAny?.email || null;
+        const walletAddress: string | null = userAny?.solana?.address || null;
+        const civicUserId: string | null = userAny?.id || userAny?.sub || null;
+        const token: string | null = userAny?.idToken || userAny?.token || null;
+
+        // We need at least one identity to proceed
+        if (!userEmail && !walletAddress && !civicUserId) return;
+
         const checkProfile = async () => {
             try {
-                const token = (user as any).token || (user as any).idToken;
-                const url = `/api/profile/check?email=${encodeURIComponent(userEmail as string)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
-                const res = await fetch(url);
+                // Step 1: Ensure a server session exists.
+                // The session cookie is normally set by useCivicWallet inside pages,
+                // but we need it here (in layout) before any page mounts.
+                const hasCookie =
+                    typeof document !== "undefined" &&
+                    document.cookie.includes("sid=");
 
-                if (res.status === 401) {
+                if (!hasCookie) {
+                    const addressToVerify =
+                        walletAddress || (civicUserId ? `civic_${civicUserId}` : null);
+
+                    if (token || addressToVerify) {
+                        try {
+                            const verifyRes = await fetch("/api/auth/verify", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    token,
+                                    address: addressToVerify,
+                                }),
+                            });
+                            // If session creation failed outright, don't block the user
+                            if (!verifyRes.ok) {
+                                hasChecked.current = false; // allow retry on next navigation
+                                return;
+                            }
+                        } catch {
+                            hasChecked.current = false;
+                            return;
+                        }
+                    } else {
+                        // No way to verify — skip for now
+                        hasChecked.current = false;
+                        return;
+                    }
+                }
+
+                // Step 2: Check if profile exists and is complete.
+                // Build query: prefer email, fall back to civic_user_id
+                const params = new URLSearchParams();
+                if (userEmail) params.set("email", userEmail);
+                if (walletAddress) params.set("address", walletAddress);
+                if (civicUserId) params.set("civicId", civicUserId);
+
+                const headers: HeadersInit = {};
+                if (token) headers["Authorization"] = `Bearer ${token}`;
+
+                const res = await fetch(`/api/profile/check?${params.toString()}`, {
+                    headers,
+                });
+
+                if (!res.ok) {
+                    // 401 most likely means session still not ready — allow retry
+                    hasChecked.current = false;
                     return;
                 }
 
                 const data = await res.json();
-                if (data.exists === false) {
+
+                // Redirect if profile doesn't exist OR is incomplete (missing key fields)
+                if (!data.exists || !data.isComplete) {
                     router.push("/onboarding");
                 }
-            } catch (error) {
-                // Silently fail on check errors during production
+            } catch {
+                // Network error — allow retry on next navigation
+                hasChecked.current = false;
             }
         };
 
-        // Small delay to ensure user data is fully loaded
-        const timeout = setTimeout(checkProfile, 500);
+        // Short delay to let Civic fully hydrate the user object
+        const timeout = setTimeout(checkProfile, 800);
         return () => clearTimeout(timeout);
     }, [user, isLoading, pathname, router]);
 

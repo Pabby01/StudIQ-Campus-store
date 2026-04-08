@@ -8,9 +8,10 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Card from "@/components/ui/Card";
 import { useToast } from "@/hooks/useToast";
-import { Loader2, CheckCircle, User } from "lucide-react";
+import { Loader2, CheckCircle, User, Sparkles, Trophy, ArrowRight, Gift } from "lucide-react";
 import { updateProfileSchema } from "@/lib/validators";
 import CivicAuthButton from "@/components/CivicAuthButton";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Type guard to check if user has a Solana wallet
 function hasWallet(user: any): user is { solana: { address: string; wallet: any } } {
@@ -28,6 +29,7 @@ export default function OnboardingPage() {
   const [mounted, setMounted] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [referralCodeValue, setReferralCodeValue] = useState("");
+  const [celebrationData, setCelebrationData] = useState<{ pointsEarned: number; name: string } | null>(null);
 
   // Avoid hydration issues
   useEffect(() => {
@@ -40,7 +42,6 @@ export default function OnboardingPage() {
       if (hasWallet(user)) {
         setWalletAddress(user.solana.address);
       } else {
-        // Try to get wallet address from user context
         const userAny = user as any;
         if (userAny.solana?.address) {
           setWalletAddress(userAny.solana.address);
@@ -98,19 +99,20 @@ export default function OnboardingPage() {
     const formData = new FormData(e.currentTarget);
 
     const userEmail = user && "email" in user ? (user.email as string) : (formData.get("email") as string);
-    const civicUserId = userAny?.id || (user && "sub" in user ? (user.sub as string) : null);
-    const address = walletAddress || (civicUserId ? `civic_${civicUserId}` : null);
+    const civicUserIdLocal = userAny?.id || (user && "sub" in user ? (user.sub as string) : null);
+    const address = walletAddress || (civicUserIdLocal ? `civic_${civicUserIdLocal}` : null);
     if (!address) {
       toast.error("Missing account", "Please sign in again and retry");
       return;
     }
 
     const referralCode = String(formData.get("referralCode") || "").trim();
+    const submittedName = (formData.get("name") as string) || "";
     const profileData = {
       address,
       email: userEmail,
-      civic_user_id: civicUserId,
-      name: (formData.get("name") as string) || "",
+      civic_user_id: civicUserIdLocal,
+      name: submittedName,
       school: (formData.get("school") as string) || "",
       campus: (formData.get("campus") as string) || "",
       level: (formData.get("level") as string) || "",
@@ -145,8 +147,16 @@ export default function OnboardingPage() {
       });
 
       if (res.ok) {
-        toast.success("Welcome to StudIQ!", "Your profile has been created");
-        router.push("/");
+        const resData = await res.json();
+        // Mark the tour as seen so it doesn't fire over the celebration modal
+        if (typeof window !== "undefined") {
+          localStorage.setItem("studiq_welcome_tour_seen", "true");
+        }
+        // Show celebration screen
+        setCelebrationData({
+          pointsEarned: resData.pointsEarned ?? 150,
+          name: submittedName.split(" ")[0] || "Student",
+        });
       } else {
         const error = await res.json();
         toast.error("Failed to save profile", error.error || "Please try again");
@@ -167,6 +177,118 @@ export default function OnboardingPage() {
           <Loader2 className="w-12 h-12 animate-spin text-primary-blue mx-auto mb-4" />
           <p className="text-muted-text">Loading...</p>
         </Card>
+      </div>
+    );
+  }
+
+  // 🎉 Celebration screen after successful onboarding
+  if (celebrationData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4">
+        <AnimatePresence>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", bounce: 0.4, duration: 0.8 }}
+            className="max-w-md w-full"
+          >
+            <Card className="p-8 text-center space-y-6 bg-white/95 backdrop-blur-xl border-white shadow-2xl rounded-3xl">
+              {/* Animated trophy */}
+              <motion.div
+                initial={{ rotate: -10, scale: 0 }}
+                animate={{ rotate: [0, -10, 10, -5, 5, 0], scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="flex justify-center"
+              >
+                <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-xl shadow-orange-300/50">
+                  <Trophy className="w-12 h-12 text-white" />
+                </div>
+              </motion.div>
+
+              {/* Welcome text */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="space-y-2"
+              >
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Welcome, {celebrationData.name}! 🎉
+                </h1>
+                <p className="text-gray-500">
+                  You&apos;re officially part of StudIQ Campus!
+                </p>
+              </motion.div>
+
+              {/* Points badge */}
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.7, type: "spring", bounce: 0.5 }}
+                className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-2xl p-5"
+              >
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <Gift className="w-6 h-6 text-blue-600" />
+                  <span className="text-sm font-semibold text-blue-600 uppercase tracking-wider">Welcome Bonus</span>
+                  <Sparkles className="w-6 h-6 text-purple-500" />
+                </div>
+                <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                  +{celebrationData.pointsEarned}
+                </div>
+                <div className="text-sm text-gray-500 mt-1">StudIQ Points earned</div>
+              </motion.div>
+
+              {/* What's next */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.9 }}
+                className="text-left space-y-2 bg-gray-50 rounded-2xl p-4"
+              >
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">What you can do now</p>
+                {[
+                  "Browse campus stores near you",
+                  "Create your own store & start selling",
+                  "Earn more points with every purchase",
+                  "Climb the leaderboard & win rewards",
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 1 + i * 0.1 }}
+                    className="flex items-center gap-2 text-sm text-gray-600"
+                  >
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    {item}
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {/* CTA */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 1.4 }}
+                className="flex flex-col gap-3"
+              >
+                <Button
+                  onClick={() => router.push("/dashboard")}
+                  className="w-full flex items-center justify-center gap-2 py-3 text-base font-semibold"
+                >
+                  Go to my Dashboard
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+                <button
+                  onClick={() => router.push("/search")}
+                  className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Browse stores first →
+                </button>
+              </motion.div>
+            </Card>
+          </motion.div>
+        </AnimatePresence>
       </div>
     );
   }
@@ -203,7 +325,8 @@ export default function OnboardingPage() {
             Complete Your Profile
           </h1>
           <p className="text-muted-text">
-            Welcome! Let&apos;s set up your StudIQ account.
+            Welcome! Set up your account to earn{" "}
+            <span className="font-semibold text-primary-blue">150 bonus points</span> instantly.
           </p>
           {walletAddress && (
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-2xl">
@@ -236,18 +359,21 @@ export default function OnboardingPage() {
             error={errors.email}
           />
 
-          <Input
-            label="School"
-            name="school"
-            placeholder="Your school name"
-            required
-            error={errors.school}
-          />
+          <div className="space-y-1">
+            <Input
+              label="School"
+              name="school"
+              placeholder="Your school name"
+              required
+              error={errors.school}
+            />
+            <p className="text-xs text-gray-400 pl-1">Used to connect you with sellers on your campus</p>
+          </div>
 
           <Input
-            label="Campus"
+            label="Campus / Location"
             name="campus"
-            placeholder="Campus location"
+            placeholder="e.g. Main Campus, Yaba"
             required
             error={errors.campus}
           />
@@ -260,18 +386,22 @@ export default function OnboardingPage() {
             error={errors.level}
           />
 
-          <Input
-            label="Phone Number"
-            name="phone"
-            type="tel"
-            placeholder="Your phone number"
-            required
-            error={errors.phone}
-          />
+          <div className="space-y-1">
+            <Input
+              label="Phone Number"
+              name="phone"
+              type="tel"
+              placeholder="Your phone number"
+              required
+              error={errors.phone}
+            />
+            <p className="text-xs text-gray-400 pl-1">Sellers will use this for order coordination</p>
+          </div>
+
           <Input
             label="Referral Code (optional)"
             name="referralCode"
-            placeholder="Enter referral code"
+            placeholder="Enter 6-character code"
             error={errors.referralCode}
             value={referralCodeValue}
             maxLength={6}
@@ -283,7 +413,17 @@ export default function OnboardingPage() {
             disabled={loading}
             className="w-full mt-6"
           >
-            {loading ? "Creating Profile..." : "Complete Setup"}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creating Profile...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Complete Setup &amp; Earn 150 Points
+              </span>
+            )}
           </Button>
         </form>
       </Card>
