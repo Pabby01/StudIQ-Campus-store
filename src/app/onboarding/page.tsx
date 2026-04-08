@@ -29,6 +29,8 @@ export default function OnboardingPage() {
   const [mounted, setMounted] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [referralCodeValue, setReferralCodeValue] = useState("");
+  const [referralStatus, setReferralStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const [referralOwner, setReferralOwner] = useState<string | null>(null);
   const [celebrationData, setCelebrationData] = useState<{ pointsEarned: number; name: string } | null>(null);
 
   // Avoid hydration issues
@@ -91,6 +93,28 @@ export default function OnboardingPage() {
       body: JSON.stringify({ token, address: addressToUse }),
     }).catch(() => {});
   }, [mounted, isLoading, user, token, walletAddress, civicUserId]);
+
+  async function handleReferralBlur() {
+    if (referralCodeValue.length !== 6) {
+      setReferralStatus("idle");
+      setReferralOwner(null);
+      return;
+    }
+    setReferralStatus("checking");
+    try {
+      const res = await fetch(`/api/profile/referral/validate?code=${referralCodeValue}`);
+      const data = await res.json();
+      if (data.valid) {
+        setReferralStatus("valid");
+        setReferralOwner(data.name ?? null);
+      } else {
+        setReferralStatus("invalid");
+        setReferralOwner(null);
+      }
+    } catch {
+      setReferralStatus("idle");
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -398,15 +422,38 @@ export default function OnboardingPage() {
             <p className="text-xs text-gray-400 pl-1">Sellers will use this for order coordination</p>
           </div>
 
-          <Input
-            label="Referral Code (optional)"
-            name="referralCode"
-            placeholder="Enter 6-character code"
-            error={errors.referralCode}
-            value={referralCodeValue}
-            maxLength={6}
-            onChange={(e) => setReferralCodeValue(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase())}
-          />
+          <div>
+            <Input
+              label="Referral Code (optional)"
+              name="referralCode"
+              placeholder="Enter 6-character code"
+              error={errors.referralCode}
+              value={referralCodeValue}
+              maxLength={6}
+              onChange={(e) => {
+                setReferralCodeValue(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
+                setReferralStatus("idle");
+                setReferralOwner(null);
+              }}
+              onBlur={handleReferralBlur}
+            />
+            {referralStatus === "checking" && (
+              <p className="text-xs text-gray-400 pl-1 mt-1 flex items-center gap-1">
+                <Loader2 className="w-3 h-3 animate-spin" /> Checking code…
+              </p>
+            )}
+            {referralStatus === "valid" && (
+              <p className="text-xs text-green-600 pl-1 mt-1 flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" />
+                Valid code{referralOwner ? ` — referred by ${referralOwner}` : ""}! You&apos;ll both earn bonus points.
+              </p>
+            )}
+            {referralStatus === "invalid" && (
+              <p className="text-xs text-red-500 pl-1 mt-1">
+                Code not found. Leave blank to skip, or double-check it.
+              </p>
+            )}
+          </div>
 
           <Button
             type="submit"

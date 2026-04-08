@@ -5,11 +5,9 @@ import { getSessionWallet } from "@/lib/session";
 
 function generateShortCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "";
-  for (let i = 0; i < 6; i++) {
-    out += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-  return out;
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => alphabet[b % alphabet.length]).join("");
 }
 
 export async function POST(req: Request) {
