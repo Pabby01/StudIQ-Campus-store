@@ -80,9 +80,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Explicit allowlist — never pass raw body to the DB
+  const allowed: Record<string, unknown> = {};
+  const allowedFields = [
+    "name", "description", "category", "price", "price_ngn",
+    "currency", "inventory", "image_url", "images",
+    "is_pod_enabled", "original_price",
+  ] as const;
+  for (const field of allowedFields) {
+    if (field in body) allowed[field] = body[field];
+  }
+
+  if (Object.keys(allowed).length === 0) {
+    return Response.json({ error: "No valid fields to update" }, { status: 400 });
+  }
+
   const { error } = await supabase
     .from("products")
-    .update(body)
+    .update(allowed)
     .eq("id", id);
 
   if (error) {

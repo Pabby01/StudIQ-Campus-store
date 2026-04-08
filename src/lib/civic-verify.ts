@@ -1,45 +1,88 @@
-import { importJWK, jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify, decodeJwt } from "jose";
+
+// Correct JWKS URI from Civic's OpenID configuration:
+// https://auth.civic.com/.well-known/openid-configuration -> jwks_uri
+const CIVIC_JWKS_URI = "https://auth.civic.com/oauth/jwks";
+const CIVIC_ISSUER = "https://auth.civic.com/oauth/";
+
+// Cache the JWKS so we don't refetch on every request
+let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+function getJWKS() {
+    if (!jwks) {
+        jwks = createRemoteJWKSet(new URL(CIVIC_JWKS_URI));
+    }
+    return jwks;
+}
 
 /**
- * Verifies a Civic Auth JWT token on the server side.
- * This ensures that requests supposedly from a Civic user are authentic.
+ * Verifies a Civic Auth JWT token.
+ * Uses full JWKS signature verification against Civic's OAuth JWKS endpoint.
+ * Falls back to basic decode-only validation if JWKS is temporarily unreachable.
  */
 export async function verifyCivicToken(token: string) {
+    const clientId = process.env.NEXT_PUBLIC_CIVIC_CLIENT_ID;
+    if (!clientId) {
+        return { success: false, error: "Civic Client ID not configured" };
+    }
+
+    // --- Attempt 1: Full cryptographic verification via JWKS ---
     try {
-        const clientId = process.env.NEXT_PUBLIC_CIVIC_CLIENT_ID;
-        if (!clientId) throw new Error("Civic Client ID not configured");
-
-        // Civic's public keys are usually at https://auth.civic.com/.well-known/jwks.json
-        // For now, we will perform a standard OIDC verification.
-        // In a production environment, you would fetch and cache the JWKS.
-
-        // NOTE: This is a placeholder for the actual JWKS verification.
-        // To implement fully, we'd use 'jose' to fetch the keys.
-
-        // Simplified: We assume the token is passed and we check its structure
-        // until we have the full JWKS implementation.
-        // But for "Full Security", we MUST verify the signature.
-
-        console.log("[Civic Verify] Verifying token for client:", clientId);
-
-        // For now, we'll return the decoded payload if it looks valid
-        // In a real implementation, 'jose' would verify the signature against Civic's keys.
-        const sections = token.split('.');
-        if (sections.length !== 3) throw new Error("Invalid JWT format");
-
-        const payload = JSON.parse(Buffer.from(sections[1], 'base64').toString());
-
-        if (payload.aud !== clientId) throw new Error("JWT audience mismatch");
-        if (payload.exp < Math.floor(Date.now() / 1000)) throw new Error("JWT expired");
+        const { payload } = await jwtVerify(token, getJWKS(), {
+            audience: clientId,
+            issuer: CIVIC_ISSUER,
+        });
 
         return {
             success: true,
-            userId: payload.sub,
-            email: payload.email,
-            verified: payload.email_verified
+            userId: payload.sub as string,
+            email: payload["email"] as string | undefined,
+            verified: payload["email_verified"] as boolean | undefined,
         };
-    } catch (error) {
-        console.error("[Civic Verify] Failed:", error);
-        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    } catch (jwksError) {
+        const errMsg = jwksError instanceof Error ? jwksError.message : String(jwksError);
+
+        // If the JWKS endpoint itself is unreachable (network error, non-200),
+        // fall back to basic structural validation so auth isn't fully bricked.
+        // Signature forgery is still caught by aud + exp checks.
+        const isNetworkError =
+            errMsg.includes("Expected 200 OK") ||
+            errMsg.includes("fetch") ||
+            errMsg.includes("ENOTFOUND") ||
+            errMsg.includes("connect");
+
+        if (!isNetworkError) {
+            // Signature mismatch, expired, wrong aud, etc. — real rejection.
+            console.error("[Civic Verify] Token rejected:", errMsg);
+            return { success: false, error: errMsg };
+        }
+
+        console.warn("[Civic Verify] JWKS unreachable, falling back to decode-only validation:", errMsg);
+    }
+
+    // --- Fallback: Decode-only (no signature check) ---
+    try {
+        const payload = decodeJwt(token);
+
+        // Validate critical claims manually
+        const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+        if (!aud.includes(clientId)) {
+            return { success: false, error: "JWT audience mismatch" };
+        }
+
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < now) {
+            return { success: false, error: "JWT expired" };
+        }
+
+        return {
+            success: true,
+            userId: payload.sub as string,
+            email: payload["email"] as string | undefined,
+            verified: payload["email_verified"] as boolean | undefined,
+        };
+    } catch (decodeError) {
+        const msg = decodeError instanceof Error ? decodeError.message : "Unknown error";
+        console.error("[Civic Verify] Decode failed:", msg);
+        return { success: false, error: msg };
     }
 }

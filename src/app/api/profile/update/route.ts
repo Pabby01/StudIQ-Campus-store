@@ -5,11 +5,9 @@ import { getSessionWallet } from "@/lib/session";
 
 function generateShortCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "";
-  for (let i = 0; i < 6; i++) {
-    out += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-  return out;
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => alphabet[b % alphabet.length]).join("");
 }
 
 export async function POST(req: Request) {
@@ -125,6 +123,8 @@ export async function POST(req: Request) {
     const isComplete = data.name && data.school && data.campus;
     console.log("[Profile Update] isComplete:", isComplete);
 
+    let pointsAwarded = false;
+
     if ((isNewProfile || wasIncomplete) && isComplete) {
       try {
         // Check if we already awarded points to this profile
@@ -136,17 +136,26 @@ export async function POST(req: Request) {
           .maybeSingle();
 
         if (!existingPoints) {
-          // Award welcome/profile completion points
+          const reason = isNewProfile ? "Welcome bonus - Profile created" : "Profile completed";
+          // Insert the log entry
           const { error: pointsError } = await supabase.from("points_log").insert({
             address: data.address,
             points: POINTS.PROFILE_COMPLETE,
-            reason: isNewProfile ? "Welcome bonus - Profile created" : "Profile completed",
+            reason,
           });
 
           if (pointsError) {
             console.error("[Profile Update] Points insert error:", pointsError);
           } else {
-            console.log(`[Profile Update] ✅ Awarded 50 points to ${data.address}`);
+            // Also update the running total on the profile row so dashboard shows it immediately
+            const currentPoints = Number(data.points ?? 0);
+            await supabase
+              .from("profiles")
+              .update({ points: currentPoints + POINTS.PROFILE_COMPLETE })
+              .eq("address", data.address);
+
+            pointsAwarded = true;
+            console.log(`[Profile Update] ✅ Awarded ${POINTS.PROFILE_COMPLETE} points to ${data.address}`);
           }
         } else {
           console.log("[Profile Update] Points already awarded to:", data.address);
@@ -185,6 +194,18 @@ export async function POST(req: Request) {
 
             if (referralError) {
               console.error("[Profile Update] Referral points insert error:", referralError);
+            } else {
+              // Also keep referrer's running total in sync
+              const { data: referrerProfile } = await supabase
+                .from("profiles")
+                .select("points")
+                .eq("address", referrer.address)
+                .maybeSingle();
+              const referrerPoints = Number(referrerProfile?.points ?? 0);
+              await supabase
+                .from("profiles")
+                .update({ points: referrerPoints + POINTS.REFERRAL })
+                .eq("address", referrer.address);
             }
           }
         }
@@ -193,7 +214,12 @@ export async function POST(req: Request) {
       }
     }
 
-    return Response.json({ ok: true, profile: data });
+    return Response.json({
+      ok: true,
+      profile: data,
+      pointsAwarded,
+      pointsEarned: pointsAwarded ? POINTS.PROFILE_COMPLETE : 0,
+    });
   } catch (error) {
     console.error("[Profile Update] Error:", error);
     return Response.json(

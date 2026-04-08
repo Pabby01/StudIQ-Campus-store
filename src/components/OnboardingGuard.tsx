@@ -1,53 +1,113 @@
 "use client";
 
-import { useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useRef, useState } from "react";
 import { useUser } from "@civic/auth-web3/react";
 import { useRouter, usePathname } from "next/navigation";
 
 /**
- * Component that ensures new users are redirected to onboarding
- * Place this inside your layout to automatically handle redirects
+ * Component that ensures new users are redirected to onboarding.
+ * Establishes a server session first if the cookie is missing, then
+ * checks whether the profile exists and is complete.
  */
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
-    const { user, isLoading } = useUser();
+    const userContext = useUser();
+    const { user, isLoading } = userContext;
     const router = useRouter();
     const pathname = usePathname();
+    const hasChecked = useRef(false);
+
+    // Extract token — poll until it's available since Civic loads it async
+    const userAny = user as any;
+    const token: string | null = userAny?.idToken || userAny?.token || null;
+    const walletAddress: string | null = userAny?.solana?.address || null;
 
     useEffect(() => {
-        // Skip if loading or no user
+        // Skip if still loading Civic auth
         if (isLoading || !user) return;
 
-        // Skip if already on onboarding page
-        if (pathname === "/onboarding") return;
+        // Skip auth/onboarding pages and admin to avoid redirect loops
+        if (
+            pathname === "/onboarding" ||
+            pathname === "/auth" ||
+            pathname?.startsWith("/admin")
+        ) return;
 
-        // Get email from user
-        const userEmail = 'email' in user ? user.email : null;
-        if (!userEmail) return;
+        // We need a token OR a wallet address — wait until one is available
+        if (!token && !walletAddress) return;
 
-        // Check if profile exists
+        // Prevent running the check more than once per token/address combo
+        if (hasChecked.current) return;
+        hasChecked.current = true;
+
+        const userEmail: string | null = userAny?.email || null;
+        const civicUserId: string | null = userAny?.id || userAny?.sub || null;
+
         const checkProfile = async () => {
             try {
-                const token = (user as any).token || (user as any).idToken;
-                const url = `/api/profile/check?email=${encodeURIComponent(userEmail as string)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
-                const res = await fetch(url);
+                // Step 1: Ensure a server session exists.
+                const hasCookie =
+                    typeof document !== "undefined" &&
+                    document.cookie.includes("sid=");
 
-                if (res.status === 401) {
+                if (!hasCookie) {
+                    const addressToVerify =
+                        walletAddress || (civicUserId ? `civic_${civicUserId}` : null);
+
+                    try {
+                        const verifyRes = await fetch("/api/auth/verify", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                token,
+                                address: addressToVerify,
+                            }),
+                        });
+                        if (!verifyRes.ok) {
+                            hasChecked.current = false;
+                            return;
+                        }
+                    } catch {
+                        hasChecked.current = false;
+                        return;
+                    }
+                }
+
+                // Step 2: Check if profile exists and is complete.
+                const params = new URLSearchParams();
+                if (userEmail) params.set("email", userEmail);
+                if (walletAddress) params.set("address", walletAddress);
+                if (civicUserId) params.set("civicId", civicUserId);
+
+                const headers: HeadersInit = {};
+                if (token) headers["Authorization"] = `Bearer ${token}`;
+
+                const res = await fetch(`/api/profile/check?${params.toString()}`, {
+                    headers,
+                });
+
+                if (!res.ok) {
+                    hasChecked.current = false;
                     return;
                 }
 
                 const data = await res.json();
-                if (data.exists === false) {
+
+                // Redirect if profile doesn't exist OR is incomplete (missing key fields)
+                if (!data.exists || !data.isComplete) {
                     router.push("/onboarding");
                 }
-            } catch (error) {
-                // Silently fail on check errors during production
+            } catch {
+                hasChecked.current = false;
             }
         };
 
-        // Small delay to ensure user data is fully loaded
-        const timeout = setTimeout(checkProfile, 500);
+        const timeout = setTimeout(checkProfile, 800);
         return () => clearTimeout(timeout);
-    }, [user, isLoading, pathname, router]);
+    // Re-run when token or walletAddress become available (Civic loads them asynchronously)
+    }, [user, isLoading, token, walletAddress, pathname, router, userAny]);
 
     return <>{children}</>;
 }
+
+

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronRight, ChevronLeft, Check, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { useUser } from "@civic/auth-web3/react";
 
 type Step = {
   title: string;
@@ -47,18 +48,20 @@ const steps: Step[] = [
 ];
 
 export default function WelcomeTour() {
+  const { user, isLoading } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    // Check if user has seen the tour
+    // Only show to authenticated users who haven't seen the tour
+    if (isLoading || !user) return;
     const hasSeenTour = localStorage.getItem("studiq_welcome_tour_seen");
     if (!hasSeenTour) {
       // Small delay to allow initial load animations to finish
       const timer = setTimeout(() => setIsOpen(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [user, isLoading]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
