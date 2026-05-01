@@ -53,7 +53,7 @@ export default function CartPage() {
     zip: "",
   });
 
-  const [paymentCurrency, setPaymentCurrency] = useState<"SOL" | "USDC">("SOL");
+  const [paymentCurrency, setPaymentCurrency] = useState<"USDC" | "USDT">("USDC");
   const [ngnPerUsd, setNgnPerUsd] = useState<number | null>(null);
 
   const solPrice = useCart((s) => s.solPrice);
@@ -66,16 +66,21 @@ export default function CartPage() {
   const pickupEnabled = store?.pickup_enabled ?? true;
   const deliveryFee = deliveryMethod === "shipping" ? Number(store?.delivery_fee ?? 0) : 0;
   const derivedSubtotal = items.reduce((sum, item) => {
-    const displayPrice = getDisplayPrice(item, solPrice, ngnPerUsd);
+    const displayPrice = item.price_ngn ?? item.priceNgn ?? item.price;
     return sum + displayPrice * item.qty;
   }, 0);
   const orderTotal = derivedSubtotal + deliveryFee;
   const deliveryUnavailable = !deliveryEnabled && !pickupEnabled;
 
-  // Set default payment currency based on items
+  // Set default payment currency based on items (USDC/USDT only now)
   useEffect(() => {
     if (items.length > 0) {
-      setPaymentCurrency((items[0]?.currency === "USDC") ? "USDC" : "SOL");
+      const itemCurrency = items[0]?.currency;
+      if (itemCurrency === "USDT") {
+        setPaymentCurrency("USDT");
+      } else {
+        setPaymentCurrency("USDC");
+      }
     }
   }, [items]);
 
@@ -112,22 +117,20 @@ export default function CartPage() {
   }, [deliveryEnabled, pickupEnabled, deliveryMethod]);
 
 
-  // Calculate final amount and currency for display & transaction
-  const { finalAmount, finalCurrency, exchangeRate, isRateReady } = calculatePayment(
-    orderTotal,
-    items[0]?.currency,
-    paymentCurrency,
-    solPrice
-  );
+  // Stablecoins-only: no currency conversion needed (all products in USDC/USDT)
+  // Payment currency matches product currency (no SOL option anymore)
+  const finalAmount = orderTotal; // NGN stays NGN; will be converted to payment currency at backend
+  const finalCurrency = (items[0]?.currency || "USDC") as "USDC" | "USDT";
+  const isRateReady = ngnPerUsd !== null;
   const cartCurrency = items[0]?.currency;
-  const ngnSubtotal = toNgn(derivedSubtotal, cartCurrency, solPrice, ngnPerUsd);
-  const ngnDelivery = toNgn(deliveryFee, cartCurrency, solPrice, ngnPerUsd);
-  const ngnOrderTotal = toNgn(orderTotal, cartCurrency, solPrice, ngnPerUsd);
-  const ngnFinalTotal = toNgn(finalAmount, finalCurrency, solPrice, ngnPerUsd);
+  const ngnSubtotal = derivedSubtotal; // Already in NGN
+  const ngnDelivery = deliveryFee; // Delivery fee is in NGN
+  const ngnOrderTotal = orderTotal; // Already in NGN
+  const ngnFinalTotal = finalAmount; // Already in NGN
   const formatNgn = (value: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
-  const walletSolBalance = tokens.find((t) => t.symbol === "SOL")?.balance ?? 0;
   const walletUsdcBalance = tokens.find((t) => t.symbol === "USDC")?.balance ?? 0;
-  const availableBalance = finalCurrency === "SOL" ? walletSolBalance : walletUsdcBalance;
+  const walletUsdtBalance = tokens.find((t) => t.symbol === "USDT")?.balance ?? 0;
+  const availableBalance = finalCurrency === "USDT" ? walletUsdtBalance : walletUsdcBalance;
   const showBalanceSection = paymentMethod === "solana" && deliveryMethod === "shipping";
   const hasInsufficientBalance = showBalanceSection && isRateReady && finalAmount > 0 && !balanceLoading && availableBalance < finalAmount;
   const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
@@ -135,7 +138,7 @@ export default function CartPage() {
     buyer: walletAddress || "",
     storeId: items[0]?.storeId || "",
     items: items.map((i) => ({ productId: i.id, qty: i.qty })),
-    currency: (items[0]?.currency || "SOL") as "SOL" | "USDC",
+    currency: (items[0]?.currency || "USDC") as "USDC" | "USDT",
     deliveryMethod,
     deliveryDetails: {
       ...deliveryDetails,
@@ -365,7 +368,7 @@ export default function CartPage() {
 
     if (deliveryMethod === "pickup") return "Place Pickup Order";
     if (paymentMethod === "pod") return "Place Order (Cash on Delivery)";
-    return "Checkout with Solana";
+    return "Checkout with Stablecoin";
   };
 
   const getStatusMessage = () => {
@@ -460,21 +463,8 @@ export default function CartPage() {
                           <div className="min-w-0">
                             <h3 className="font-semibold text-black mb-1 text-sm sm:text-base truncate">{item.name}</h3>
                             <p className="text-base font-bold text-black">
-                              {item.currency === "SOL"
-                                ? `${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)} SOL`
-                                : `$${getDisplayPrice(item, solPrice, ngnPerUsd).toFixed(2)}`
-                              }
+                              {formatNgn(item.price_ngn ?? item.priceNgn ?? item.price)}
                             </p>
-                            {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
-                              <p className="text-xs text-muted-text">
-                                {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd) && (
-                                  <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)} </>
-                                )}
-                                {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
-                                  <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)!)} </>
-                                )}
-                              </p>
-                            )}
                           </div>
                           <button
                             onClick={() => remove(item.id)}
@@ -504,17 +494,8 @@ export default function CartPage() {
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-black text-sm">
-                              {item.currency === "SOL"
-                                ? `${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)} SOL`
-                                : `$${(getDisplayPrice(item, solPrice, ngnPerUsd) * item.qty).toFixed(2)}`
-                              }
+                              {formatNgn((item.price_ngn ?? item.priceNgn ?? item.price) * item.qty)}
                             </p>
-                            {(getNgnEquivalent(item, solPrice, ngnPerUsd) || getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd)) && (
-                              <p className="text-xs text-muted-text">
-                                {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty) && (
-                                  <>≈ {getOtherCurrencyEquivalent(item, solPrice, ngnPerUsd, item.qty)} </>
-                                )}
-                                {getNgnEquivalent(item, solPrice, ngnPerUsd) && (
                                   <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)! * item.qty)} </>
                                 )}
                               </p>
@@ -596,21 +577,6 @@ export default function CartPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pay With</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button
-                        onClick={() => setPaymentCurrency("SOL")}
-                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${paymentCurrency === "SOL"
-                          ? "border-primary-blue bg-blue-50 ring-1 ring-primary-blue"
-                          : "border-gray-200 hover:bg-gray-50"
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center">
-                            <img src="https://cryptologos.cc/logos/solana-sol-logo.png" className="w-4 h-4" alt="SOL" />
-                          </div>
-                          <span className="font-medium text-sm">SOL</span>
-                        </div>
-                        {paymentCurrency === "SOL" && <div className="w-2 h-2 rounded-full bg-primary-blue" />}
-                      </button>
-                      <button
                         onClick={() => setPaymentCurrency("USDC")}
                         className={`flex items-center justify-between p-3 rounded-lg border transition-all ${paymentCurrency === "USDC"
                           ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500"
@@ -625,12 +591,22 @@ export default function CartPage() {
                         </div>
                         {paymentCurrency === "USDC" && <div className="w-2 h-2 rounded-full bg-blue-500" />}
                       </button>
+                      <button
+                        onClick={() => setPaymentCurrency("USDT")}
+                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${paymentCurrency === "USDT"
+                          ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500"
+                          : "border-gray-200 hover:bg-gray-50"
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">
+                            ₮
+                          </div>
+                          <span className="font-medium text-sm">USDT</span>
+                        </div>
+                        {paymentCurrency === "USDT" && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                      </button>
                     </div>
-                    {solPrice && (
-                      <p className="text-xs text-muted-text mt-2">
-                        Exchange Rate: 1 SOL ≈ ${solPrice.toFixed(2)} USDC
-                      </p>
-                    )}
                     <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50/60 p-3">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-text">Available balance</span>
@@ -880,56 +856,9 @@ export default function CartPage() {
   );
 }
 
-type PaymentCalculation = {
-  finalAmount: number;
-  finalCurrency: "SOL" | "USDC";
-  exchangeRate: number | null;
-  isRateReady: boolean;
-};
+// Helper Functions
 
-function calculatePayment(
-  orderTotal: number,
-  orderCurrency: string | undefined,
-  payCurrency: "SOL" | "USDC",
-  solToUsdcRate: number | null
-): PaymentCalculation {
-  if (!orderCurrency) return { finalAmount: orderTotal, finalCurrency: payCurrency, exchangeRate: null, isRateReady: true };
-
-  // Case 1: Same Currency
-  if (orderCurrency === payCurrency || (orderCurrency === "USD" && payCurrency === "USDC")) {
-    return {
-      finalAmount: orderTotal,
-      finalCurrency: payCurrency,
-      exchangeRate: 1,
-      isRateReady: true
-    };
-  }
-
-  // Case 2: Item SOL -> Pay USDC
-  if (orderCurrency === "SOL" && payCurrency === "USDC") {
-    if (!solToUsdcRate) return { finalAmount: 0, finalCurrency: payCurrency, exchangeRate: null, isRateReady: false };
-    return {
-      finalAmount: orderTotal * solToUsdcRate,
-      finalCurrency: "USDC",
-      exchangeRate: solToUsdcRate,
-      isRateReady: true
-    };
-  }
-
-  // Case 3: Item USDC/USD -> Pay SOL
-  if ((orderCurrency === "USDC" || orderCurrency === "USD") && payCurrency === "SOL") {
-    if (!solToUsdcRate) return { finalAmount: 0, finalCurrency: payCurrency, exchangeRate: null, isRateReady: false };
-    return {
-      finalAmount: orderTotal / solToUsdcRate,
-      finalCurrency: "SOL",
-      exchangeRate: solToUsdcRate,
-      isRateReady: true
-    };
-  }
-
-  return { finalAmount: orderTotal, finalCurrency: payCurrency, exchangeRate: null, isRateReady: true };
-}
-
+// Extract numeric value from various token value formats
 function extractTokenValue(tokenValue: unknown): number | null {
   if (typeof tokenValue === "number") return tokenValue;
   if (!tokenValue || typeof tokenValue !== "object") return null;
@@ -942,44 +871,9 @@ function extractTokenValue(tokenValue: unknown): number | null {
   return typeof direct === "number" ? direct : null;
 }
 
-function formatTokenAmount(amount: number, symbol: "SOL" | "USDC") {
-  const precision = symbol === "SOL" ? 4 : 2;
+// Stablecoins only: no need for complex conversion logic
+function formatTokenAmount(amount: number, symbol: "USDC" | "USDT") {
+  const precision = 2;
   return `${amount.toFixed(precision)} ${symbol}`;
-}
-
-function toNgn(amount: number, currency: string | undefined, solUsd: number | null, ngnPerUsd: number | null) {
-  if (!ngnPerUsd || !currency) return null;
-  if (currency === "USDC") return amount * ngnPerUsd;
-  if (currency === "SOL" && solUsd) return amount * solUsd * ngnPerUsd;
-  return null;
-}
-
-function getDisplayPrice(item: { price: number; priceNgn?: number; currency?: "SOL" | "USDC" | "USD" }, solUsd: number | null, ngnPerUsd: number | null) {
-  if (item.priceNgn && ngnPerUsd) {
-    if (item.currency === "USDC") return item.priceNgn / ngnPerUsd;
-    if (item.currency === "SOL" && solUsd) return item.priceNgn / (solUsd * ngnPerUsd);
-  }
-  return item.price;
-}
-
-function getNgnEquivalent(item: { price: number; priceNgn?: number; currency?: "SOL" | "USDC" | "USD" }, solUsd: number | null, ngnPerUsd: number | null) {
-  if (item.priceNgn) return item.priceNgn;
-  return toNgn(item.price, item.currency, solUsd, ngnPerUsd);
-}
-
-function getOtherCurrencyEquivalent(
-  item: { price: number; priceNgn?: number; currency?: "SOL" | "USDC" | "USD" },
-  solUsd: number | null,
-  ngnPerUsd: number | null,
-  quantity = 1
-) {
-  const displayPrice = getDisplayPrice(item, solUsd, ngnPerUsd);
-  if (item.currency === "SOL" && solUsd) {
-    return `$${(displayPrice * solUsd * quantity).toFixed(2)}`;
-  }
-  if (item.currency === "USDC" && solUsd) {
-    return `SOL ${(displayPrice / solUsd * quantity).toFixed(4)}`;
-  }
-  return null;
 }
 

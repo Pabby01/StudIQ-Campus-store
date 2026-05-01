@@ -14,13 +14,6 @@ import { useToast } from "@/hooks/useToast";
 import ProductReviews from "@/components/ProductReviews";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 
-const NGN_CACHE_MS = 30000;
-let cachedNgnPerUsd: number | null = null;
-let cachedNgnAt = 0;
-let ngnInFlight: Promise<number | null> | null = null;
-let cachedSolUsd: number | null = null;
-let cachedSolAt = 0;
-let solInFlight: Promise<number | null> | null = null;
 
 type Product = {
   id: string;
@@ -51,8 +44,6 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [ngnPerUsd, setNgnPerUsd] = useState<number | null>(cachedNgnPerUsd);
-  const [solUsd, setSolUsd] = useState<number | null>(cachedSolUsd);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   const addToCart = useCart((s) => s.add);
@@ -63,16 +54,6 @@ export default function ProductDetailPage() {
     fetchProduct();
   }, [productId]);
 
-  useEffect(() => {
-    const loadRates = async () => {
-      const [ngnRate, solRate] = await Promise.all([getNgnPerUsd(), getSolUsd()]);
-      if (ngnRate) setNgnPerUsd(ngnRate);
-      if (solRate) setSolUsd(solRate);
-    };
-    loadRates();
-    const interval = setInterval(loadRates, NGN_CACHE_MS);
-    return () => clearInterval(interval);
-  }, []);
 
   const fetchProduct = async () => {
     try {
@@ -144,12 +125,12 @@ export default function ProductDetailPage() {
     addToCart({
       id: product.id,
       name: product.name,
-      price: product.price,
-      priceNgn: product.price_ngn ?? undefined,
+      price: product.price_ngn ?? product.price,
+      priceNgn: product.price_ngn ?? product.price,
       storeId: product.store_id,
       imageUrl: product.image_url || undefined,
       isPodEnabled: product.is_pod_enabled,
-      currency: product.currency || "SOL",
+      currency: (product.currency as "USDC" | "USDT" | undefined) || "USDC",
     }, quantity);
 
     toast.success("Added to cart", `${quantity}x ${product.name}`);
@@ -205,8 +186,7 @@ export default function ProductDetailPage() {
   ].filter(Boolean);
 
   // Deduplicate
-  const uniqueImages = Array.from(new Set(galleryImages));
-
+  const uniqueImages = product.price_ngn ?? product.priceNgn ?? product.price
   const handlePrevImage = () => {
     setSelectedImageIndex((prev) => (prev === 0 ? uniqueImages.length - 1 : prev - 1));
   };
@@ -343,11 +323,11 @@ export default function ProductDetailPage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-3xl font-bold text-black">
-                    {product.currency === "USDC" ? "USDC" : "SOL"} {displayPrice.toFixed(2)}
+                    {formatNgn(displayPrice)}
                   </span>
                   {product.original_price && product.original_price > product.price && (
                     <span className="text-base text-muted-text line-through">
-                      {product.currency === "USDC" ? "USDC" : "SOL"} {product.original_price.toFixed(2)}
+                      {formatNgn(product.price_ngn && product.price ? (displayPrice / product.price) * product.original_price : product.original_price)}
                     </span>
                   )}
                 </div>
@@ -361,9 +341,6 @@ export default function ProductDetailPage() {
                   {inStock ? "Add to Cart" : "Out of Stock"}
                 </Button>
               </div>
-              {ngnEquivalent && (
-                <p className="text-sm text-muted-text">≈ ₦{ngnEquivalent.toFixed(2)}</p>
-              )}
               {product.is_pod_enabled && (
                 <div className="w-fit px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200">
                   Cash on Delivery Available
@@ -470,69 +447,5 @@ export default function ProductDetailPage() {
 function extractTokenValue(tokenValue: unknown): number | null {
   if (typeof tokenValue === "number") return tokenValue;
   if (!tokenValue || typeof tokenValue !== "object") return null;
-  const value = tokenValue as Record<string, unknown>;
-  const direct =
-    (typeof value.amount === "number" && value.amount) ||
-    (typeof value.value === "number" && value.value) ||
-    (typeof value.ngn === "number" && value.ngn) ||
-    (typeof value.rate === "number" && value.rate);
-  return typeof direct === "number" ? direct : null;
-}
-
-async function getNgnPerUsd() {
-  const now = Date.now();
-  if (cachedNgnPerUsd && now - cachedNgnAt < NGN_CACHE_MS) return cachedNgnPerUsd;
-  if (ngnInFlight) return ngnInFlight;
-  const usdcMint = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
-  ngnInFlight = fetch(`/api/ramp/rates?amount=1&mint=${encodeURIComponent(usdcMint)}`)
-    .then((res) => res.json())
-    .then((data) => {
-      const value = extractTokenValue(data?.tokenValue);
-      if (value) {
-        cachedNgnPerUsd = value;
-        cachedNgnAt = Date.now();
-      }
-      return value;
-    })
-    .finally(() => {
-      ngnInFlight = null;
-    });
-  return ngnInFlight;
-}
-
-async function getSolUsd() {
-  const now = Date.now();
-  if (cachedSolUsd && now - cachedSolAt < NGN_CACHE_MS) return cachedSolUsd;
-  if (solInFlight) return solInFlight;
-  solInFlight = fetch("/api/price/sol")
-    .then((res) => res.json())
-    .then((data) => {
-      const value = Number(data?.price);
-      if (value && !Number.isNaN(value)) {
-        cachedSolUsd = value;
-        cachedSolAt = Date.now();
-        return value;
-      }
-      return null;
-    })
-    .finally(() => {
-      solInFlight = null;
-    });
-  return solInFlight;
-}
-
-function getDisplayPrice(product: { price: number; price_ngn?: number | null; currency?: "SOL" | "USDC" }, solUsd: number | null, ngnPerUsd: number | null) {
-  if (product.price_ngn && ngnPerUsd) {
-    if (product.currency === "USDC") return product.price_ngn / ngnPerUsd;
-    if (product.currency === "SOL" && solUsd) return product.price_ngn / (solUsd * ngnPerUsd);
-  }
-  return product.price;
-}
-
-function getNgnEquivalent(product: { price: number; price_ngn?: number | null; currency?: "SOL" | "USDC" }, solUsd: number | null, ngnPerUsd: number | null) {
-  if (product.price_ngn) return product.price_ngn;
-  if (!ngnPerUsd || !product.currency) return null;
-  if (product.currency === "USDC") return product.price * ngnPerUsd;
-  if (product.currency === "SOL" && solUsd) return product.price * solUsd * ngnPerUsd;
-  return null;
-}
+  const vformatNgn(value: number) {
+  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value)

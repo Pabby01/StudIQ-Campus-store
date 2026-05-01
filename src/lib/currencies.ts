@@ -2,13 +2,13 @@
 // This ensures consistency across product creation, pricing, and filters
 
 export const CURRENCIES = [
-    { code: "SOL", symbol: "SOL", name: "Solana" },
     { code: "USDC", symbol: "$", name: "USD Coin" },
+    { code: "USDT", symbol: "$", name: "Tether" },
 ] as const;
 
 export type CurrencyCode = typeof CURRENCIES[number]["code"];
 
-export const DEFAULT_CURRENCY: CurrencyCode = "SOL";
+export const DEFAULT_CURRENCY: CurrencyCode = "USDC";
 
 // Helper to get currency symbol
 export function getCurrencySymbol(code: string): string {

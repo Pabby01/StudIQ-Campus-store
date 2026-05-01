@@ -10,7 +10,7 @@ import PremiumBadge from "@/components/PremiumBadge";
 import { useCart } from "@/store/cart";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useToast } from "@/hooks/useToast";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const NGN_CACHE_MS = 30000;
@@ -18,8 +18,6 @@ let cachedNgnPerUsd: number | null = null;
 let cachedNgnAt = 0;
 let ngnInFlight: Promise<number | null> | null = null;
 let cachedSolUsd: number | null = null;
-let cachedSolAt = 0;
-let solInFlight: Promise<number | null> | null = null;
 
 type Product = Readonly<{
   id: string;
@@ -50,13 +48,13 @@ interface ProductCardProps {
 export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
-  const [ngnPerUsd, setNgnPerUsd] = useState<number | null>(cachedNgnPerUsd);
-  const [solUsd, setSolUsd] = useState<number | null>(cachedSolUsd);
 
   const originalPrice = p.original_price || p.originalPrice;
   const hasDiscount = originalPrice && originalPrice > p.price;
+  const displayPriceNgn = p.price_ngn ?? p.priceNgn ?? p.price;
+  const displayOriginalPriceNgn = originalPrice && p.price ? (displayPriceNgn / p.price) * originalPrice : null;
   const discountPercent = hasDiscount
-    ? Math.round(((originalPrice! - p.price) / originalPrice!) * 100)
+    ? Math.round(((displayOriginalPriceNgn! - displayPriceNgn) / displayOriginalPriceNgn!) * 100)
     : 0;
 
   const { walletAddress: address } = useCivicWallet();
@@ -84,11 +82,11 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
     addToCart({
       id: p.id,
       name: p.name,
-      price: displayPrice,
+      price: displayPriceNgn,
       storeId: p.store_id || "",
       imageUrl: p.image_url || undefined,
-      currency: p.currency || "SOL",
-      priceNgn: baseNgn || undefined,
+      currency: (p.currency as "USDC" | "USDT" | undefined) || "USDC",
+      priceNgn: displayPriceNgn,
     });
 
     toast.success("Added to cart", p.name);
@@ -96,17 +94,6 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
 
   const [isWishlisted, setIsWishlisted] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const loadRates = async () => {
-      const [ngnRate, solRate] = await Promise.all([getNgnPerUsd(), getSolUsd()]);
-      if (ngnRate) setNgnPerUsd(ngnRate);
-      if (solRate) setSolUsd(solRate);
-    };
-    loadRates();
-    const interval = setInterval(loadRates, NGN_CACHE_MS);
-    return () => clearInterval(interval);
-  }, []);
 
   const openDetails = () => {
     router.push(`/product/${p.id}`);
@@ -150,31 +137,6 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   };
 
   const formatPrice = (price: number) => {
-    return p.currency === "SOL"
-      ? `SOL ${price.toFixed(2)}`
-      : `$${price.toFixed(2)}`;
-  };
-  const formatNgn = (value: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
-  const baseNgn = p.price_ngn ?? p.priceNgn ?? null;
-  const livePrice =
-    baseNgn && ngnPerUsd
-      ? p.currency === "USDC"
-        ? baseNgn / ngnPerUsd
-        : p.currency === "SOL" && solUsd
-          ? baseNgn / (solUsd * ngnPerUsd)
-          : null
-      : null;
-  const displayPrice = livePrice ?? p.price;
-  const ngnEquivalent = baseNgn ?? (p.currency === "USDC"
-    ? ngnPerUsd
-      ? displayPrice * ngnPerUsd
-      : null
-    : p.currency === "SOL" && solUsd && ngnPerUsd
-      ? displayPrice * solUsd * ngnPerUsd
-      : null);
-  const otherCurrency =
-    p.currency === "SOL" && solUsd
-      ? `$${(displayPrice * solUsd).toFixed(2)}`
       : p.currency === "USDC" && solUsd
         ? `SOL ${(displayPrice / solUsd).toFixed(4)}`
         : null;
@@ -263,11 +225,11 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           {/* Pricing */}
           <div className="space-y-0.5 mt-auto">
             <div className="text-[6px] text-muted-text min-h-[10px]">
-              {fxNgnLabel && fxOtherLabel
+                      {formatNgn(displayPriceNgn)}
                 ? `≈ ${fxOtherLabel} · ${fxNgnLabel}`
                 : fxOtherLabel
-                  ? `≈ ${fxOtherLabel}`
-                  : fxNgnLabel
+                      <span className="text-[8px] text-muted-text line-through hidden sm:inline">
+                        {formatNgn(displayOriginalPriceNgn!)}
                     ? `≈ ${fxNgnLabel}`
                     : ""}
             </div>
@@ -315,7 +277,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        onDelete();
+                  Save {formatNgn(displayOriginalPriceNgn! - displayPriceNgn)}
                       }}
                     >
                       Del
@@ -350,59 +312,8 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   {p.price > 100 
                     ? "Price is 15% above market avg. Consider a discount." 
                     : p.inventory && p.inventory < 5 
-                      ? "Low stock! Restock soon to maintain ranking."
-                      : "Add 2 more photos to increase conversion by 20%."}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function extractTokenValue(tokenValue: unknown): number | null {
-  if (typeof tokenValue === "number") return tokenValue;
-  if (!tokenValue || typeof tokenValue !== "object") return null;
-  const value = tokenValue as Record<string, unknown>;
-  const direct =
-    (typeof value.amount === "number" && value.amount) ||
-    (typeof value.value === "number" && value.value) ||
-    (typeof value.ngn === "number" && value.ngn) ||
-    (typeof value.rate === "number" && value.rate);
-  return typeof direct === "number" ? direct : null;
-}
-
-async function getNgnPerUsd() {
-  const now = Date.now();
-  if (cachedNgnPerUsd && now - cachedNgnAt < NGN_CACHE_MS) return cachedNgnPerUsd;
-  if (ngnInFlight) return ngnInFlight;
-  const usdcMint = process.env.NEXT_PUBLIC_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
-  ngnInFlight = fetch(`/api/ramp/rates?amount=1&mint=${encodeURIComponent(usdcMint)}`)
-    .then((res) => res.json())
-    .then((data) => {
       const value = extractTokenValue(data?.tokenValue);
-      if (value) {
-        cachedNgnPerUsd = value;
-        cachedNgnAt = Date.now();
-      }
-      return value;
-    })
-    .finally(() => {
-      ngnInFlight = null;
-    });
-  return ngnInFlight;
-}
-
-async function getSolUsd() {
-  const now = Date.now();
-  if (cachedSolUsd && now - cachedSolAt < NGN_CACHE_MS) return cachedSolUsd;
-  if (solInFlight) return solInFlight;
-  solInFlight = fetch("/api/price/sol")
-    .then((res) => res.json())
-    .then((data) => {
-      const value = Number(data?.price);
       if (value && !Number.isNaN(value)) {
         cachedSolUsd = value;
         cachedSolAt = Date.now();

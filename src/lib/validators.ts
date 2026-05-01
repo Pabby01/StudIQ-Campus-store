@@ -45,7 +45,7 @@ export const createProductSchema = z.object({
   description: z.string().optional(),
   category: z.string().min(2),
   price: z.number().positive(),
-  currency: z.enum(["SOL", "USDC"]).default("SOL"),
+  currency: z.enum(["USDC", "USDT"]).default("USDC"),
   priceNgn: z.number().positive().optional().nullable(),
   inventory: z.number().int().nonnegative(),
   imageUrl: z.string().url().optional(), // Keep for backward compatibility
@@ -62,7 +62,7 @@ export const checkoutCreateSchema = z.object({
   items: z.array(
     z.object({ productId: z.string().min(1), qty: z.number().int().positive() })
   ).min(1),
-  currency: z.enum(["SOL", "USDC"]),
+  currency: z.enum(["USDC", "USDT"]),
   deliveryMethod: z.enum(["shipping", "pickup"]),
   deliveryDetails: z.object({
     name: z.string().min(2),
