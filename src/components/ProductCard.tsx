@@ -13,7 +13,51 @@ import { useToast } from "@/hooks/useToast";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const NGN_CACHE_MS = 30000;
+type Product = Readonly<{
+  id: string;
+  name: string;
+  price: number;
+  currency?: "USDC" | "USDT" | "SOL" | "USD";
+  price_ngn?: number | null;
+  priceNgn?: number | null;
+  image_url?: string | null;
+  rating?: number | null;
+  category?: string;
+  originalPrice?: number;
+  original_price?: number;
+  store_id?: string;
+  inventory?: number;
+  owner_address?: string;
+  isPremiumSeller?: boolean;
+  reviews_count?: number;
+  stores?: { name: string } | null;
+}>;
+
+interface ProductCardProps {
+  p: Product;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}
+
+export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
+  const addToCart = useCart((s) => s.add);
+  const toast = useToast();
+  const router = useRouter();
+  const { walletAddress: address } = useCivicWallet();
+
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  const originalPrice = p.original_price || p.originalPrice;
+  const displayPriceNgn = p.price_ngn ?? p.priceNgn ?? p.price;
+  const displayOriginalPriceNgn = originalPrice && p.price ? (displayPriceNgn / p.price) * originalPrice : null;
+  const hasDiscount = !!(displayOriginalPriceNgn && displayOriginalPriceNgn > displayPriceNgn);
+  const discountPercent = hasDiscount
+    ? Math.round(((displayOriginalPriceNgn! - displayPriceNgn) / displayOriginalPriceNgn!) * 100)
+    : 0;
+
+  const isSoldOut = p.inventory !== undefined && p.inventory <= 0;
+  const isOwnProduct = !!(address && p.owner_address && address === p.owner_address);
+
   const formatNgn = (value: number) =>
     new Intl.NumberFormat("en-NG", {
       style: "currency",
@@ -21,7 +65,73 @@ const NGN_CACHE_MS = 30000;
       maximumFractionDigits: 0,
     }).format(value);
 
-  const displayPrice = displayPriceNgn;
+  const openDetails = () => {
+    router.push(`/product/${p.id}`);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isSoldOut) {
+      toast.error("Product is sold out");
+      return;
+    }
+
+    if (isOwnProduct) {
+      toast.error("You cannot purchase your own product");
+      return;
+    }
+
+    addToCart({
+      id: p.id,
+      name: p.name,
+      price: displayPriceNgn,
+      storeId: p.store_id || "",
+      imageUrl: p.image_url || undefined,
+      currency: (p.currency as "USDC" | "USDT" | undefined) || "USDC",
+      priceNgn: displayPriceNgn,
+    });
+
+    toast.success("Added to cart", p.name);
+  };
+
+  const toggleWishlist = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!address) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    if (isOwnProduct) {
+      toast.error("Cannot wishlist your own product");
+      return;
+    }
+
+    const previousState = isWishlisted;
+    setIsWishlisted(!previousState);
+
+    try {
+      if (!previousState) {
+        await fetch("/api/wishlist", {
+          method: "POST",
+          body: JSON.stringify({ address, productId: p.id }),
+        });
+        toast.success("Added to wishlist");
+      } else {
+        await fetch(`/api/wishlist?address=${address}&productId=${p.id}`, {
+          method: "DELETE",
+        });
+        toast.success("Removed from wishlist");
+      }
+    } catch (error) {
+      setIsWishlisted(previousState);
+      toast.error("Failed to update wishlist");
+      console.error("[Wishlist] Failed to update wishlist:", error);
+    }
+  };
 
   return (
     <div className="h-full">
@@ -60,10 +170,9 @@ const NGN_CACHE_MS = 30000;
               className="object-contain p-2 group-hover:scale-[1.02] transition-transform duration-300"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-              No Image
-            </div>
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400">No Image</div>
           )}
+
           <div className="absolute top-2 right-2 flex items-center gap-0.5 rounded-full bg-white/90 px-1 py-0.5 text-[8px] font-semibold text-black shadow-sm border border-black/10">
             <Star className="w-2 h-2 fill-black text-black" />
             {p.rating?.toFixed?.(1) ?? "0.0"}
@@ -73,16 +182,12 @@ const NGN_CACHE_MS = 30000;
         <div className="px-3 pb-3 flex flex-col min-h-0 h-full">
           <div className="flex items-center justify-between mb-0.5">
             {p.category && (
-              <span className="hidden sm:inline text-[7px] text-muted-text uppercase tracking-wide truncate pr-1">
-                {p.category}
-              </span>
+              <span className="hidden sm:inline text-[7px] text-muted-text uppercase tracking-wide truncate pr-1">{p.category}</span>
             )}
             {p.isPremiumSeller && <PremiumBadge size="sm" />}
           </div>
 
-          <p className="font-semibold text-black text-[10px] line-clamp-1 mb-0.5 min-h-[11px] leading-tight group-hover:text-black">
-            {p.name}
-          </p>
+          <p className="font-semibold text-black text-[10px] line-clamp-1 mb-0.5 min-h-[11px] leading-tight group-hover:text-black">{p.name}</p>
 
           {p.stores?.name && (
             <Link
@@ -96,22 +201,16 @@ const NGN_CACHE_MS = 30000;
 
           <div className="space-y-0.5 mt-auto">
             <div className="text-[6px] text-muted-text min-h-[10px]">
-              {hasDiscount && displayOriginalPriceNgn ? (
-                <span className="text-[8px] text-muted-text line-through hidden sm:inline">
-                  {formatNgn(displayOriginalPriceNgn)}
-                </span>
-              ) : null}
+              {hasDiscount && displayOriginalPriceNgn && (
+                <span className="text-[8px] text-muted-text line-through hidden sm:inline">{formatNgn(displayOriginalPriceNgn)}</span>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
               <div className="w-1/2 flex items-baseline gap-1">
-                <span className="text-[11px] font-bold text-black">
-                  {formatNgn(displayPrice)}
-                </span>
+                <span className="text-[11px] font-bold text-black">{formatNgn(displayPriceNgn)}</span>
                 {hasDiscount && displayOriginalPriceNgn && (
-                  <span className="text-[8px] text-muted-text line-through hidden sm:inline">
-                    {formatNgn(displayOriginalPriceNgn)}
-                  </span>
+                  <span className="text-[8px] text-muted-text line-through hidden sm:inline">{formatNgn(displayOriginalPriceNgn)}</span>
                 )}
               </div>
 
@@ -160,7 +259,7 @@ const NGN_CACHE_MS = 30000;
 
             {hasDiscount && displayOriginalPriceNgn && (
               <div className="text-[6px] text-green-600 font-medium hidden sm:block">
-                Save {formatNgn(displayOriginalPriceNgn - displayPrice)}
+                Save {formatNgn(displayOriginalPriceNgn - displayPriceNgn)}
               </div>
             )}
           </div>
@@ -168,18 +267,17 @@ const NGN_CACHE_MS = 30000;
           {isOwnProduct && (
             <div className="mt-2 pt-2 border-t border-slate-100 space-y-1.5">
               <div className="flex items-center justify-between text-[8px] text-slate-500 font-medium">
-                <span className="flex items-center gap-1">📦 Stock: {p.inventory ?? 0}</span>
-                <span className="flex items-center gap-1">👁️ {Math.floor(Math.random() * 100) + 12} views</span>
+                <span className="flex items-center gap-1">Stock: {p.inventory ?? 0}</span>
+                <span className="flex items-center gap-1">Views: {Math.floor(Math.random() * 100) + 12}</span>
               </div>
-
               <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-1.5 flex gap-1.5 items-start">
-                <span className="text-[10px]">✨</span>
+                <span className="text-[10px]">Tip</span>
                 <p className="text-[7px] leading-tight text-blue-700 font-medium">
                   {p.price > 100
-                    ? "Price is 15% above market avg. Consider a discount."
+                    ? "Price is above market average. Consider a small discount."
                     : p.inventory && p.inventory < 5
-                      ? "Low stock. Add urgency to boost conversions."
-                      : "Good pricing. Try a featured listing for more views."}
+                      ? "Low stock can improve urgency."
+                      : "Pricing looks good. A featured listing can increase views."}
                 </p>
               </div>
             </div>
@@ -188,125 +286,4 @@ const NGN_CACHE_MS = 30000;
       </div>
     </div>
   );
-            {p.isPremiumSeller && (
-              <PremiumBadge size="sm" />
-            )}
-          </div>
-
-          <p className="font-semibold text-black text-[10px] line-clamp-1 mb-0.5 min-h-[11px] leading-tight group-hover:text-black">
-            {p.name}
-          </p>
-          {p.stores?.name && (
-            <Link
-              href={`/store/${p.store_id}`}
-              className="text-[8px] text-primary-blue mb-0.5 hover:underline w-fit"
-              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
-            >
-              {p.stores.name}
-            </Link>
-          )}
-
-          {/* Pricing */}
-          <div className="space-y-0.5 mt-auto">
-            <div className="text-[6px] text-muted-text min-h-[10px]">
-                      {formatNgn(displayPriceNgn)}
-                ? `≈ ${fxOtherLabel} · ${fxNgnLabel}`
-                : fxOtherLabel
-                      <span className="text-[8px] text-muted-text line-through hidden sm:inline">
-                        {formatNgn(displayOriginalPriceNgn!)}
-                    ? `≈ ${fxNgnLabel}`
-                    : ""}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1/2 flex items-baseline gap-1">
-                <span className="text-[11px] font-bold text-black">
-                  {formatPrice(Number(displayPrice))}
-                </span>
-                {hasDiscount && (
-                  <span className="text-[8px] text-muted-text line-through hidden sm:inline">
-                    {formatPrice(originalPrice!)}
-                  </span>
-                )}
-              </div>
-              <Button
-                size="sm"
-                className={`w-1/2 h-6 text-[9px] bg-black text-white hover:bg-black/90 focus:ring-black rounded-full ${isOwnProduct ? 'hidden' : ''}`}
-                onClick={handleAddToCart}
-                disabled={isSoldOut}
-              >
-                {isSoldOut ? "Sold Out" : "Buy"}
-              </Button>
-              
-              {isOwnProduct && (
-                <div className="flex gap-1 w-1/2">
-                  {onEdit && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 h-6 text-[9px] px-0"
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onEdit();
-                      }}
-                    >
-                      Edit
-                    </Button>
-                  )}
-                  {onDelete && (
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      className="flex-1 h-6 text-[9px] px-0"
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                  Save {formatNgn(displayOriginalPriceNgn! - displayPriceNgn)}
-                      }}
-                    >
-                      Del
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-            {hasDiscount && (
-              <div className="text-[6px] text-green-600 font-medium hidden sm:block">
-                Save {formatPrice(originalPrice! - p.price)}
-              </div>
-            )}
-          </div>
-
-          {/* Seller Stats & AI Tips */}
-          {isOwnProduct && (
-            <div className="mt-2 pt-2 border-t border-slate-100 space-y-1.5">
-              <div className="flex items-center justify-between text-[8px] text-slate-500 font-medium">
-                <span className="flex items-center gap-1">
-                  📦 Stock: {p.inventory ?? 0}
-                </span>
-                <span className="flex items-center gap-1">
-                  👁️ {Math.floor(Math.random() * 100) + 12} views
-                </span>
-              </div>
-              
-              {/* AI Tip */}
-              <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-1.5 flex gap-1.5 items-start">
-                <span className="text-[10px]">✨</span>
-                <p className="text-[7px] leading-tight text-blue-700 font-medium">
-                  {p.price > 100 
-                    ? "Price is 15% above market avg. Consider a discount." 
-                    : p.inventory && p.inventory < 5 
-
-      const value = extractTokenValue(data?.tokenValue);
-      if (value && !Number.isNaN(value)) {
-        cachedSolUsd = value;
-        cachedSolAt = Date.now();
-        return value;
-      }
-      return null;
-    })
-    .finally(() => {
-      solInFlight = null;
-    });
-  return solInFlight;
 }

@@ -66,7 +66,7 @@ export default function CartPage() {
   const pickupEnabled = store?.pickup_enabled ?? true;
   const deliveryFee = deliveryMethod === "shipping" ? Number(store?.delivery_fee ?? 0) : 0;
   const derivedSubtotal = items.reduce((sum, item) => {
-    const displayPrice = item.price_ngn ?? item.priceNgn ?? item.price;
+    const displayPrice = item.priceNgn ?? item.price;
     return sum + displayPrice * item.qty;
   }, 0);
   const orderTotal = derivedSubtotal + deliveryFee;
@@ -232,7 +232,7 @@ export default function CartPage() {
         return;
       }
       const requiredAmount = finalAmount;
-      const currentBalance = finalCurrency === "SOL" ? walletSolBalance : walletUsdcBalance;
+      const currentBalance = availableBalance;
       if (requiredAmount > 0 && currentBalance < requiredAmount) {
         setError(`Insufficient ${finalCurrency} balance. Available: ${formatTokenAmount(currentBalance, finalCurrency)}.`);
         setShowInsufficientModal(true);
@@ -463,7 +463,7 @@ export default function CartPage() {
                           <div className="min-w-0">
                             <h3 className="font-semibold text-black mb-1 text-sm sm:text-base truncate">{item.name}</h3>
                             <p className="text-base font-bold text-black">
-                              {formatNgn(item.price_ngn ?? item.priceNgn ?? item.price)}
+                              {formatNgn(item.priceNgn ?? item.price)}
                             </p>
                           </div>
                           <button
@@ -494,12 +494,8 @@ export default function CartPage() {
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-black text-sm">
-                              {formatNgn((item.price_ngn ?? item.priceNgn ?? item.price) * item.qty)}
+                              {formatNgn((item.priceNgn ?? item.price) * item.qty)}
                             </p>
-                                  <>• ≈ {formatNgn(getNgnEquivalent(item, solPrice, ngnPerUsd)! * item.qty)} </>
-                                )}
-                              </p>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -709,70 +705,26 @@ export default function CartPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-text">Subtotal</span>
                     <div className="text-right">
-                      <span className="font-medium text-black block">
-                        {items[0]?.currency === "SOL"
-                        ? `${derivedSubtotal.toFixed(2)} SOL`
-                        : `$${derivedSubtotal.toFixed(2)}`
-                        }
-                      </span>
-                      {ngnSubtotal && (
-                        <span className="text-xs text-muted-text block">
-                          ≈ {formatNgn(ngnSubtotal)}
-                        </span>
-                      )}
+                      <span className="font-medium text-black block">{formatNgn(derivedSubtotal)}</span>
                     </div>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-text">Platform Fee</span>
-                    <span className="font-medium text-black">
-                      {items[0]?.currency === "SOL" ? "0.00 SOL" : "$0.00"}
-                    </span>
+                    <span className="font-medium text-black">{formatNgn(0)}</span>
                   </div>
                   {deliveryMethod === "shipping" && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-text">Shipping</span>
                       <div className="text-right">
-                        <span className="font-medium text-black block">
-                          {items[0]?.currency === "SOL"
-                            ? `${deliveryFee.toFixed(2)} SOL`
-                            : `$${deliveryFee.toFixed(2)}`
-                          }
-                        </span>
-                        {ngnDelivery && (
-                          <span className="text-xs text-muted-text block">
-                            ≈ {formatNgn(ngnDelivery)}
-                          </span>
-                        )}
+                        <span className="font-medium text-black block">{formatNgn(deliveryFee)}</span>
                       </div>
                     </div>
                   )}
                   <div className="border-t border-border-gray pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold text-black">
-                        Total {finalCurrency !== items[0]?.currency ? `(Pay ${finalCurrency})` : ""}
-                      </span>
+                      <span className="font-semibold text-black">Total</span>
                       <div className="text-right">
-                        <span className="text-2xl font-bold text-primary-blue block">
-                          {finalCurrency === "SOL"
-                            ? `${finalAmount.toFixed(4)} SOL`
-                            : `$${finalAmount.toFixed(2)}`
-                          }
-                        </span>
-                        {ngnFinalTotal && (
-                          <span className="text-xs text-muted-text block">
-                            ≈ {formatNgn(ngnFinalTotal)}
-                          </span>
-                        )}
-                        {finalCurrency !== items[0]?.currency && (
-                          <span className="text-xs text-muted-text">
-                            (Original: {items[0]?.currency === "SOL" ? `${orderTotal.toFixed(2)} SOL` : `$${orderTotal.toFixed(2)}`})
-                          </span>
-                        )}
-                        {finalCurrency !== items[0]?.currency && ngnOrderTotal && (
-                          <span className="text-xs text-muted-text block">
-                            (Original ≈ {formatNgn(ngnOrderTotal)})
-                          </span>
-                        )}
+                        <span className="text-2xl font-bold text-primary-blue block">{formatNgn(orderTotal)}</span>
                       </div>
                     </div>
                   </div>

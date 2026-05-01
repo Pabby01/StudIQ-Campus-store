@@ -1,12 +1,11 @@
- 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Star, ShoppingCart, Minus, Plus, Loader2, Package, ChevronLeft, ChevronRight, Edit, Trash2, Share2, Heart } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Minus, Plus, Loader2, Package, ChevronLeft, ChevronRight, Edit, Trash2, Share2, Heart } from "lucide-react";
+import { motion } from "framer-motion";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { useCart } from "@/store/cart";
@@ -14,14 +13,14 @@ import { useToast } from "@/hooks/useToast";
 import ProductReviews from "@/components/ProductReviews";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 
-
 type Product = {
   id: string;
   name: string;
   description: string;
   price: number;
-  currency?: "SOL" | "USDC";
+  currency?: "USDC" | "USDT" | "SOL" | "USD";
   price_ngn?: number | null;
+  priceNgn?: number | null;
   image_url?: string | null;
   images?: string[];
   is_pod_enabled?: boolean;
@@ -40,6 +39,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const productId = params.id as string;
+
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -53,7 +53,6 @@ export default function ProductDetailPage() {
   useEffect(() => {
     fetchProduct();
   }, [productId]);
-
 
   const fetchProduct = async () => {
     try {
@@ -71,6 +70,13 @@ export default function ProductDetailPage() {
       setLoading(false);
     }
   };
+
+  const formatNgn = (value: number) =>
+    new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+      maximumFractionDigits: 0,
+    }).format(value);
 
   const handleShare = async () => {
     const shareUrl = typeof window !== "undefined" ? window.location.href : "";
@@ -122,16 +128,21 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!product) return;
 
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price_ngn ?? product.price,
-      priceNgn: product.price_ngn ?? product.price,
-      storeId: product.store_id,
-      imageUrl: product.image_url || undefined,
-      isPodEnabled: product.is_pod_enabled,
-      currency: (product.currency as "USDC" | "USDT" | undefined) || "USDC",
-    }, quantity);
+    const displayPrice = product.price_ngn ?? product.priceNgn ?? product.price;
+
+    addToCart(
+      {
+        id: product.id,
+        name: product.name,
+        price: displayPrice,
+        priceNgn: displayPrice,
+        storeId: product.store_id,
+        imageUrl: product.image_url || undefined,
+        isPodEnabled: product.is_pod_enabled,
+        currency: (product.currency as "USDC" | "USDT" | undefined) || "USDC",
+      },
+      quantity
+    );
 
     toast.success("Added to cart", `${quantity}x ${product.name}`);
   };
@@ -146,7 +157,7 @@ export default function ProductDetailPage() {
       } else {
         toast.error("Failed to delete product");
       }
-    } catch (e) {
+    } catch {
       toast.error("Error deleting product");
     }
   };
@@ -176,17 +187,15 @@ export default function ProductDetailPage() {
 
   const inStock = (product.inventory || 0) > 0;
   const isOwner = walletAddress && product.stores?.owner_address === walletAddress;
-  const displayPrice = getDisplayPrice(product, solUsd, ngnPerUsd);
-  const ngnEquivalent = getNgnEquivalent(product, solUsd, ngnPerUsd);
+  const displayPrice = product.price_ngn ?? product.priceNgn ?? product.price;
 
-  // Combine image_url and images array for the gallery
   const galleryImages = [
     ...(product.images || []),
-    ...(product.image_url && !product.images?.includes(product.image_url) ? [product.image_url] : [])
-  ].filter(Boolean);
+    ...(product.image_url && !product.images?.includes(product.image_url) ? [product.image_url] : []),
+  ].filter(Boolean) as string[];
 
-  // Deduplicate
-  const uniqueImages = product.price_ngn ?? product.priceNgn ?? product.price
+  const uniqueImages = Array.from(new Set(galleryImages));
+
   const handlePrevImage = () => {
     setSelectedImageIndex((prev) => (prev === 0 ? uniqueImages.length - 1 : prev - 1));
   };
@@ -220,9 +229,8 @@ export default function ProductDetailPage() {
             </button>
           </div>
         </div>
-        
+
         <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
-          {/* Product Images Gallery */}
           <div className="space-y-4">
             <div className="relative rounded-3xl overflow-hidden border border-white/60 bg-white shadow-sm group">
               <div className="aspect-square bg-white flex items-center justify-center p-4 relative">
@@ -231,7 +239,6 @@ export default function ProductDetailPage() {
                     key={selectedImageIndex}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.3 }}
                     src={uniqueImages[selectedImageIndex]}
                     alt={product.name}
@@ -242,7 +249,6 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
-              {/* Navigation Arrows (Desktop Hover) */}
               {uniqueImages.length > 1 && (
                 <>
                   <button
@@ -261,109 +267,51 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Seek Buttons & Indicators */}
             {uniqueImages.length > 1 && (
-              <div className="flex items-center justify-center gap-4">
-                <button 
-                  onClick={handlePrevImage}
-                  className="p-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 hover:bg-slate-50 active:scale-95 transition-all"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                
-                <div className="flex items-center gap-2">
-                  {uniqueImages.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImageIndex(idx)}
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        selectedImageIndex === idx ? "w-6 bg-primary-blue" : "w-2 bg-slate-300 hover:bg-slate-400"
-                      }`}
-                      aria-label={`Go to image ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-
-                <button 
-                  onClick={handleNextImage}
-                  className="p-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 hover:bg-slate-50 active:scale-95 transition-all"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {uniqueImages.map((img, index) => (
+                  <button
+                    key={`${img}-${index}`}
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={`w-16 h-16 rounded-xl border-2 overflow-hidden flex-shrink-0 ${selectedImageIndex === index ? "border-primary-blue" : "border-white/60"}`}
+                  >
+                    <img src={img} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Product Info */}
-          <div className="space-y-6 bg-white/80 border border-white/60 rounded-3xl p-6 shadow-sm">
-            {product.category && (
-              <Badge variant="blue">{product.category}</Badge>
-            )}
-
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-black">{product.name}</h1>
-              {product.stores?.name && (
-                <p className="text-sm text-primary-blue mt-1">{product.stores.name}</p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold text-black">
-                  {product.rating?.toFixed(1) || "New"}
-                </span>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {product.category && <Badge variant="gray">{product.category}</Badge>}
+                {product.is_pod_enabled && <Badge variant="green">POD Enabled</Badge>}
               </div>
-              <span className="text-sm text-muted-text">
-                {product.rating ? "(12 reviews)" : "(No reviews yet)"}
-              </span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-black">{product.name}</h1>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                  <span className="text-3xl font-bold text-black">
-                    {formatNgn(displayPrice)}
-                  </span>
+                  <span className="text-3xl font-bold text-black">{formatNgn(displayPrice)}</span>
                   {product.original_price && product.original_price > product.price && (
                     <span className="text-base text-muted-text line-through">
                       {formatNgn(product.price_ngn && product.price ? (displayPrice / product.price) * product.original_price : product.original_price)}
                     </span>
                   )}
                 </div>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="px-6"
-                  onClick={handleAddToCart}
-                  disabled={!inStock}
-                >
+                <Button variant="primary" size="lg" className="px-6" onClick={handleAddToCart} disabled={!inStock}>
                   {inStock ? "Add to Cart" : "Out of Stock"}
                 </Button>
               </div>
-              {product.is_pod_enabled && (
-                <div className="w-fit px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200">
-                  Cash on Delivery Available
-                </div>
-              )}
             </div>
 
-            {/* Stock Status */}
-            <div>
-              {inStock ? (
-                <p className="text-green-600 font-medium">
-                  In Stock ({product.inventory} available)
-                </p>
-              ) : (
-                <p className="text-red-600 font-medium">Out of Stock</p>
-              )}
-            </div>
+            <div>{inStock ? <p className="text-green-600 font-medium">In Stock ({product.inventory} available)</p> : <p className="text-red-600 font-medium">Out of Stock</p>}</div>
 
             <div>
               <h3 className="font-semibold text-black mb-2">Description</h3>
-              <p className="text-muted-text leading-relaxed whitespace-pre-line">
-                {product.description || "No description provided by seller."}
-              </p>
+              <p className="text-muted-text leading-relaxed whitespace-pre-line">{product.description || "No description provided by seller."}</p>
             </div>
 
             {product.stores && (
@@ -382,60 +330,41 @@ export default function ProductDetailPage() {
                   </p>
                 </div>
                 <div className="flex gap-4">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="flex-1"
-                    onClick={() => router.push(`/dashboard/products/edit/${product.id}`)}
-                  >
+                  <Button variant="primary" size="lg" className="flex-1" onClick={() => router.push(`/dashboard/products/edit/${product.id}`)}>
                     <Edit className="w-5 h-5 mr-2" />
                     Edit Product
                   </Button>
-                  <Button
-                    variant="danger"
-                    size="lg"
-                    className="flex-shrink-0"
-                    onClick={handleDelete}
-                  >
+                  <Button variant="danger" size="lg" className="flex-shrink-0" onClick={handleDelete}>
                     <Trash2 className="w-5 h-5 mr-2" />
                     Delete
                   </Button>
                 </div>
               </div>
             ) : (
-              <>
-                {inStock && (
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-2">
-                      Quantity
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-10 h-10 glass-pill rounded-full flex items-center justify-center hover:bg-white/80 transition-colors"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="w-12 text-center font-semibold text-black">
-                        {quantity}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setQuantity(Math.min(product.inventory || 1, quantity + 1))
-                        }
-                        className="w-10 h-10 glass-pill rounded-full flex items-center justify-center hover:bg-white/80 transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
+              inStock && (
+                <div>
+                  <label className="block text-sm font-medium text-black mb-2">Quantity</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="w-10 h-10 glass-pill rounded-full flex items-center justify-center hover:bg-white/80 transition-colors"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="w-12 text-center font-semibold text-black">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(Math.min(product.inventory || 1, quantity + 1))}
+                      className="w-10 h-10 glass-pill rounded-full flex items-center justify-center hover:bg-white/80 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
                   </div>
-                )}
-              </>
+                </div>
+              )
             )}
           </div>
         </div>
 
-        {/* Reviews Section */}
         <div className="border-t border-white/50 mt-12 pt-8">
           <ProductReviews productId={product.id} onReviewAdded={fetchProduct} />
         </div>
@@ -443,9 +372,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
-function extractTokenValue(tokenValue: unknown): number | null {
-  if (typeof tokenValue === "number") return tokenValue;
-  if (!tokenValue || typeof tokenValue !== "object") return null;
-  const vformatNgn(value: number) {
-  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value)
