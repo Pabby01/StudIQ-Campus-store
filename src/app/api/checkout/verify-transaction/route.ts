@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
-import { verifyTransaction, verifySplTransferTransaction } from "@/lib/solana";
+import { verifySplTransferTransaction } from "@/lib/solana";
 import { getPlatformFee, calculateFees, recordPlatformFee } from "@/lib/platformFees";
 import { triggerNotification } from "@/lib/notifications";
 import { POINTS } from "@/lib/constants";
@@ -41,60 +41,24 @@ export async function POST(req: Request) {
         // Platform wallet receives all payments
         const platformWallet = SOLANA_CONFIG.platformWallet;
 
-        let expectedSolAmount = order.amount;
+        // Stablecoins only: amounts are already in token units (USDC/USDT)
+        const expectedAmount = order.amount;
+        
+        // Determine which mint to verify (USDC or USDT)
+        const mint = order.currency === "USDT" ? SOLANA_CONFIG.usdtMint : SOLANA_CONFIG.usdcMint;
+        
+        // Use consistent tolerance for stablecoins (2%)
+        const tolerance = 0.02;
 
-        // If currency is USD, calculate expected SOL amount
-        // If currency is not SOL, calculate expected SOL amount
-        if (order.currency !== "SOL") {
-            let solPrice = null;
-
-            try {
-                // Fetch SOL price from CoinGecko
-                const cgRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", {
-                    headers: { 'Accept': 'application/json', 'User-Agent': 'CampusStore/1.0' },
-                    next: { revalidate: 60 } // Cache for 1 minute
-                });
-
-                if (cgRes.ok) {
-                    const data = await cgRes.json();
-                    solPrice = Number(data.solana?.usd);
-                }
-            } catch (e) {
-                console.warn("[Verify] Price fetch failed:", e);
-            }
-
-            if (solPrice && !isNaN(solPrice)) {
-                // Allow a slightly wider margin for error (5%) due to potential rate differences
-                // between checkout time and verification time.
-                expectedSolAmount = order.amount / solPrice;
-            } else {
-                console.error("[Verify] Failed to fetch price from all sources");
-                return Response.json(
-                    { ok: false, error: "Unable to verify currency conversion rate. Please contact support." },
-                    { status: 500 }
-                );
-            }
-        }
-
-        // Use tighter tolerance for native SOL (0.1%) and slightly more for USD conversions (2%)
-        const tolerance = order.currency === "SOL" ? 0.001 : 0.02;
-
-        const verification = order.currency === "SOL"
-            ? await verifyTransaction(
-                txSignature,
-                order.buyer_address,
-                platformWallet,
-                expectedSolAmount,
-                tolerance
-            )
-            : await verifySplTransferTransaction(
-                txSignature,
-                order.buyer_address,
-                platformWallet,
-                SOLANA_CONFIG.usdcMint,
-                order.amount,
-                tolerance
-            );
+        // All payments are now SPL token transfers (USDC/USDT), no SOL payments
+        const verification = await verifySplTransferTransaction(
+            txSignature,
+            order.buyer_address,
+            platformWallet,
+            mint,
+            expectedAmount,
+            tolerance
+        );
 
         if (!verification.valid) {
             // Mark order as failed

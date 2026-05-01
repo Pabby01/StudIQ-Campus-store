@@ -205,14 +205,12 @@ export async function POST(req: Request) {
     const feePercent = profile?.seller_tier === "premium" ? 3 : 10;
 
     const needsNgnRate = prods.some((p) => p.price_ngn);
-    const needsSolRate = prods.some((p) => p.price_ngn && p.currency === "SOL");
     const ngnPerUsd = needsNgnRate ? await getNgnPerUsd() : null;
-    const solUsd = needsSolRate ? await getSolUsd(req) : null;
 
     // Step 5: Calculate totals
     const subtotal = items.reduce((sum, i) => {
       const p = prods.find((pp) => pp.id === i.productId)!;
-      const unitPrice = getLiveUnitPrice(p, ngnPerUsd, solUsd);
+      const unitPrice = getLiveUnitPrice(p, ngnPerUsd);
       return sum + unitPrice * i.qty;
     }, 0);
     const deliveryFee = parsed.data.deliveryMethod === "shipping" ? Number(store.delivery_fee ?? 0) : 0;
@@ -263,7 +261,7 @@ export async function POST(req: Request) {
     // Step 7: Create order items
     const itemsRows = items.map((i) => {
       const p = prods.find((pp) => pp.id === i.productId)!;
-      const unitPrice = getLiveUnitPrice(p, ngnPerUsd, solUsd);
+      const unitPrice = getLiveUnitPrice(p, ngnPerUsd);
       return {
         order_id: newOrder.id, // Use newOrder.id
         product_id: i.productId,
@@ -310,7 +308,7 @@ export async function POST(req: Request) {
           buyerEmail: parsed.data.buyerEmail,
           products: items.map(i => {
             const product = prods.find(p => p.id === i.productId)!;
-            const unitPrice = getLiveUnitPrice(product, ngnPerUsd, solUsd);
+            const unitPrice = getLiveUnitPrice(product, ngnPerUsd);
             return {
               name: product.name,
               imageUrl: product.image_url,
@@ -444,13 +442,12 @@ async function getSolUsd(req: Request) {
 }
 
 function getLiveUnitPrice(
-  product: { price: number; price_ngn?: number | null; currency?: "SOL" | "USDC" | "USD" },
-  ngnPerUsd: number | null,
-  solUsd: number | null
+  product: { price: number; price_ngn?: number | null; currency?: "USDC" | "USDT" | "USD" },
+  ngnPerUsd: number | null
 ) {
+  // Stablecoins only: all products priced in NGN, convert back to payment currency
   if (product.price_ngn && ngnPerUsd) {
-    if (product.currency === "USDC") return product.price_ngn / ngnPerUsd;
-    if (product.currency === "SOL" && solUsd) return product.price_ngn / (solUsd * ngnPerUsd);
+    return product.price_ngn / ngnPerUsd;
   }
   return Number(product.price);
 }

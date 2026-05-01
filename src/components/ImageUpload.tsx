@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Upload, X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
+import { optimizeImageFile } from "@/lib/imageOptimization";
 
 interface ImageUploadProps {
     // New unified props
@@ -62,6 +63,7 @@ export default function ImageUpload({
         }
 
         const file = files[0]; // Currently handling one upload at a time for simplicity
+        const optimizedFile = await optimizeImageFile(file, { maxDimension: 1600, quality: 0.82 });
 
         // Validate file type
         if (!file.type.startsWith("image/")) {
@@ -70,7 +72,7 @@ export default function ImageUpload({
         }
 
         // Validate file size
-        const sizeMB = file.size / 1024 / 1024;
+const sizeMB = optimizedFile.size / 1024 / 1024;
         if (sizeMB > maxSizeMB) {
             setError(`File size must be less than ${maxSizeMB}MB`);
             return;
@@ -88,7 +90,7 @@ export default function ImageUpload({
 
         try {
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("file", optimizedFile);
             formData.append("folder", folder);
             formData.append("address", walletAddress);
 
@@ -184,7 +186,7 @@ export default function ImageUpload({
                                     {allowMultiple ? "Add Photos" : "Choose Image"}
                                 </p>
                                 <p className="text-xs text-muted-text text-center max-w-[200px]">
-                                    {allowMultiple ? `Upload up to ${maxFiles} images.` : ""} PNG, JPG, WEBP up to {maxSizeMB}MB
+                                    {allowMultiple ? `Upload up to ${maxFiles} images.` : ""} Auto-optimizes large images to keep pages fast. PNG, JPG, WEBP up to {maxSizeMB}MB
                                 </p>
                             </>
                         )}
