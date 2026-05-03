@@ -178,38 +178,39 @@ function SearchPageContent() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.06, ease: "easeOut" }}
-          className="mb-6 glass-panel rounded-3xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+          className="mb-6 glass-panel rounded-3xl p-3 sm:p-4 flex flex-col gap-3 sm:gap-4"
         >
-          <div className="flex-1 rounded-2xl bg-gradient-to-r from-sky-50 via-white to-fuchsia-50 p-3">
-            <CategoryFilter
-              selected={selectedCategory}
-              onChange={handleCategoryChange}
-            />
-          </div>
+          <CategoryFilter
+            selected={selectedCategory}
+            onChange={handleCategoryChange}
+          />
 
-          <motion.select
-            whileTap={{ scale: 0.98 }}
-            value={sortBy}
-            onChange={(e) => {
-              setSortBy(e.target.value);
-              setPage(1);
-            }}
-            className="px-4 py-2.5 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue border border-white/60 bg-white shadow-sm"
-          >
-            <option value="created_at">Newest First</option>
-            <option value="price">Price: Low to High</option>
-            <option value="name">Name: A to Z</option>
-            <option value="rating">Highest Rated</option>
-          </motion.select>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <div className="text-xs font-medium text-muted-text whitespace-nowrap hidden sm:block">Sort by</div>
+            <motion.select
+              whileTap={{ scale: 0.98 }}
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setPage(1);
+              }}
+              className="w-full sm:w-auto px-4 py-2.5 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue border border-white/60 bg-white shadow-sm"
+            >
+              <option value="created_at">Newest First</option>
+              <option value="price">Price: Low to High</option>
+              <option value="name">Name: A to Z</option>
+              <option value="rating">Highest Rated</option>
+            </motion.select>
+          </div>
         </motion.div>
 
         {/* Results */}
         {loading && page === 1 ? (
-          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-8">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
             {[...Array(8)].map((_, i) => (
               <div
                 key={i}
-                className="glass-card rounded-2xl border border-white/60 h-80 animate-pulse"
+                className="glass-card rounded-2xl border border-white/60 h-64 sm:h-80 animate-pulse"
               />
             ))}
           </div>
@@ -236,7 +237,7 @@ function SearchPageContent() {
           </motion.div>
         ) : (
           <>
-            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-8">
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
               <AnimatePresence mode="popLayout">
                 {products.map((product, index) => (
                   <motion.div

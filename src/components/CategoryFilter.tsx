@@ -40,25 +40,27 @@ export default function CategoryFilter({ selected, onChange }: CategoryFilterPro
   };
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-      {FILTER_CATEGORIES.map((category, index) => {
-        const isActive = currentCategory === category || (currentCategory === "" && category === "All");
-        const tone = tones[index % tones.length];
-        return (
-          <motion.button
-            key={category}
-            whileTap={{ scale: 0.96 }}
-            whileHover={{ y: -1 }}
-            onClick={() => handleCategoryClick(category)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${isActive
-              ? `bg-gradient-to-r ${tone} text-white shadow-md`
-              : "glass-pill text-muted-text hover:text-primary-blue"
-              }`}
-          >
-            {category}
-          </motion.button>
-        );
-      })}
+    <div className="w-full">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide -mx-3 sm:mx-0 px-3 sm:px-0">
+        {FILTER_CATEGORIES.map((category, index) => {
+          const isActive = currentCategory === category || (currentCategory === "" && category === "All");
+          const tone = tones[index % tones.length];
+          return (
+            <motion.button
+              key={category}
+              whileTap={{ scale: 0.96 }}
+              whileHover={{ y: -1 }}
+              onClick={() => handleCategoryClick(category)}
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${isActive
+                ? `bg-gradient-to-r ${tone} text-white shadow-md`
+                : "glass-pill text-muted-text hover:text-primary-blue"
+                }`}
+            >
+              {category}
+            </motion.button>
+          );
+        })}
+      </div>
     </div>
   );
 }
