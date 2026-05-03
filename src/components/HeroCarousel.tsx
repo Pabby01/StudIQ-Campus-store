@@ -13,9 +13,9 @@ const slides = [
         title: "Flash Deal: Campus Tech Week",
         subtitle: "Up to 60% off new smartphones & accessories",
         cta: "Shop deal",
-        image: "/tech.jpg",
+        image: "https://images.unsplash.com/photo-1517059224940-d4af9eec41e5?auto=format&fit=crop&w=1400&q=80",
         badge: "Limited time",
-        accent: "from-indigo-100 via-white to-blue-100",
+        accent: "from-cyan-100 via-white to-blue-100",
         link: "/search?category=Electronics",
     },
     {
@@ -23,9 +23,9 @@ const slides = [
         title: "Flash Deal: Study Beats",
         subtitle: "Noise‑canceling headphones from ₦9,999",
         cta: "Grab now",
-        image: "/beat.jpg",
+        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1400&q=80",
         badge: "Hot pick",
-        accent: "from-purple-100 via-white to-pink-100",
+        accent: "from-fuchsia-100 via-white to-pink-100",
         link: "/search?category=Electronics",
     },
     {
@@ -33,9 +33,9 @@ const slides = [
         title: "Flash Deal: Sneaker Drops",
         subtitle: "Fresh kicks for campus, up to 40% off",
         cta: "View drops",
-        image: "/happy.jpg",
+        image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1400&q=80",
         badge: "Just landed",
-        accent: "from-emerald-100 via-white to-teal-100",
+        accent: "from-emerald-100 via-white to-lime-100",
         link: "/search?category=Fashion%20%26%20Clothing",
     },
 ];
@@ -78,17 +78,17 @@ export default function HeroCarousel() {
                         transition={{ duration: 0.25, ease: "easeOut" }}
                     >
                         <div className={`absolute inset-0 bg-gradient-to-r ${slide.accent}`} />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.2),transparent_55%)]" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.6),transparent_55%)]" />
 
                         <div className="relative z-10 grid h-full w-full grid-cols-1 md:grid-cols-12 gap-6 px-6 md:px-12 py-8">
                             <div className="md:col-span-6 flex flex-col justify-center">
                                 <div className="inline-flex w-fit items-center gap-2 rounded-full glass-pill px-3 py-1 text-xs font-semibold text-primary-blue">
                                     {slide.badge}
                                 </div>
-                                <h2 className="mt-4 text-3xl md:text-5xl font-bold text-black">
+                                <h2 className="mt-4 text-3xl md:text-5xl font-bold text-slate-950">
                                     {slide.title}
                                 </h2>
-                                <p className="mt-3 text-base md:text-lg text-muted-text max-w-md">
+                                <p className="mt-3 text-base md:text-lg text-slate-600 max-w-md">
                                     {slide.subtitle}
                                 </p>
                             </div>
@@ -114,7 +114,7 @@ export default function HeroCarousel() {
                             size="sm"
                             variant="secondary"
                             onClick={() => router.push(slide.link)}
-                            className="absolute bottom-5 left-5 rounded-full bg-white/90 text-primary-blue hover:bg-white shadow-md"
+                            className="absolute bottom-5 left-5 rounded-full bg-white/95 text-primary-blue hover:bg-white shadow-md"
                         >
                             {slide.cta}
                         </Button>

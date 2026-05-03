@@ -53,25 +53,25 @@ const adCards = [
   {
     title: "Campus Tech Week",
     subtitle: "Up to 60% off tech essentials",
-    image: "/tech.jpg",
+    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
     href: "/search?category=Electronics",
   },
   {
     title: "Study Beats",
     subtitle: "Headphones, speakers and more",
-    image: "/beat.jpg",
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
     href: "/search?category=Electronics",
   },
   {
     title: "Campus Style Drop",
     subtitle: "Fresh fashion for students",
-    image: "/happy.jpg",
+    image: "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1200&q=80",
     href: "/search?category=Fashion",
   },
   {
     title: "Smart Savings",
     subtitle: "Rewards, bundles and discounts",
-    image: "/carousel_bg_2.png",
+    image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
     href: "/search?sortBy=price&order=asc",
   },
 ];
@@ -287,28 +287,28 @@ export default function Home() {
         </div>
 
         {/* Animated Deals Banner */}
-        <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-slate-950 px-4 py-3 shadow-lg sm:px-6">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-blue/25 via-fuchsia-500/15 to-emerald-400/20" />
-          <div className="absolute -left-16 top-0 h-full w-32 bg-white/10 blur-3xl" />
-          <div className="relative flex flex-col gap-3 overflow-hidden sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
+        <section className="relative overflow-hidden rounded-3xl border border-white/80 bg-white/85 px-4 py-4 shadow-[0_20px_60px_rgba(79,70,229,0.12)] sm:px-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-blue/10 via-fuchsia-500/8 to-emerald-400/10" />
+          <div className="absolute -left-16 top-0 h-full w-32 bg-primary-blue/10 blur-3xl" />
+          <div className="relative flex flex-col gap-4 overflow-hidden lg:flex-row lg:items-center">
+            <div className="flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white shadow-sm">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
               Live deals
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
-              <span className="text-[10px] uppercase tracking-[0.18em] text-white/75">Ends in</span>
-              <span className="font-bold">{String(flashCountdown.hours).padStart(2, "0")}:{String(flashCountdown.minutes).padStart(2, "0")}:{String(flashCountdown.seconds).padStart(2, "0")}</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Ends in</span>
+              <span className="font-bold text-slate-950">{String(flashCountdown.hours).padStart(2, "0")}:{String(flashCountdown.minutes).padStart(2, "0")}:{String(flashCountdown.seconds).padStart(2, "0")}</span>
             </div>
             <div className="relative flex-1 overflow-hidden">
               <motion.div
-                className="flex w-max items-center gap-3 whitespace-nowrap text-sm font-medium text-white/90"
+                className="flex w-max items-center gap-3 whitespace-nowrap text-sm font-medium text-slate-700"
                 animate={{ x: [0, -520] }}
                 transition={{ repeat: Infinity, duration: 18, ease: "linear" }}
               >
                 {[...dealTicker, ...dealTicker].map((item, index) => (
                   <span
                     key={`${item}-${index}`}
-                    className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-4 py-1.5 shadow-sm backdrop-blur"
+                    className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-1.5 shadow-sm backdrop-blur"
                   >
                     {item}
                   </span>
@@ -317,7 +317,7 @@ export default function Home() {
             </div>
             <Link
               href="/search"
-              className="hidden sm:inline-flex rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950 shadow-sm transition-transform hover:-translate-y-0.5"
+              className="hidden sm:inline-flex rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
             >
               Browse deals
             </Link>
@@ -325,17 +325,17 @@ export default function Home() {
         </section>
 
         {/* Moving Ads */}
-        <section className="rounded-3xl border border-white/70 bg-white/75 p-4 shadow-sm">
+        <section className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-slate-900">Sponsored updates</h2>
               <p className="text-xs sm:text-sm text-slate-500">A live strip of offers, drops and student-friendly promos.</p>
             </div>
-            <Link href="/search" className="hidden sm:inline-flex rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800">
+            <Link href="/search" className="hidden sm:inline-flex rounded-full bg-primary-blue px-4 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90">
               See all
             </Link>
           </div>
-          <div className="relative overflow-hidden rounded-[24px] bg-slate-950 p-3 sm:p-4">
+          <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-sky-50 via-white to-fuchsia-50 p-3 sm:p-4">
             <motion.div
               className="flex w-max gap-3"
               animate={{ x: [0, -700] }}
@@ -345,7 +345,7 @@ export default function Home() {
                 <Link
                   key={`${ad.title}-${index}`}
                   href={ad.href}
-                  className="group relative h-40 w-[230px] overflow-hidden rounded-[22px] border border-white/10 bg-white/10 shadow-lg sm:h-44 sm:w-[260px]"
+                  className="group relative h-40 w-[230px] overflow-hidden rounded-[22px] border border-white/80 bg-white shadow-lg sm:h-44 sm:w-[260px]"
                 >
                   <Image
                     src={ad.image}
@@ -354,7 +354,7 @@ export default function Home() {
                     sizes="260px"
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-4 text-white">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">Sponsored</p>
                     <h3 className="mt-1 text-base font-bold leading-tight">{ad.title}</h3>
