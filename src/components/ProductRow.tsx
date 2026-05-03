@@ -42,7 +42,7 @@ export default function ProductRow({
 
     const scroll = (direction: "left" | "right") => {
         if (scrollRef.current) {
-            const scrollAmount = 300;
+                const scrollAmount = 240;
             scrollRef.current.scrollBy({
                 left: direction === "left" ? -scrollAmount : scrollAmount,
                 behavior: "smooth",
@@ -51,7 +51,7 @@ export default function ProductRow({
     };
 
     return (
-        <section className="glass-panel rounded-3xl p-4 sm:p-6 space-y-4">
+        <section className="glass-panel rounded-3xl p-3 sm:p-5 space-y-3.5">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     {Icon && (
@@ -78,7 +78,7 @@ export default function ProductRow({
                 {/* Left Arrow */}
                 <button
                     onClick={() => scroll("left")}
-                    className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass-pill rounded-full items-center justify-center border border-white/60 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/90"
+                    className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 glass-pill rounded-full items-center justify-center border border-white/60 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/90"
                     aria-label="Scroll left"
                 >
                     <ChevronLeft className="w-5 h-5" />
@@ -87,16 +87,16 @@ export default function ProductRow({
                 {/* Products Container */}
                 <div
                     ref={scrollRef}
-                    className="grid grid-cols-2 gap-4 sm:flex sm:gap-4 sm:overflow-x-auto sm:scrollbar-hide sm:scroll-smooth sm:pb-2"
+                    className="grid grid-cols-2 gap-3 sm:flex sm:gap-3 sm:overflow-x-auto sm:scrollbar-hide sm:scroll-smooth sm:pb-2"
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                     {products.map((product) => {
                         const productBadge = product.badge ?? badgeText;
                         return (
-                        <div key={product.id} className="relative w-full sm:flex-shrink-0 sm:w-[190px] lg:w-[200px]">
+                        <div key={product.id} className="relative w-full sm:flex-shrink-0 sm:w-[165px] lg:w-[175px]">
                             {productBadge && (
                                 <div
-                                    className={`absolute top-2 left-2 sm:top-3 sm:left-3 z-10 ${badgeColor} text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1 rounded-full`}
+                                    className={`absolute top-2 left-2 z-10 ${badgeColor} text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full`}
                                 >
                                     {productBadge}
                                 </div>
@@ -110,7 +110,7 @@ export default function ProductRow({
                 {/* Right Arrow */}
                 <button
                     onClick={() => scroll("right")}
-                    className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass-pill rounded-full items-center justify-center border border-white/60 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/90"
+                    className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 glass-pill rounded-full items-center justify-center border border-white/60 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/90"
                     aria-label="Scroll right"
                 >
                     <ChevronRight className="w-5 h-5" />

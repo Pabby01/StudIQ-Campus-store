@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks.purity */
 "use client";
 
 import Image from "next/image";
@@ -78,7 +77,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   return (
     <div className="h-full">
       <div
-        className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[22px] border border-gray-200 bg-white text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+        className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[18px] border border-gray-200 bg-white text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
         onClick={openDetails}
         role="link"
         tabIndex={0}
@@ -89,7 +88,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           }
         }}
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-50">
+        <div className="relative aspect-[1/1] w-full overflow-hidden bg-slate-50">
           {p.image_url ? (
             <Image
               src={p.image_url}
@@ -102,21 +101,18 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">No Image</div>
           )}
 
-          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/35 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
         </div>
 
-        <div className="flex flex-1 flex-col gap-3 p-3 sm:p-4">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Product</p>
-            <h3 className="mt-1 text-sm font-semibold leading-snug text-slate-950 line-clamp-2 sm:text-[15px] lg:text-base">
-              {p.name}
-            </h3>
-          </div>
+        <div className="flex flex-1 flex-col gap-2.5 p-2.5 sm:p-3">
+          <h3 className="text-[13px] font-semibold leading-tight text-slate-950 line-clamp-2 sm:text-sm lg:text-[15px]">
+            {p.name}
+          </h3>
 
           <div className="mt-auto flex items-center gap-2">
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] text-slate-500">Price</div>
-              <div className="text-base font-bold text-slate-950 sm:text-lg">
+              <div className="text-[10px] text-slate-500">Price</div>
+              <div className="text-sm font-bold text-slate-950 sm:text-base">
                 {formatNgn(displayPriceNgn)}
               </div>
             </div>
@@ -124,7 +120,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             {!isOwnProduct ? (
               <Button
                 size="sm"
-                className="h-9 shrink-0 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-slate-800"
+                className="h-8 shrink-0 rounded-full bg-slate-950 px-3 text-[11px] font-semibold text-white hover:bg-slate-800 sm:px-4 sm:text-xs"
                 onClick={handleAddToCart}
                 disabled={isSoldOut}
               >
@@ -136,7 +132,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-9 rounded-full px-4 text-sm"
+                    className="h-8 rounded-full px-3 text-[11px] sm:px-4 sm:text-xs"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -150,7 +146,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                   <Button
                     variant="danger"
                     size="sm"
-                    className="h-9 rounded-full px-4 text-sm"
+                    className="h-8 rounded-full px-3 text-[11px] sm:px-4 sm:text-xs"
                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                       e.preventDefault();
                       e.stopPropagation();
