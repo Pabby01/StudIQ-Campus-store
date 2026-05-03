@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import { Store, MapPin, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface StoreCardProps {
     store: {
@@ -19,15 +20,18 @@ interface StoreCardProps {
 function StoreCard({ store }: StoreCardProps) {
     return (
         <Link href={`/store/${store.id}`}>
-            <Card className="group glass-card border-white/60 hover-lift cursor-pointer overflow-hidden">
+            <Card className="group glass-card border-white/60 hover-lift cursor-pointer overflow-hidden transition-transform duration-300">
                 {store.banner_url ? (
-                    <img
-                        src={store.banner_url}
-                        alt={store.name}
-                        className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    <div className="relative h-32 overflow-hidden">
+                        <img
+                            src={store.banner_url}
+                            alt={store.name}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+                    </div>
                 ) : (
-                    <div className="w-full h-32 bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                    <div className="w-full h-32 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
                         <Store className="w-12 h-12 text-primary-blue opacity-20" />
                     </div>
                 )}
@@ -105,8 +109,17 @@ export default function FeaturedStores() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {stores.map((store) => (
-                    <StoreCard key={store.id} store={store} />
+                {stores.map((store, index) => (
+                    <motion.div
+                        key={store.id}
+                        initial={{ opacity: 0, y: 16, x: index % 2 === 0 ? -12 : 12 }}
+                        whileInView={{ opacity: 1, y: 0, x: 0 }}
+                        viewport={{ once: true, amount: 0.25 }}
+                        transition={{ duration: 0.35, ease: "easeOut" }}
+                        whileHover={{ y: -4, scale: 1.01 }}
+                    >
+                        <StoreCard store={store} />
+                    </motion.div>
                 ))}
             </div>
         </section>

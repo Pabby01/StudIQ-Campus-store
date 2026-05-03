@@ -16,6 +16,8 @@ type Product = Readonly<{
   priceNgn?: number | null;
   image_url?: string | null;
   category?: string;
+  badge?: string;
+  badgeTone?: string;
   store_id?: string;
   inventory?: number;
   owner_address?: string;
@@ -45,6 +47,15 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
     if (value.includes("food")) return "from-emerald-500 via-teal-500 to-lime-400";
     if (value.includes("beaut")) return "from-purple-500 via-violet-500 to-indigo-500";
     return "from-slate-500 via-slate-400 to-zinc-500";
+  };
+
+  const getBadgeTone = (badge?: string) => {
+    const value = (badge || "").toLowerCase();
+    if (value.includes("featured")) return "from-emerald-500 via-teal-500 to-cyan-500";
+    if (value.includes("sponsored")) return "from-fuchsia-500 via-pink-500 to-rose-500";
+    if (value.includes("hot") || value.includes("sale")) return "from-orange-500 via-amber-500 to-yellow-500";
+    if (value.includes("new")) return "from-sky-500 via-blue-500 to-indigo-500";
+    return p.badgeTone || "from-slate-700 via-slate-600 to-slate-500";
   };
 
   const formatNgn = (value: number) =>
@@ -88,7 +99,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   return (
     <div className="h-full">
       <div
-        className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[18px] border border-gray-200 bg-white text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+        className="group flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[18px] border border-gray-200 bg-white text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
         onClick={openDetails}
         role="link"
         tabIndex={0}
@@ -115,6 +126,12 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
           {p.category && (
             <div className={`absolute left-2 top-2 rounded-full bg-gradient-to-r ${getCategoryTone(p.category)} px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white shadow-md`}>
               {p.category}
+            </div>
+          )}
+
+          {p.badge && (
+            <div className={`absolute right-2 top-2 rounded-full bg-gradient-to-r ${getBadgeTone(p.badge)} px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-white shadow-md`}>
+              {p.badge}
             </div>
           )}
 

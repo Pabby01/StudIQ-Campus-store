@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MapPin, Star } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import { motion } from "framer-motion";
 
 type Store = Readonly<{
   id: string;
@@ -14,14 +15,18 @@ type Store = Readonly<{
 
 export default function StoreCard({ s }: { s: Store }) {
   return (
-    <div className="glass-card rounded-2xl border border-white/60 hover-lift overflow-hidden group">
+    <motion.div
+      className="glass-card rounded-2xl border border-white/60 hover-lift overflow-hidden group"
+      whileHover={{ y: -4, scale: 1.01 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+    >
       {/* Store Banner */}
       <div className="relative h-28 sm:h-36 bg-gradient-to-br from-primary-blue to-accent-blue overflow-hidden">
         {s.banner_url ? (
           <img
             src={s.banner_url}
             alt={s.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -56,6 +61,6 @@ export default function StoreCard({ s }: { s: Store }) {
           </Link>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

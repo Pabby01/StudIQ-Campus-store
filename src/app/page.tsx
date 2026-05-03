@@ -21,6 +21,8 @@ type Product = Readonly<{
   image_url?: string | null;
   rating?: number | null;
   category?: string;
+  badge?: string;
+  badgeTone?: string;
 }>;
 type StoreType = Readonly<{
   id: string;
@@ -47,6 +49,33 @@ const dealTicker = [
   "New arrivals dropping daily",
 ];
 
+const adCards = [
+  {
+    title: "Campus Tech Week",
+    subtitle: "Up to 60% off tech essentials",
+    image: "/tech.jpg",
+    href: "/search?category=Electronics",
+  },
+  {
+    title: "Study Beats",
+    subtitle: "Headphones, speakers and more",
+    image: "/beat.jpg",
+    href: "/search?category=Electronics",
+  },
+  {
+    title: "Campus Style Drop",
+    subtitle: "Fresh fashion for students",
+    image: "/happy.jpg",
+    href: "/search?category=Fashion",
+  },
+  {
+    title: "Smart Savings",
+    subtitle: "Rewards, bundles and discounts",
+    image: "/carousel_bg_2.png",
+    href: "/search?sortBy=price&order=asc",
+  },
+];
+
 export default function Home() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -56,6 +85,7 @@ export default function Home() {
   const [mobileStoreIndex, setMobileStoreIndex] = useState(0);
   const [isMobileFeaturePaused, setIsMobileFeaturePaused] = useState(false);
   const [isMobileStorePaused, setIsMobileStorePaused] = useState(false);
+  const [flashCountdown, setFlashCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumeStoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const featureCards = [
@@ -202,6 +232,36 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    const endTime = Date.now() + 1000 * 60 * 60 * 12;
+
+    const updateCountdown = () => {
+      const difference = Math.max(0, endTime - Date.now());
+      const totalSeconds = Math.floor(difference / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      setFlashCountdown({ hours, minutes, seconds });
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const highlightedProducts = products.map((product, index) => ({
+    ...product,
+    badge: index === 0 ? "Featured" : index === 1 ? "Sponsored" : product.badge,
+    badgeTone: index === 0 ? "from-emerald-500 via-teal-500 to-cyan-500" : index === 1 ? "from-fuchsia-500 via-pink-500 to-rose-500" : product.badgeTone,
+  }));
+
+  const flashDealProducts = highlightedProducts.map((product) => ({
+    ...product,
+    badge: product.badge || "Flash",
+    badgeTone: product.badgeTone || "from-orange-500 via-amber-500 to-yellow-500",
+  }));
+
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 sm:pt-6 space-y-10 md:space-y-14">
@@ -230,10 +290,14 @@ export default function Home() {
         <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-slate-950 px-4 py-3 shadow-lg sm:px-6">
           <div className="absolute inset-0 bg-gradient-to-r from-primary-blue/25 via-fuchsia-500/15 to-emerald-400/20" />
           <div className="absolute -left-16 top-0 h-full w-32 bg-white/10 blur-3xl" />
-          <div className="relative flex items-center gap-3 overflow-hidden">
+          <div className="relative flex flex-col gap-3 overflow-hidden sm:flex-row sm:items-center">
             <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
               Live deals
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-white/75">Ends in</span>
+              <span className="font-bold">{String(flashCountdown.hours).padStart(2, "0")}:{String(flashCountdown.minutes).padStart(2, "0")}:{String(flashCountdown.seconds).padStart(2, "0")}</span>
             </div>
             <div className="relative flex-1 overflow-hidden">
               <motion.div
@@ -257,6 +321,48 @@ export default function Home() {
             >
               Browse deals
             </Link>
+          </div>
+        </section>
+
+        {/* Moving Ads */}
+        <section className="rounded-3xl border border-white/70 bg-white/75 p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">Sponsored updates</h2>
+              <p className="text-xs sm:text-sm text-slate-500">A live strip of offers, drops and student-friendly promos.</p>
+            </div>
+            <Link href="/search" className="hidden sm:inline-flex rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800">
+              See all
+            </Link>
+          </div>
+          <div className="relative overflow-hidden rounded-[24px] bg-slate-950 p-3 sm:p-4">
+            <motion.div
+              className="flex w-max gap-3"
+              animate={{ x: [0, -700] }}
+              transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+            >
+              {[...adCards, ...adCards].map((ad, index) => (
+                <Link
+                  key={`${ad.title}-${index}`}
+                  href={ad.href}
+                  className="group relative h-40 w-[230px] overflow-hidden rounded-[22px] border border-white/10 bg-white/10 shadow-lg sm:h-44 sm:w-[260px]"
+                >
+                  <Image
+                    src={ad.image}
+                    alt={ad.title}
+                    fill
+                    sizes="260px"
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">Sponsored</p>
+                    <h3 className="mt-1 text-base font-bold leading-tight">{ad.title}</h3>
+                    <p className="mt-1 text-xs text-white/80">{ad.subtitle}</p>
+                  </div>
+                </Link>
+              ))}
+            </motion.div>
           </div>
         </section>
 
@@ -287,7 +393,7 @@ export default function Home() {
           icon={TrendingUp}
           subtitle="Most popular items this week"
           viewAllLink="/search"
-          products={products.slice(0, 6)}
+          products={highlightedProducts.slice(0, 6)}
         />
 
         {/* Top Rated / Best Sellers */}
@@ -298,7 +404,7 @@ export default function Home() {
           viewAllLink="/search?sortBy=rating"
           badgeText="Top"
           badgeColor="bg-gradient-to-r from-amber-500 to-orange-500"
-          products={[...products]
+          products={[...highlightedProducts]
             .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
             .slice(0, 8)}
         />
@@ -310,7 +416,7 @@ export default function Home() {
           viewAllLink="/search"
           badgeText="Hot"
           badgeColor="bg-gradient-to-r from-fuchsia-500 to-pink-500"
-          products={[...products]
+          products={[...flashDealProducts]
             .sort((a, b) => {
               const scoreA = (a.rating ?? 0) + (a.category ? 0.25 : 0);
               const scoreB = (b.rating ?? 0) + (b.category ? 0.25 : 0);
@@ -363,8 +469,17 @@ export default function Home() {
             </div>
           </div>
           <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {products.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} p={product} />
+            {highlightedProducts.slice(0, 4).map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.3, delay: index * 0.06 }}
+                whileHover={{ y: -4, scale: 1.01 }}
+              >
+                <ProductCard key={product.id} p={product} />
+              </motion.div>
             ))}
           </div>
         </section>

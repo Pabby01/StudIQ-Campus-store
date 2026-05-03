@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
+import { motion } from "framer-motion";
 
 const slides = [
     {
@@ -70,9 +71,11 @@ export default function HeroCarousel() {
                 style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
                 {slides.map((slide) => (
-                    <div
+                    <motion.div
                         key={slide.id}
                         className="min-w-full h-full relative flex items-center justify-center"
+                        whileHover={{ scale: 1.005 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                     >
                         <div className={`absolute inset-0 bg-gradient-to-r ${slide.accent}`} />
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.2),transparent_55%)]" />
@@ -90,16 +93,20 @@ export default function HeroCarousel() {
                                 </p>
                             </div>
                             <div className="md:col-span-6 flex items-center justify-center">
-                                <div className="relative w-full max-w-[520px] h-[220px] md:h-[300px]">
+                                <motion.div
+                                    className="relative w-full max-w-[520px] h-[220px] md:h-[300px]"
+                                    whileHover={{ y: -4, scale: 1.01 }}
+                                    transition={{ duration: 0.25, ease: "easeOut" }}
+                                >
                                     <Image
                                         src={slide.image}
                                         alt={slide.title}
                                         fill
                                         sizes="(min-width: 768px) 50vw, 90vw"
-                                        className="object-cover rounded-[32px] shadow-2xl"
+                                        className="object-cover rounded-[32px] shadow-2xl transition-transform duration-500"
                                         priority={slide.id === 1}
                                     />
-                                </div>
+                                </motion.div>
                             </div>
                         </div>
 
@@ -111,7 +118,7 @@ export default function HeroCarousel() {
                         >
                             {slide.cta}
                         </Button>
-                    </div>
+                    </motion.div>
                 ))}
             </div>
 
