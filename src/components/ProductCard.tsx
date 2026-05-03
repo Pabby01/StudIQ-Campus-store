@@ -10,6 +10,9 @@ import PremiumBadge from "@/components/PremiumBadge";
 import { useCart } from "@/store/cart";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useToast } from "@/hooks/useToast";
+import { useSellerVerification } from "@/hooks/useSellerVerification";
+import { SellerVerificationBadge } from "@/components/SellerVerificationBadge";
+import { ReviewSnippetDisplay } from "@/components/ReviewSnippetDisplay";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -44,6 +47,7 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   const toast = useToast();
   const router = useRouter();
   const { walletAddress: address } = useCivicWallet();
+  const { data: verificationData } = useSellerVerification(p.store_id);
 
   const [isWishlisted, setIsWishlisted] = useState(false);
 
@@ -187,6 +191,13 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             {p.isPremiumSeller && <PremiumBadge size="sm" />}
           </div>
 
+          {/* Seller Verification Badges */}
+          {verificationData?.badges && verificationData.badges.length > 0 && !isOwnProduct && (
+            <div className="mb-1">
+              <SellerVerificationBadge badges={verificationData.badges} size="sm" showTooltip={false} />
+            </div>
+          )}
+
           <p className="font-semibold text-black text-[10px] line-clamp-1 mb-0.5 min-h-[11px] leading-tight group-hover:text-black">{p.name}</p>
 
           {p.stores?.name && (
@@ -256,6 +267,17 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
                 </div>
               )}
             </div>
+
+            {/* Review Snippet */}
+            {!isOwnProduct && p.reviews_count && p.reviews_count > 0 && (
+              <div className="mt-2 pt-2 border-t border-gray-100">
+                <ReviewSnippetDisplay
+                  productId={p.id}
+                  rating={p.rating}
+                  reviewCount={p.reviews_count}
+                />
+              </div>
+            )}
 
             {hasDiscount && displayOriginalPriceNgn && (
               <div className="text-[6px] text-green-600 font-medium hidden sm:block">

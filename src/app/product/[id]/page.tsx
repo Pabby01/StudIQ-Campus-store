@@ -12,6 +12,7 @@ import { useCart } from "@/store/cart";
 import { useToast } from "@/hooks/useToast";
 import ProductReviews from "@/components/ProductReviews";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 
 type Product = {
   id: string;
@@ -49,10 +50,25 @@ export default function ProductDetailPage() {
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
   const { walletAddress } = useCivicWallet();
+  const { addProduct: addRecentlyViewed } = useRecentlyViewed();
 
   useEffect(() => {
     fetchProduct();
   }, [productId]);
+
+  // Track recently viewed product
+  useEffect(() => {
+    if (product) {
+      const priceNgn = product.price_ngn || product.priceNgn || product.price * 1600;
+      addRecentlyViewed({
+        id: product.id,
+        name: product.name,
+        image_url: product.image_url || product.images?.[0] || '/placeholder.png',
+        price: product.price,
+        priceNgn,
+      });
+    }
+  }, [product?.id]);
 
   const fetchProduct = async () => {
     try {
