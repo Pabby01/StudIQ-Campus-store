@@ -39,6 +39,14 @@ const categoryChips = [
   { label: "Deals", href: "/search?sortBy=price&order=asc", tone: "from-slate-900 to-slate-700" },
 ];
 
+const dealTicker = [
+  "Flash deals on campus essentials",
+  "Free pickup from nearby stores",
+  "Student picks under ₦10,000",
+  "Pay securely with USDC or USDT",
+  "New arrivals dropping daily",
+];
+
 export default function Home() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -218,6 +226,40 @@ export default function Home() {
           <HeroCarousel />
         </div>
 
+        {/* Animated Deals Banner */}
+        <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-slate-950 px-4 py-3 shadow-lg sm:px-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-blue/25 via-fuchsia-500/15 to-emerald-400/20" />
+          <div className="absolute -left-16 top-0 h-full w-32 bg-white/10 blur-3xl" />
+          <div className="relative flex items-center gap-3 overflow-hidden">
+            <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              Live deals
+            </div>
+            <div className="relative flex-1 overflow-hidden">
+              <motion.div
+                className="flex w-max items-center gap-3 whitespace-nowrap text-sm font-medium text-white/90"
+                animate={{ x: [0, -520] }}
+                transition={{ repeat: Infinity, duration: 18, ease: "linear" }}
+              >
+                {[...dealTicker, ...dealTicker].map((item, index) => (
+                  <span
+                    key={`${item}-${index}`}
+                    className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-4 py-1.5 shadow-sm backdrop-blur"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </motion.div>
+            </div>
+            <Link
+              href="/search"
+              className="hidden sm:inline-flex rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950 shadow-sm transition-transform hover:-translate-y-0.5"
+            >
+              Browse deals
+            </Link>
+          </div>
+        </section>
+
         {/* Category Chips */}
         <section className="rounded-3xl border border-white/70 bg-white/75 p-4 sm:p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -258,6 +300,22 @@ export default function Home() {
           badgeColor="bg-gradient-to-r from-amber-500 to-orange-500"
           products={[...products]
             .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+            .slice(0, 8)}
+        />
+
+        <ProductRow
+          title="Best Sellers"
+          icon={Zap}
+          subtitle="What students are adding most"
+          viewAllLink="/search"
+          badgeText="Hot"
+          badgeColor="bg-gradient-to-r from-fuchsia-500 to-pink-500"
+          products={[...products]
+            .sort((a, b) => {
+              const scoreA = (a.rating ?? 0) + (a.category ? 0.25 : 0);
+              const scoreB = (b.rating ?? 0) + (b.category ? 0.25 : 0);
+              return scoreB - scoreA;
+            })
             .slice(0, 8)}
         />
 
