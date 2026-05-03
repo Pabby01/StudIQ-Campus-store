@@ -54,6 +54,7 @@ export default function Navbar() {
   if (pathname?.startsWith("/admin")) return null;
 
   const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
+  const showBackButton = pathname !== "/";
 
   const navItems = [
     { href: "https://www.studiq.fun", icon: ArrowLeft, label: "StudIQ" },
@@ -72,6 +73,16 @@ export default function Navbar() {
           
           {/* Logo Section */}
           <div className="flex-shrink-0 flex items-center gap-3">
+            {showBackButton && (
+              <button
+                onClick={() => router.back()}
+                className="inline-flex w-10 h-10 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-700 shadow-sm transition-all duration-200 hover:-translate-x-0.5 hover:bg-slate-50 hover:text-primary-blue"
+                aria-label="Go back"
+                title="Go back"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
             <Link href="/" className="flex items-center gap-2 group">
               <div className="relative w-10 h-10 overflow-hidden rounded-xl shadow-sm group-hover:shadow-md transition-all duration-300">
                 <img
