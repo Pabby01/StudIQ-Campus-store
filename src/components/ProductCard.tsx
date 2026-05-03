@@ -15,6 +15,7 @@ type Product = Readonly<{
   price_ngn?: number | null;
   priceNgn?: number | null;
   image_url?: string | null;
+  category?: string;
   store_id?: string;
   inventory?: number;
   owner_address?: string;
@@ -35,6 +36,16 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
   const displayPriceNgn = p.price_ngn ?? p.priceNgn ?? p.price;
   const isSoldOut = p.inventory !== undefined && p.inventory <= 0;
   const isOwnProduct = !!(address && p.owner_address && address === p.owner_address);
+
+  const getCategoryTone = (category?: string) => {
+    const value = (category || "").toLowerCase();
+    if (value.includes("book")) return "from-amber-500 via-orange-400 to-yellow-400";
+    if (value.includes("elect")) return "from-cyan-500 via-sky-500 to-blue-500";
+    if (value.includes("fashion") || value.includes("cloth")) return "from-fuchsia-500 via-pink-500 to-rose-500";
+    if (value.includes("food")) return "from-emerald-500 via-teal-500 to-lime-400";
+    if (value.includes("beaut")) return "from-purple-500 via-violet-500 to-indigo-500";
+    return "from-slate-500 via-slate-400 to-zinc-500";
+  };
 
   const formatNgn = (value: number) =>
     new Intl.NumberFormat("en-NG", {
@@ -99,6 +110,12 @@ export default function ProductCard({ p, onEdit, onDelete }: ProductCardProps) {
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">No Image</div>
+          )}
+
+          {p.category && (
+            <div className={`absolute left-2 top-2 rounded-full bg-gradient-to-r ${getCategoryTone(p.category)} px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white shadow-md`}>
+              {p.category}
+            </div>
           )}
 
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />

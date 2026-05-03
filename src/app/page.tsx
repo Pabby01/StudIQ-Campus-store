@@ -30,6 +30,15 @@ type StoreType = Readonly<{
   description?: string | null;
 }>;
 
+const categoryChips = [
+  { label: "Fashion", href: "/search?category=Fashion", tone: "from-pink-500 to-rose-500" },
+  { label: "Electronics", href: "/search?category=Electronics", tone: "from-sky-500 to-blue-500" },
+  { label: "Books", href: "/search?category=Books%20%26%20Textbooks", tone: "from-amber-500 to-orange-500" },
+  { label: "Food", href: "/search?category=Food", tone: "from-emerald-500 to-teal-500" },
+  { label: "Beauty", href: "/search?category=Beauty", tone: "from-fuchsia-500 to-violet-500" },
+  { label: "Deals", href: "/search?sortBy=price&order=asc", tone: "from-slate-900 to-slate-700" },
+];
+
 export default function Home() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -209,6 +218,27 @@ export default function Home() {
           <HeroCarousel />
         </div>
 
+        {/* Category Chips */}
+        <section className="rounded-3xl border border-white/70 bg-white/75 p-4 sm:p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">Shop by category</h2>
+              <p className="text-xs sm:text-sm text-slate-500">Quick taps to jump straight into what students need most.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categoryChips.map((chip) => (
+              <Link
+                key={chip.label}
+                href={chip.href}
+                className={`inline-flex items-center rounded-full bg-gradient-to-r ${chip.tone} px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md`}
+              >
+                {chip.label}
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* Trending Products */}
         <ProductRow
           title="Trending Now"
@@ -216,6 +246,19 @@ export default function Home() {
           subtitle="Most popular items this week"
           viewAllLink="/search"
           products={products.slice(0, 6)}
+        />
+
+        {/* Top Rated / Best Sellers */}
+        <ProductRow
+          title="Top Rated"
+          icon={Sparkles}
+          subtitle="Campus favorites with strong ratings"
+          viewAllLink="/search?sortBy=rating"
+          badgeText="Top"
+          badgeColor="bg-gradient-to-r from-amber-500 to-orange-500"
+          products={[...products]
+            .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+            .slice(0, 8)}
         />
 
         {/* Featured Stores */}
