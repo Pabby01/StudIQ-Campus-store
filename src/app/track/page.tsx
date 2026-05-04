@@ -262,8 +262,8 @@ export default function TrackOrderPage() {
                                     )}
                                     {order.delivery_method === 'shipping' && order.status === 'shipped' && (
                                         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-2xl">
-                                            <p className="text-sm text-blue-800">
-                                                📦 Your order is on the way! Expected delivery: 2-3 business days
+                                            <p className="text-sm text-blue-800 flex items-center gap-2">
+                                                <Package className="w-4 h-4" /> Your order is on the way! Expected delivery: 2-3 business days
                                             </p>
                                         </div>
                                     )}

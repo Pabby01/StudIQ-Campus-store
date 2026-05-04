@@ -112,7 +112,7 @@ export default function WalletPage() {
             <Dialog
                 isOpen={isComingSoonOpen}
                 onClose={() => setIsComingSoonOpen(false)}
-                title="Coming Soon! 🚀"
+                title="Coming Soon!"
                 footer={
                     <Button variant="primary" className="w-full h-12 rounded-xl font-bold" onClick={() => setIsComingSoonOpen(false)}>
                         Got it, I&apos;ll be waiting!

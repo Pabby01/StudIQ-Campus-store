@@ -160,7 +160,7 @@ export default function StoreProductsPage() {
                                             </span>
                                             {product.rating && (
                                                 <span className="text-muted-text">
-                                                    ⭐ {product.rating}
+                                                    {product.rating} stars
                                                 </span>
                                             )}
                                         </div>

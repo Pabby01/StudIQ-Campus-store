@@ -205,7 +205,7 @@ export default function OnboardingPage() {
     );
   }
 
-  // 🎉 Celebration screen after successful onboarding
+  // Celebration screen after successful onboarding
   if (celebrationData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4">
@@ -237,7 +237,7 @@ export default function OnboardingPage() {
                 className="space-y-2"
               >
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Welcome, {celebrationData.name}! 🎉
+                  Welcome, {celebrationData.name}!
                 </h1>
                 <p className="text-gray-500">
                   You&apos;re officially part of StudIQ Campus!
