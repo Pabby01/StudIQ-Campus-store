@@ -5,37 +5,89 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
+import { motion } from "framer-motion";
 
-const slides = [
+type Slide =
+    | {
+        id: number;
+        title: string;
+        subtitle: string;
+        cta: string;
+        image: string;
+        badge: string;
+        accent: string;
+        link: string;
+        mediaType: "image";
+    }
+    | {
+        id: number;
+        title: string;
+        subtitle: string;
+        cta: string;
+        video: string;
+        poster: string;
+        badge: string;
+        accent: string;
+        link: string;
+        mediaType: "video";
+    };
+
+const slides: Slide[] = [
     {
         id: 1,
         title: "Flash Deal: Campus Tech Week",
         subtitle: "Up to 60% off new smartphones & accessories",
         cta: "Shop deal",
-        image: "/tech.jpg",
+        image: "https://images.unsplash.com/photo-1517059224940-d4af9eec41e5?auto=format&fit=crop&w=1400&q=80",
         badge: "Limited time",
-        accent: "from-indigo-100 via-white to-blue-100",
+        accent: "from-cyan-100 via-white to-blue-100",
         link: "/search?category=Electronics",
+        mediaType: "image",
     },
     {
         id: 2,
         title: "Flash Deal: Study Beats",
         subtitle: "Noise‑canceling headphones from ₦9,999",
         cta: "Grab now",
-        image: "/beat.jpg",
+        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1400&q=80",
         badge: "Hot pick",
-        accent: "from-purple-100 via-white to-pink-100",
+        accent: "from-fuchsia-100 via-white to-pink-100",
         link: "/search?category=Electronics",
+        mediaType: "image",
     },
     {
         id: 3,
         title: "Flash Deal: Sneaker Drops",
         subtitle: "Fresh kicks for campus, up to 40% off",
         cta: "View drops",
-        image: "/happy.jpg",
+        image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1400&q=80",
         badge: "Just landed",
-        accent: "from-emerald-100 via-white to-teal-100",
+        accent: "from-emerald-100 via-white to-lime-100",
         link: "/search?category=Fashion%20%26%20Clothing",
+        mediaType: "image",
+    },
+    {
+        id: 4,
+        title: "Campus Unboxings",
+        subtitle: "Quick product previews from real student sellers",
+        cta: "Watch now",
+        video: "https://cdn.pixabay.com/video/2021/09/14/88366-610590257_large.mp4",
+        poster: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80",
+        badge: "Video",
+        accent: "from-violet-100 via-white to-indigo-100",
+        link: "/search",
+        mediaType: "video",
+    },
+    {
+        id: 5,
+        title: "Study Essentials Refresh",
+        subtitle: "Books, tablets and desk gear for the semester",
+        cta: "Explore",
+        image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1400&q=80",
+        badge: "Fresh picks",
+        accent: "from-amber-100 via-white to-orange-100",
+        link: "/search?category=Books%20%26%20Textbooks",
+        mediaType: "image",
     },
 ];
 
@@ -69,50 +121,74 @@ export default function HeroCarousel() {
                 className="flex h-full transition-transform duration-500 ease-out"
                 style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
-                {slides.map((slide) => (
-                    <div
-                        key={slide.id}
-                        className="min-w-full h-full relative flex items-center justify-center"
-                    >
-                        <div className={`absolute inset-0 bg-gradient-to-r ${slide.accent}`} />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.2),transparent_55%)]" />
+                {slides.map((slide) => {
+                    const isVideo = slide.mediaType === "video";
 
-                        <div className="relative z-10 grid h-full w-full grid-cols-1 md:grid-cols-12 gap-6 px-6 md:px-12 py-8">
-                            <div className="md:col-span-6 flex flex-col justify-center">
-                                <div className="inline-flex w-fit items-center gap-2 rounded-full glass-pill px-3 py-1 text-xs font-semibold text-primary-blue">
-                                    {slide.badge}
-                                </div>
-                                <h2 className="mt-4 text-3xl md:text-5xl font-bold text-black">
-                                    {slide.title}
-                                </h2>
-                                <p className="mt-3 text-base md:text-lg text-muted-text max-w-md">
-                                    {slide.subtitle}
-                                </p>
-                            </div>
-                            <div className="md:col-span-6 flex items-center justify-center">
-                                <div className="relative w-full max-w-[520px] h-[220px] md:h-[300px]">
-                                    <Image
-                                        src={slide.image}
-                                        alt={slide.title}
-                                        fill
-                                        sizes="(min-width: 768px) 50vw, 90vw"
-                                        className="object-cover rounded-[32px] shadow-2xl"
-                                        priority={slide.id === 1}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => router.push(slide.link)}
-                            className="absolute bottom-5 left-5 rounded-full bg-white/90 text-primary-blue hover:bg-white shadow-md"
+                    return (
+                        <motion.div
+                            key={slide.id}
+                            className="min-w-full h-full relative flex items-center justify-center"
+                            whileHover={{ scale: 1.005 }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
                         >
-                            {slide.cta}
-                        </Button>
-                    </div>
-                ))}
+                            <div className={`absolute inset-0 bg-gradient-to-r ${slide.accent}`} />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.6),transparent_55%)]" />
+
+                            <div className="relative z-10 grid h-full w-full grid-cols-1 md:grid-cols-12 gap-6 px-6 md:px-12 py-8">
+                                <div className="md:col-span-6 flex flex-col justify-center max-w-lg">
+                                    <div className="inline-flex w-fit items-center gap-2 rounded-full glass-pill px-3 py-1 text-xs font-semibold text-primary-blue">
+                                        {slide.badge}
+                                    </div>
+                                    <h2 className="mt-4 text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-slate-950 leading-tight">
+                                        {slide.title}
+                                    </h2>
+                                    <p className="mt-3 text-sm sm:text-base md:text-lg text-slate-600 max-w-md">
+                                        {slide.subtitle}
+                                    </p>
+                                </div>
+                                <div className="md:col-span-6 flex items-center justify-center">
+                                    <motion.div
+                                        className="relative w-full max-w-[520px] h-[220px] md:h-[300px]"
+                                        whileHover={{ y: -4, scale: 1.01 }}
+                                        transition={{ duration: 0.25, ease: "easeOut" }}
+                                    >
+                                        {isVideo && "video" in slide ? (
+                                            <video
+                                                src={slide.video}
+                                                poster={slide.poster}
+                                                autoPlay
+                                                muted
+                                                loop
+                                                playsInline
+                                                preload="metadata"
+                                                className="h-full w-full rounded-[32px] object-cover shadow-2xl"
+                                            />
+                                        ) : (
+                                            <Image
+                                                src={slide.image}
+                                                alt={slide.title}
+                                                fill
+                                                sizes="(min-width: 768px) 50vw, 90vw"
+                                                className="object-cover rounded-[32px] shadow-2xl transition-transform duration-500"
+                                                priority={slide.id === 1}
+                                                unoptimized
+                                            />
+                                        )}
+                                    </motion.div>
+                                </div>
+                            </div>
+
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => router.push(slide.link)}
+                                className="absolute bottom-5 left-5 rounded-full bg-white/95 text-primary-blue hover:bg-white shadow-md"
+                            >
+                                {slide.cta}
+                            </Button>
+                        </motion.div>
+                    );
+                })}
             </div>
 
             {/* Navigation Arrows */}

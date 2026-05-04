@@ -5,8 +5,9 @@ import { useEffect, useState, Suspense, useRef } from "react";
 import ProductCard from "@/components/ProductCard";
 import SearchBar from "@/components/SearchBar";
 import CategoryFilter from "@/components/CategoryFilter";
-import { Loader2, Package } from "lucide-react";
+import { Loader2, Package, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Product = Readonly<{
   id: string;
@@ -144,55 +145,81 @@ function SearchPageContent() {
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 sm:pt-6">
         {/* Header */}
-        <div className="mb-6 glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="mb-6 glass-panel rounded-3xl p-5 sm:p-6 space-y-4 relative overflow-hidden"
+        >
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-blue via-fuchsia-500 to-emerald-400" />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-black mb-2">Search Products</h1>
-              <p className="text-sm text-muted-text">Find campus essentials, fast.</p>
+              <p className="inline-flex items-center gap-2 rounded-full bg-primary-blue/10 px-3 py-1 text-xs font-semibold text-primary-blue">
+                <Sparkles className="w-3.5 h-3.5" /> Student search
+              </p>
+              <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-slate-950">Search Products</h1>
+              <p className="text-sm text-slate-500">Find campus essentials, fast.</p>
             </div>
             {!loading && (
-              <div className="glass-pill rounded-full px-4 py-2 text-xs font-semibold text-muted-text">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm"
+              >
                 {total > 0 ? `${total} results` : "No results"}
-              </div>
+              </motion.div>
             )}
           </div>
           <SearchBar onSearch={handleSearch} />
-        </div>
+        </motion.div>
 
         {/* Filters */}
-        <div className="mb-6 glass-panel rounded-3xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.06, ease: "easeOut" }}
+          className="mb-6 glass-panel rounded-3xl p-3 sm:p-4 flex flex-col gap-3 sm:gap-4"
+        >
           <CategoryFilter
             selected={selectedCategory}
             onChange={handleCategoryChange}
           />
 
-          <select
-            value={sortBy}
-            onChange={(e) => {
-              setSortBy(e.target.value);
-              setPage(1);
-            }}
-            className="px-4 py-2.5 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue border border-white/60"
-          >
-            <option value="created_at">Newest First</option>
-            <option value="price">Price: Low to High</option>
-            <option value="name">Name: A to Z</option>
-            <option value="rating">Highest Rated</option>
-          </select>
-        </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <div className="text-xs font-medium text-muted-text whitespace-nowrap hidden sm:block">Sort by</div>
+            <motion.select
+              whileTap={{ scale: 0.98 }}
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setPage(1);
+              }}
+              className="w-full sm:w-auto px-4 py-2.5 glass-pill rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue border border-white/60 bg-white shadow-sm"
+            >
+              <option value="created_at">Newest First</option>
+              <option value="price">Price: Low to High</option>
+              <option value="name">Name: A to Z</option>
+              <option value="rating">Highest Rated</option>
+            </motion.select>
+          </div>
+        </motion.div>
 
         {/* Results */}
         {loading && page === 1 ? (
-          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-8">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
             {[...Array(8)].map((_, i) => (
               <div
                 key={i}
-                className="glass-card rounded-2xl border border-white/60 h-80 animate-pulse"
+                className="glass-card rounded-2xl border border-white/60 h-64 sm:h-80 animate-pulse"
               />
             ))}
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-16 glass-panel rounded-3xl border border-white/60">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-16 glass-panel rounded-3xl border border-white/60"
+          >
             <Package className="w-16 h-16 text-muted-text mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-black mb-2">No products found</h3>
             <p className="text-muted-text mb-6">
@@ -207,13 +234,26 @@ function SearchPageContent() {
             >
               Clear Filters
             </Button>
-          </div>
+          </motion.div>
         ) : (
           <>
-            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-8">
-              {products.map((product) => (
-                <ProductCard key={product.id} p={product} />
-              ))}
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+              <AnimatePresence mode="popLayout">
+                {products.map((product, index) => (
+                  <motion.div
+                    key={product.id}
+                    layout
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.25, delay: index * 0.01, ease: "easeOut" }}
+                    whileHover={{ y: -4, scale: 1.01 }}
+                    whileTap={{ scale: 0.985 }}
+                  >
+                    <ProductCard p={product} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
 
             {total > limit && (

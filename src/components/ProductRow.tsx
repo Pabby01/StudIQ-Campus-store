@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef } from "react";
 import ProductCard from "./ProductCard";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 type Product = Readonly<{
     id: string;
@@ -40,9 +41,27 @@ export default function ProductRow({
 }: ProductRowProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    const sectionVariants = {
+        hidden: { opacity: 0, y: 18 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.45,
+                ease: "easeOut" as const,
+                staggerChildren: 0.06,
+            },
+        },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 14, scale: 0.98 },
+        visible: { opacity: 1, y: 0, scale: 1 },
+    };
+
     const scroll = (direction: "left" | "right") => {
         if (scrollRef.current) {
-            const scrollAmount = 300;
+                const scrollAmount = 240;
             scrollRef.current.scrollBy({
                 left: direction === "left" ? -scrollAmount : scrollAmount,
                 behavior: "smooth",
@@ -51,13 +70,29 @@ export default function ProductRow({
     };
 
     return (
-        <section className="glass-panel rounded-3xl p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between">
+        <motion.section
+            className="glass-panel rounded-3xl p-3 sm:p-5 space-y-3.5 relative overflow-hidden"
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+        >
+            <motion.div
+                className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary-blue via-sky-400 to-fuchsia-400"
+                animate={{ opacity: [0.45, 1, 0.45], x: ["-10%", "10%", "-10%"] }}
+                transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+            />
+
+            <div className="flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-3">
                     {Icon && (
-                        <div className="p-1.5 sm:p-2 bg-white/70 rounded-2xl border border-white/60">
+                        <motion.div
+                            className="p-1.5 sm:p-2 bg-white/70 rounded-2xl border border-white/60"
+                            animate={{ y: [0, -2, 0] }}
+                            transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
+                        >
                             <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-blue" />
-                        </div>
+                        </motion.div>
                     )}
                     <div>
                         <h2 className="text-lg sm:text-2xl font-bold text-black">{title}</h2>
@@ -74,11 +109,11 @@ export default function ProductRow({
                 )}
             </div>
 
-            <div className="relative group">
+            <div className="relative group z-10">
                 {/* Left Arrow */}
                 <button
                     onClick={() => scroll("left")}
-                    className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass-pill rounded-full items-center justify-center border border-white/60 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/90"
+                    className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 glass-pill rounded-full items-center justify-center border border-white/60 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/90"
                     aria-label="Scroll left"
                 >
                     <ChevronLeft className="w-5 h-5" />
@@ -87,22 +122,28 @@ export default function ProductRow({
                 {/* Products Container */}
                 <div
                     ref={scrollRef}
-                    className="grid grid-cols-2 gap-4 sm:flex sm:gap-4 sm:overflow-x-auto sm:scrollbar-hide sm:scroll-smooth sm:pb-2"
+                    className="grid grid-cols-2 gap-3 sm:flex sm:gap-3 sm:overflow-x-auto sm:scrollbar-hide sm:scroll-smooth sm:pb-2"
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                     {products.map((product) => {
                         const productBadge = product.badge ?? badgeText;
                         return (
-                        <div key={product.id} className="relative w-full sm:flex-shrink-0 sm:w-[190px] lg:w-[200px]">
+                        <motion.div
+                            key={product.id}
+                            className="relative w-full sm:flex-shrink-0 sm:w-[165px] lg:w-[175px]"
+                            variants={itemVariants}
+                            whileHover={{ y: -4 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                        >
                             {productBadge && (
                                 <div
-                                    className={`absolute top-2 left-2 sm:top-3 sm:left-3 z-10 ${badgeColor} text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1 rounded-full`}
+                                    className={`absolute top-2 left-2 z-10 ${badgeColor} text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm`}
                                 >
                                     {productBadge}
                                 </div>
                             )}
                             <ProductCard p={product} />
-                        </div>
+                        </motion.div>
                         );
                     })}
                 </div>
@@ -110,12 +151,12 @@ export default function ProductRow({
                 {/* Right Arrow */}
                 <button
                     onClick={() => scroll("right")}
-                    className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 glass-pill rounded-full items-center justify-center border border-white/60 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/90"
+                    className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 glass-pill rounded-full items-center justify-center border border-white/60 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/90"
                     aria-label="Scroll right"
                 >
                     <ChevronRight className="w-5 h-5" />
                 </button>
             </div>
-        </section>
+        </motion.section>
     );
 }

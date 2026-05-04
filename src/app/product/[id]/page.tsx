@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Minus, Plus, Loader2, Package, ChevronLeft, ChevronRight, Edit, Trash2, Share2, Heart } from "lucide-react";
@@ -12,6 +13,7 @@ import { useCart } from "@/store/cart";
 import { useToast } from "@/hooks/useToast";
 import ProductReviews from "@/components/ProductReviews";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 
 type Product = {
   id: string;
@@ -49,10 +51,25 @@ export default function ProductDetailPage() {
   const addToCart = useCart((s) => s.add);
   const toast = useToast();
   const { walletAddress } = useCivicWallet();
+  const { addProduct: addRecentlyViewed } = useRecentlyViewed();
 
   useEffect(() => {
     fetchProduct();
   }, [productId]);
+
+  // Track recently viewed product
+  useEffect(() => {
+    if (product) {
+      const priceNgn = product.price_ngn || product.priceNgn || product.price * 1600;
+      addRecentlyViewed({
+        id: product.id,
+        name: product.name,
+        image_url: product.image_url || product.images?.[0] || '/placeholder.png',
+        price: product.price,
+        priceNgn,
+      });
+    }
+  }, [product?.id]);
 
   const fetchProduct = async () => {
     try {
@@ -207,6 +224,21 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="hidden lg:flex items-center justify-between mb-6">
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-sm font-medium text-black shadow-sm transition-all hover:bg-white"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to products
+          </button>
+
+          <div className="text-right">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-text">Product details</p>
+            <p className="text-sm text-black/70">Everything you need before adding to cart</p>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <button
             onClick={() => router.back()}
@@ -230,10 +262,10 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
+        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-10">
           <div className="space-y-4">
-            <div className="relative rounded-3xl overflow-hidden border border-white/60 bg-white shadow-sm group">
-              <div className="aspect-square bg-white flex items-center justify-center p-4 relative">
+            <div className="relative rounded-[28px] overflow-hidden border border-white/70 bg-white shadow-[0_24px_80px_rgba(76,88,140,0.12)] group">
+              <div className="aspect-square bg-gradient-to-br from-white to-slate-50 flex items-center justify-center p-4 relative">
                 {uniqueImages.length > 0 ? (
                   <motion.img
                     key={selectedImageIndex}
@@ -282,18 +314,21 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          <div className="space-y-6">
-            <div className="space-y-3">
+          <div className="space-y-6 rounded-[28px] border border-white/70 bg-white/85 p-5 sm:p-6 shadow-[0_24px_80px_rgba(76,88,140,0.12)] backdrop-blur">
+            <div className="space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
                 {product.category && <Badge variant="gray">{product.category}</Badge>}
                 {product.is_pod_enabled && <Badge variant="green">POD Enabled</Badge>}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-black">{product.name}</h1>
+
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-black leading-tight">
+                {product.name}
+              </h1>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-baseline gap-2 flex-wrap">
+            <div className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-baseline gap-3 flex-wrap">
                   <span className="text-3xl font-bold text-black">{formatNgn(displayPrice)}</span>
                   {product.original_price && product.original_price > product.price && (
                     <span className="text-base text-muted-text line-through">
@@ -305,20 +340,36 @@ export default function ProductDetailPage() {
                   {inStock ? "Add to Cart" : "Out of Stock"}
                 </Button>
               </div>
+
+              <div>
+                {inStock ? (
+                  <p className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
+                    In Stock ({product.inventory} available)
+                  </p>
+                ) : (
+                  <p className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-700">
+                    Out of Stock
+                  </p>
+                )}
+              </div>
             </div>
 
-            <div>{inStock ? <p className="text-green-600 font-medium">In Stock ({product.inventory} available)</p> : <p className="text-red-600 font-medium">Out of Stock</p>}</div>
-
             <div>
-              <h3 className="font-semibold text-black mb-2">Description</h3>
-              <p className="text-muted-text leading-relaxed whitespace-pre-line">{product.description || "No description provided by seller."}</p>
+              <h3 className="font-semibold text-black mb-3 text-lg">Description</h3>
+              <p className="text-muted-text leading-relaxed whitespace-pre-line text-[15px] sm:text-base">{product.description || "No description provided by seller."}</p>
             </div>
 
             {product.stores && (
-              <div className="p-4 glass-pill rounded-2xl">
+              <Link
+                href={`/store/${product.store_id}`}
+                className="group block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-primary-blue/40 hover:shadow-md"
+              >
                 <p className="text-sm text-muted-text mb-1">Sold by</p>
-                <p className="font-semibold text-black">{product.stores.name}</p>
-              </div>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-semibold text-black transition-colors group-hover:text-primary-blue">{product.stores.name}</p>
+                  <span className="text-sm font-medium text-primary-blue">View store</span>
+                </div>
+              </Link>
             )}
 
             {isOwner ? (

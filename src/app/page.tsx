@@ -21,6 +21,8 @@ type Product = Readonly<{
   image_url?: string | null;
   rating?: number | null;
   category?: string;
+  badge?: string;
+  badgeTone?: string;
 }>;
 type StoreType = Readonly<{
   id: string;
@@ -29,6 +31,50 @@ type StoreType = Readonly<{
   banner_url?: string | null;
   description?: string | null;
 }>;
+
+const categoryChips = [
+  { label: "Fashion", href: "/search?category=Fashion", tone: "from-pink-500 to-rose-500" },
+  { label: "Electronics", href: "/search?category=Electronics", tone: "from-sky-500 to-blue-500" },
+  { label: "Books", href: "/search?category=Books%20%26%20Textbooks", tone: "from-amber-500 to-orange-500" },
+  { label: "Food", href: "/search?category=Food", tone: "from-emerald-500 to-teal-500" },
+  { label: "Beauty", href: "/search?category=Beauty", tone: "from-fuchsia-500 to-violet-500" },
+  { label: "Deals", href: "/search?sortBy=price&order=asc", tone: "from-slate-900 to-slate-700" },
+];
+
+const dealTicker = [
+  "Flash deals on campus essentials",
+  "Free pickup from nearby stores",
+  "Student picks under ₦10,000",
+  "Pay securely with USDC or USDT",
+  "New arrivals dropping daily",
+];
+
+const adCards = [
+  {
+    title: "Campus Tech Week",
+    subtitle: "Up to 60% off tech essentials",
+    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
+    href: "/search?category=Electronics",
+  },
+  {
+    title: "Study Beats",
+    subtitle: "Headphones, speakers and more",
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
+    href: "/search?category=Electronics",
+  },
+  {
+    title: "Campus Style Drop",
+    subtitle: "Fresh fashion for students",
+    image: "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1200&q=80",
+    href: "/search?category=Fashion",
+  },
+  {
+    title: "Smart Savings",
+    subtitle: "Rewards, bundles and discounts",
+    image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
+    href: "/search?sortBy=price&order=asc",
+  },
+];
 
 export default function Home() {
   const router = useRouter();
@@ -39,6 +85,7 @@ export default function Home() {
   const [mobileStoreIndex, setMobileStoreIndex] = useState(0);
   const [isMobileFeaturePaused, setIsMobileFeaturePaused] = useState(false);
   const [isMobileStorePaused, setIsMobileStorePaused] = useState(false);
+  const [flashCountdown, setFlashCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumeStoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const featureCards = [
@@ -185,6 +232,36 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    const endTime = Date.now() + 1000 * 60 * 60 * 12;
+
+    const updateCountdown = () => {
+      const difference = Math.max(0, endTime - Date.now());
+      const totalSeconds = Math.floor(difference / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      setFlashCountdown({ hours, minutes, seconds });
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const highlightedProducts = products.map((product, index) => ({
+    ...product,
+    badge: index === 0 ? "Featured" : index === 1 ? "Sponsored" : product.badge,
+    badgeTone: index === 0 ? "from-emerald-500 via-teal-500 to-cyan-500" : index === 1 ? "from-fuchsia-500 via-pink-500 to-rose-500" : product.badgeTone,
+  }));
+
+  const flashDealProducts = highlightedProducts.map((product) => ({
+    ...product,
+    badge: product.badge || "Flash",
+    badgeTone: product.badgeTone || "from-orange-500 via-amber-500 to-yellow-500",
+  }));
+
   return (
     <div className="min-h-screen bg-soft-gray-bg mesh-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 sm:pt-6 space-y-10 md:space-y-14">
@@ -209,13 +286,144 @@ export default function Home() {
           <HeroCarousel />
         </div>
 
+        {/* Animated Deals Banner */}
+        <section className="relative overflow-hidden rounded-3xl border border-white/80 bg-white/85 px-4 py-4 shadow-[0_20px_60px_rgba(79,70,229,0.12)] sm:px-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-blue/10 via-fuchsia-500/8 to-emerald-400/10" />
+          <div className="absolute -left-16 top-0 h-full w-32 bg-primary-blue/10 blur-3xl" />
+          <div className="relative flex flex-col gap-4 overflow-hidden lg:flex-row lg:items-center">
+            <div className="flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              Live deals
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-900 shadow-sm">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Ends in</span>
+              <span className="font-bold text-slate-950">{String(flashCountdown.hours).padStart(2, "0")}:{String(flashCountdown.minutes).padStart(2, "0")}:{String(flashCountdown.seconds).padStart(2, "0")}</span>
+            </div>
+            <div className="relative flex-1 overflow-hidden">
+              <motion.div
+                className="flex w-max items-center gap-3 whitespace-nowrap text-sm font-medium text-slate-700"
+                animate={{ x: [0, -520] }}
+                transition={{ repeat: Infinity, duration: 18, ease: "linear" }}
+              >
+                {[...dealTicker, ...dealTicker].map((item, index) => (
+                  <span
+                    key={`${item}-${index}`}
+                    className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-1.5 shadow-sm backdrop-blur"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </motion.div>
+            </div>
+            <Link
+              href="/search"
+              className="hidden sm:inline-flex rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
+            >
+              Browse deals
+            </Link>
+          </div>
+        </section>
+
+        {/* Moving Ads */}
+        <section className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">Sponsored updates</h2>
+              <p className="text-xs sm:text-sm text-slate-500">A live strip of offers, drops and student-friendly promos.</p>
+            </div>
+            <Link href="/search" className="hidden sm:inline-flex rounded-full bg-primary-blue px-4 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90">
+              See all
+            </Link>
+          </div>
+          <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-sky-50 via-white to-fuchsia-50 p-3 sm:p-4">
+            <motion.div
+              className="flex w-max gap-3"
+              animate={{ x: [0, -700] }}
+              transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+            >
+              {[...adCards, ...adCards].map((ad, index) => (
+                <Link
+                  key={`${ad.title}-${index}`}
+                  href={ad.href}
+                  className="group relative h-40 w-[230px] overflow-hidden rounded-[22px] border border-white/80 bg-white shadow-lg sm:h-44 sm:w-[260px]"
+                >
+                  <Image
+                    src={ad.image}
+                    alt={ad.title}
+                    fill
+                    sizes="260px"
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">Sponsored</p>
+                    <h3 className="mt-1 text-base font-bold leading-tight">{ad.title}</h3>
+                    <p className="mt-1 text-xs text-white/80">{ad.subtitle}</p>
+                  </div>
+                </Link>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Category Chips */}
+        <section className="rounded-3xl border border-white/70 bg-white/75 p-4 sm:p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900">Shop by category</h2>
+              <p className="text-xs sm:text-sm text-slate-500">Quick taps to jump straight into what students need most.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categoryChips.map((chip) => (
+              <Link
+                key={chip.label}
+                href={chip.href}
+                className={`inline-flex items-center rounded-full bg-gradient-to-r ${chip.tone} px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md`}
+              >
+                {chip.label}
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* Trending Products */}
         <ProductRow
           title="Trending Now"
           icon={TrendingUp}
           subtitle="Most popular items this week"
           viewAllLink="/search"
-          products={products.slice(0, 6)}
+          products={highlightedProducts.slice(0, 6)}
+        />
+
+        {/* Top Rated / Best Sellers */}
+        <ProductRow
+          title="Top Rated"
+          icon={Sparkles}
+          subtitle="Campus favorites with strong ratings"
+          viewAllLink="/search?sortBy=rating"
+          badgeText="Top"
+          badgeColor="bg-gradient-to-r from-amber-500 to-orange-500"
+          products={[...highlightedProducts]
+            .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+            .slice(0, 8)}
+        />
+
+        <ProductRow
+          title="Best Sellers"
+          icon={Zap}
+          subtitle="What students are adding most"
+          viewAllLink="/search"
+          badgeText="Hot"
+          badgeColor="bg-gradient-to-r from-fuchsia-500 to-pink-500"
+          products={[...flashDealProducts]
+            .sort((a, b) => {
+              const scoreA = (a.rating ?? 0) + (a.category ? 0.25 : 0);
+              const scoreB = (b.rating ?? 0) + (b.category ? 0.25 : 0);
+              return scoreB - scoreA;
+            })
+            .slice(0, 8)}
         />
 
         {/* Featured Stores */}
@@ -262,8 +470,17 @@ export default function Home() {
             </div>
           </div>
           <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {products.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} p={product} />
+            {highlightedProducts.slice(0, 4).map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.3, delay: index * 0.06 }}
+                whileHover={{ y: -4, scale: 1.01 }}
+              >
+                <ProductCard key={product.id} p={product} />
+              </motion.div>
             ))}
           </div>
         </section>
