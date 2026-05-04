@@ -218,12 +218,17 @@ export default function DashboardPage() {
   // Only check for user, not walletAddress (wallet may still be loading)
   if (!user) {
     return (
-      <div className="min-h-screen bg-soft-gray-bg mesh-bg flex items-center justify-center p-4">
-        <div className="text-center glass-panel rounded-3xl p-8 border border-white/60">
-          <h2 className="text-2xl font-bold text-black mb-4">Sign In Required</h2>
-          <p className="text-lg text-muted-text mb-6">Please sign in to view your dashboard</p>
-          <Button variant="primary" onClick={() => router.push("/")}>
-            Go to Home
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute -top-32 left-1/4 h-72 w-72 rounded-full bg-blue-500/30 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl" />
+        </div>
+        <div className="relative w-full max-w-md overflow-hidden rounded-[2rem] border border-white/15 bg-white/95 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-600" />
+          <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Sign In Required</h2>
+          <p className="mt-3 text-slate-600 mb-8 leading-relaxed">Please sign in to view your dashboard</p>
+          <Button variant="primary" onClick={() => router.push("/auth")} className="w-full py-6 text-lg rounded-2xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all duration-300">
+            Sign In
           </Button>
         </div>
       </div>

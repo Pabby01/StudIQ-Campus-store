@@ -45,32 +45,39 @@ export function ProtectedRoute({ children, requireWallet = false }: ProtectedRou
     // Not authenticated - show sign in prompt
     if (!user) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4 bg-soft-gray-bg mesh-bg">
-                <div className="glass-panel rounded-3xl p-8 md:p-12 w-full max-w-md text-center border border-white/60 shadow-xl backdrop-blur-xl relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/10 pointer-events-none" />
-                    
+            <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-40">
+                    <div className="absolute -top-32 left-1/4 h-72 w-72 rounded-full bg-blue-500/30 blur-3xl" />
+                    <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl" />
+                </div>
+                <div className="relative w-full max-w-md overflow-hidden rounded-[2rem] border border-white/15 bg-white/95 p-8 md:p-10 text-center shadow-[0_24px_80px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-600" />
+                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-gradient-to-br from-blue-600 to-indigo-700 shadow-lg shadow-blue-600/25">
+                        <svg className="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+
                     <div className="relative z-10">
-                        <div className="w-20 h-20 bg-gradient-to-br from-primary-blue to-accent-blue rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg rotate-3 hover:rotate-6 transition-transform duration-300">
-                            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.25em] text-blue-700">
+                            Secure access
+                        </span>
                         
-                        <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">Access Denied</h2>
-                        <p className="text-slate-500 mb-8 leading-relaxed">
+                        <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950">Sign in required</h2>
+                        <p className="mt-3 text-slate-600 leading-relaxed">
                             Please sign in to access your dashboard and manage your store.
                         </p>
                         
-                        <div className="space-y-4">
+                        <div className="mt-8 space-y-3">
                             <Button 
                                 variant="primary" 
-                                onClick={() => router.push("/")}
-                                className="w-full py-6 text-lg rounded-xl shadow-lg shadow-primary-blue/20 hover:shadow-primary-blue/40 transition-all duration-300"
+                                onClick={() => router.push("/auth")}
+                                className="w-full py-6 text-lg rounded-2xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all duration-300"
                             >
-                                Go to Home
+                                Sign In
                             </Button>
                             
-                            <p className="text-xs text-slate-400 mt-6">
+                            <p className="text-xs text-slate-400 mt-5">
                                 Protected by StudIQ Secure Auth
                             </p>
                         </div>

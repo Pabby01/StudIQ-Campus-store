@@ -580,7 +580,7 @@ export default function CartPage() {
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-muted-text">Available balance</span>
                         <span className="font-semibold text-gray-900">
-                          {!walletAddress && "Connect wallet to view"}
+                          {!walletAddress && "Sign in to view"}
                           {walletAddress && balanceLoading && "Loading..."}
                           {walletAddress && !balanceLoading && formatTokenAmount(availableBalance, finalCurrency)}
                         </span>
