@@ -11,7 +11,7 @@ import { SOLANA_CONFIG } from "@/lib/solana-config";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
-import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin } from "lucide-react";
+import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin, CreditCard, Coins, Lock, Sparkles, ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { checkoutCreateSchema } from "@/lib/validators";
 import { useStore } from "@/hooks/useStore";
@@ -36,6 +36,8 @@ export default function CartPage() {
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showRampModal, setShowRampModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaystackModal, setShowPaystackModal] = useState(false);
 
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -366,9 +368,7 @@ export default function CartPage() {
     if (checkoutStatus === "verifying") return "Verifying...";
     if (checkoutStatus === "success") return "Complete!";
 
-    if (deliveryMethod === "pickup") return "Place Pickup Order";
-    if (paymentMethod === "pod") return "Place Order (Cash on Delivery)";
-    return "Checkout with Stablecoin";
+    return "Pay Now";
   };
 
   const getStatusMessage = () => {
@@ -541,33 +541,6 @@ export default function CartPage() {
                   </div>
                 )}
 
-                {/* Payment Method Selection */}
-                {deliveryMethod === "shipping" && items.every(i => i.isPodEnabled) && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-black mb-3">Payment Method</h3>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <button
-                        onClick={() => setPaymentMethod("solana")}
-                        className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === "solana"
-                          ? "border-primary-blue bg-blue-50 text-primary-blue"
-                          : "border-border-gray hover:bg-gray-50"
-                          }`}
-                      >
-                        <span className="font-medium">Solana (Crypto)</span>
-                      </button>
-                      <button
-                        onClick={() => setPaymentMethod("pod")}
-                        className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === "pod"
-                          ? "border-green-600 bg-green-50 text-green-700"
-                          : "border-border-gray hover:bg-gray-50"
-                          }`}
-                      >
-                        <span className="font-medium">Cash on Delivery</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 {paymentMethod === "solana" && deliveryMethod === "shipping" && (
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Pay With</label>
@@ -733,14 +706,13 @@ export default function CartPage() {
                   <Button
                     variant="primary"
                     className="w-full"
-                    onClick={() => void checkout()}
+                    onClick={() => setShowPaymentModal(true)}
                     disabled={
                       (checkoutStatus !== "idle" && checkoutStatus !== "error") ||
-                      (!isRateReady && paymentMethod === 'solana') ||
                       deliveryUnavailable
                     }
                   >
-                    {!isRateReady && paymentMethod === 'solana' ? "Fetching Rates..." : getButtonText()}
+                    {getButtonText()}
                   </Button>
                   <Button
                     variant="outline"
@@ -804,6 +776,116 @@ export default function CartPage() {
         onClose={() => setShowRampModal(false)}
         initialType="onramp"
       />
+      <Dialog
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        title="Choose payment method"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Pick how you want to pay. Crypto checkout is live now, Paystack is being integrated, and StudPoints is visible but not active yet.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowPaymentModal(false);
+              setShowPaystackModal(true);
+            }}
+            className="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 transition-all hover:border-primary-blue hover:bg-blue-50/60"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
+                <CreditCard className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-semibold text-black">Pay with Paystack</h4>
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                    Coming soon
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-text">
+                  Card and bank payment integration will land here next.
+                </p>
+              </div>
+              <ArrowRight className="mt-1 h-4 w-4 text-gray-400" />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowPaymentModal(false);
+              void checkout();
+            }}
+            className="w-full text-left rounded-2xl border border-primary-blue bg-blue-50/70 p-4 transition-all hover:bg-blue-100"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-blue text-white">
+                <Coins className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-semibold text-black">Pay with crypto wallet</h4>
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-700">
+                    Live
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-text">
+                  Use your wallet to pay with SOL or stablecoins, then confirm the transaction.
+                </p>
+              </div>
+              <ArrowRight className="mt-1 h-4 w-4 text-primary-blue" />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            disabled
+            className="w-full text-left rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4 opacity-60"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-200 text-gray-500">
+                <Lock className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-semibold text-black">Pay with StudPoints</h4>
+                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-600">
+                    Disabled
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-text">
+                  This option is not active yet, but it will be available later.
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </Dialog>
+      <Dialog
+        isOpen={showPaystackModal}
+        onClose={() => setShowPaystackModal(false)}
+        title="Paystack is coming next"
+        footer={
+          <Button variant="primary" className="w-full" onClick={() => setShowPaystackModal(false)}>
+            Got it
+          </Button>
+        }
+      >
+        <div className="space-y-4 text-center py-2">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-blue-50 text-primary-blue shadow-sm">
+            <Sparkles className="h-7 w-7" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-black text-gray-900 tracking-tight">Paystack checkout is not live yet</h3>
+            <p className="text-sm leading-relaxed text-gray-600">
+              The checkout UI is ready for Paystack, but the payment processor is still being wired up. Crypto wallet checkout remains available right now.
+            </p>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }
