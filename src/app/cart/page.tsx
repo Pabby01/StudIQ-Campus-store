@@ -624,14 +624,20 @@ export default function CartPage() {
                     placeholder="john@example.com"
                     type="email"
                     value={deliveryDetails.email}
-                    onChange={(e) => setDeliveryDetails({ ...deliveryDetails, email: e.target.value })}
+                    onChange={(e) => {
+                      setDeliveryDetails({ ...deliveryDetails, email: e.target.value });
+                      if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: undefined });
+                    }}
                     error={fieldErrors.email}
                   />
                   <Input
                     label="Recipient Name"
                     placeholder="Full Name"
                     value={deliveryDetails.name}
-                    onChange={(e) => setDeliveryDetails({ ...deliveryDetails, name: e.target.value })}
+                    onChange={(e) => {
+                      setDeliveryDetails({ ...deliveryDetails, name: e.target.value });
+                      if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: undefined });
+                    }}
                     error={fieldErrors.name}
                   />
                   {deliveryMethod === "shipping" && (
@@ -640,7 +646,10 @@ export default function CartPage() {
                         label="Street Address"
                         placeholder="123 Campus Dr"
                         value={deliveryDetails.address}
-                        onChange={(e) => setDeliveryDetails({ ...deliveryDetails, address: e.target.value })}
+                        onChange={(e) => {
+                          setDeliveryDetails({ ...deliveryDetails, address: e.target.value });
+                          if (fieldErrors.address) setFieldErrors({ ...fieldErrors, address: undefined });
+                        }}
                         error={fieldErrors.address}
                       />
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -648,14 +657,20 @@ export default function CartPage() {
                           label="City"
                           placeholder="San Francisco"
                           value={deliveryDetails.city}
-                          onChange={(e) => setDeliveryDetails({ ...deliveryDetails, city: e.target.value })}
+                          onChange={(e) => {
+                            setDeliveryDetails({ ...deliveryDetails, city: e.target.value });
+                            if (fieldErrors.city) setFieldErrors({ ...fieldErrors, city: undefined });
+                          }}
                           error={fieldErrors.city}
                         />
                         <Input
                           label="Zip Code"
                           placeholder="94105"
                           value={deliveryDetails.zip}
-                          onChange={(e) => setDeliveryDetails({ ...deliveryDetails, zip: e.target.value })}
+                          onChange={(e) => {
+                            setDeliveryDetails({ ...deliveryDetails, zip: e.target.value });
+                            if (fieldErrors.zip) setFieldErrors({ ...fieldErrors, zip: undefined });
+                          }}
                           error={fieldErrors.zip}
                         />
                       </div>
