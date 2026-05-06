@@ -6,6 +6,17 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+function normalizeStatus(status: string | null | undefined): "completed" | "pending" | "failed" {
+  const value = (status || "").toLowerCase();
+  if (value.includes("complete") || value.includes("success") || value.includes("paid")) {
+    return "completed";
+  }
+  if (value.includes("fail") || value.includes("error") || value.includes("cancel") || value.includes("reject")) {
+    return "failed";
+  }
+  return "pending";
+}
+
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
@@ -13,58 +24,115 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
 
-    const offset = (page - 1) * limit;
+    const [pajResult, rampResult, subscriptionResult] = await Promise.all([
+      supabase
+        .from("paj_transactions")
+        .select("id, user_address, amount, status, reference_id, created_at, updated_at")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("ramp_transactions")
+        .select("id, paj_id, user_address, fiat_amount, status, created_at, updated_at")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("subscription_transactions")
+        .select("id, user_address, amount, status, tx_signature, created_at")
+        .order("created_at", { ascending: false }),
+    ]);
 
-    let query = supabase
-      .from("paj_transactions")
-      .select("*, profiles(name, phone)")
-      .order("created_at", { ascending: false });
-
-    if (status && status !== "all") {
-      query = query.eq("status", status);
+    if (pajResult.error && pajResult.error.code !== "42P01") {
+      throw pajResult.error;
+    }
+    if (rampResult.error && rampResult.error.code !== "42P01") {
+      throw rampResult.error;
+    }
+    if (subscriptionResult.error && subscriptionResult.error.code !== "42P01") {
+      throw subscriptionResult.error;
     }
 
-    query = query.range(offset, offset + limit - 1);
+    const pajRows = pajResult.data || [];
+    const rampRows = rampResult.data || [];
+    const subscriptionRows = subscriptionResult.data || [];
 
-    const { data: transactions, error, count } = await query;
+    const userAddresses = new Set<string>();
+    pajRows.forEach((tx: any) => userAddresses.add(tx.user_address));
+    rampRows.forEach((tx: any) => userAddresses.add(tx.user_address));
+    subscriptionRows.forEach((tx: any) => userAddresses.add(tx.user_address));
 
-    if (error) throw error;
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("address, name, email")
+      .in("address", Array.from(userAddresses));
 
-    // Format response
-    const formattedTransactions = (transactions || []).map((tx: any) => ({
-      id: tx.id,
-      userId: tx.user_address,
-      userName: tx.profiles?.name || "Unknown",
-      amount: tx.amount,
-      status: tx.status,
-      createdAt: tx.created_at,
-      updatedAt: tx.updated_at,
-      reference_id: tx.reference_id,
-    }));
+    const profileMap = new Map<string, { name: string | null; email: string | null }>();
+    (profiles || []).forEach((p: any) => {
+      profileMap.set(p.address, { name: p.name, email: p.email });
+    });
 
-    // Calculate stats
-    const { data: allTransactions } = await supabase
-      .from("paj_transactions")
-      .select("amount, status");
+    const mergedTransactions = [
+      ...pajRows.map((tx: any) => ({
+        id: tx.id,
+        userId: tx.user_address,
+        userName: profileMap.get(tx.user_address)?.name || "Unknown",
+        userEmail: profileMap.get(tx.user_address)?.email || null,
+        amount: Number(tx.amount || 0),
+        status: normalizeStatus(tx.status),
+        createdAt: tx.created_at,
+        updatedAt: tx.updated_at,
+        reference_id: tx.reference_id,
+        source: "paj_transactions",
+      })),
+      ...rampRows.map((tx: any) => ({
+        id: tx.id,
+        userId: tx.user_address,
+        userName: profileMap.get(tx.user_address)?.name || "Unknown",
+        userEmail: profileMap.get(tx.user_address)?.email || null,
+        amount: Number(tx.fiat_amount || 0),
+        status: normalizeStatus(tx.status),
+        createdAt: tx.created_at,
+        updatedAt: tx.updated_at,
+        reference_id: tx.paj_id,
+        source: "ramp_transactions",
+      })),
+      ...subscriptionRows.map((tx: any) => ({
+        id: tx.id,
+        userId: tx.user_address,
+        userName: profileMap.get(tx.user_address)?.name || "Unknown",
+        userEmail: profileMap.get(tx.user_address)?.email || null,
+        amount: Number(tx.amount || 0),
+        status: normalizeStatus(tx.status),
+        createdAt: tx.created_at,
+        updatedAt: tx.created_at,
+        reference_id: tx.tx_signature,
+        source: "subscription_transactions",
+      })),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    const totalTransactions = allTransactions?.length || 0;
-    const completedTransactions = (allTransactions || []).filter(
-      (t) => t.status === "completed"
-    ).length;
-    const pendingTransactions = (allTransactions || []).filter(
-      (t) => t.status === "pending"
-    ).length;
-    const failedTransactions = (allTransactions || []).filter(
-      (t) => t.status === "failed"
-    ).length;
+    const statusFiltered =
+      status === "all"
+        ? mergedTransactions
+        : mergedTransactions.filter((tx) => tx.status === status);
+
+    const offset = (page - 1) * limit;
+    const pagedTransactions = statusFiltered.slice(offset, offset + limit);
+
+    const totalTransactions = mergedTransactions.length;
+    const completedTransactions = mergedTransactions.filter((t) => t.status === "completed").length;
+    const pendingTransactions = mergedTransactions.filter((t) => t.status === "pending").length;
+    const failedTransactions = mergedTransactions.filter((t) => t.status === "failed").length;
+    const sourceBreakdown = {
+      pajTransactions: mergedTransactions.filter((t) => t.source === "paj_transactions").length,
+      rampTransactions: mergedTransactions.filter((t) => t.source === "ramp_transactions").length,
+      subscriptionTransactions: mergedTransactions.filter((t) => t.source === "subscription_transactions").length,
+    };
 
     return NextResponse.json({
-      transactions: formattedTransactions,
-      total: count || 0,
+      transactions: pagedTransactions,
+      total: statusFiltered.length,
       totalTransactions,
       completedTransactions,
       pendingTransactions,
       failedTransactions,
+      sourceBreakdown,
       page,
       limit,
     });

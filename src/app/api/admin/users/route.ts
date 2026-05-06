@@ -19,11 +19,11 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from("profiles")
       .select("*")
-      .order("id", { ascending: false })
+      .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,address.ilike.%${search}%`);
+      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,address.ilike.%${search}%`);
     }
 
     const { data: profiles, error, count } = await query;
@@ -48,13 +48,12 @@ export async function GET(req: NextRequest) {
           .from("stores")
           .select("id")
           .eq("owner_address", profile.address)
-          .single();
+          .maybeSingle();
 
         const isSeller = !!store;
 
         // Calculate spending trend (compare last 2 months)
         const now = new Date();
-        const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
         const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -83,7 +82,7 @@ export async function GET(req: NextRequest) {
 
         return {
           id: profile.address,
-          email: profile.phone || "N/A",
+          email: profile.email || "N/A",
           name: profile.name || "Unknown",
           wallet_address: profile.address,
           total_spent: Math.round(totalSpent),
@@ -111,9 +110,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Get total count
-    let countQuery = supabase.from("profiles").select("id", { count: "exact" });
+    let countQuery = supabase.from("profiles").select("address", { count: "exact" });
     if (search) {
-      countQuery = countQuery.or(`name.ilike.%${search}%,phone.ilike.%${search}%,address.ilike.%${search}%`);
+      countQuery = countQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%,address.ilike.%${search}%`);
     }
     const { count: totalCount } = await countQuery;
 

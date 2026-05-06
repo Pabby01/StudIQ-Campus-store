@@ -23,6 +23,9 @@ type DashboardOverview = {
   totalRevenue: number;
   featuredStores: number;
   activeOrders: number;
+  subscriptionTransactions: number;
+  rampTransactions: number;
+  growthPercent: number;
 };
 
 export default function AdminDashboard() {
@@ -36,27 +39,34 @@ export default function AdminDashboard() {
   async function fetchDashboardData() {
     try {
       setLoading(true);
-      // Fetch overview data
-      const [storesRes, usersRes, analyticsRes] = await Promise.all([
-        fetch("/api/admin/stores"),
-        fetch("/api/admin/analytics/users"),
-        fetch("/api/admin/analytics"),
+      const [storesRes, usersRes, ordersRes, analyticsRes, pajRes] = await Promise.all([
+        fetch("/api/admin/stores?page=1&limit=1"),
+        fetch("/api/admin/users?page=1&limit=1"),
+        fetch("/api/admin/orders?page=1&limit=1"),
+        fetch("/api/admin/analytics?range=30d"),
+        fetch("/api/admin/transactions/paj?page=1&limit=1"),
       ]);
 
-      if (storesRes.ok && usersRes.ok && analyticsRes.ok) {
+      if (storesRes.ok && usersRes.ok && ordersRes.ok && analyticsRes.ok && pajRes.ok) {
         const storesData = await storesRes.json();
         const usersData = await usersRes.json();
+        const ordersData = await ordersRes.json();
         const analyticsData = await analyticsRes.json();
+        const pajData = await pajRes.json();
 
         const featuredCount = storesData.stores?.filter((s: any) => s.featured).length || 0;
+        const growthPercent = Number(analyticsData.revenueGrowth || 0);
 
         setData({
-          totalStores: storesData.stores?.length || 0,
-          totalUsers: usersData.totalUsers || 0,
-          totalOrders: analyticsData.totalOrders || 0,
+          totalStores: storesData.total || 0,
+          totalUsers: usersData.total || 0,
+          totalOrders: ordersData.total || 0,
           totalRevenue: analyticsData.totalRevenue || 0,
           featuredStores: featuredCount,
-          activeOrders: 0,
+          activeOrders: ordersData.pendingOrders || 0,
+          subscriptionTransactions: pajData?.sourceBreakdown?.subscriptionTransactions || 0,
+          rampTransactions: pajData?.sourceBreakdown?.rampTransactions || 0,
+          growthPercent,
         });
       }
     } catch (error) {
@@ -112,10 +122,24 @@ export default function AdminDashboard() {
     },
     {
       label: "Growth",
-      value: "↑ 12%",
+      value: `${(data?.growthPercent || 0) >= 0 ? "↑" : "↓"} ${Math.abs(data?.growthPercent || 0).toFixed(1)}%`,
       icon: TrendingUp,
       color: "pink",
       href: "/admin/analytics",
+    },
+    {
+      label: "Subscription Txns",
+      value: data?.subscriptionTransactions || 0,
+      icon: Users,
+      color: "blue",
+      href: "/admin/transactions/paj",
+    },
+    {
+      label: "Ramp Txns",
+      value: data?.rampTransactions || 0,
+      icon: ShoppingCart,
+      color: "green",
+      href: "/admin/transactions/paj",
     },
   ];
 
