@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from("orders")
-      .select("*, stores(name), profiles(name, email)")
+      .select("*, stores(name), profiles(name, phone)")
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     // Search filter
     if (search) {
-      query = query.or(`id.ilike.%${search}%,user_address.ilike.%${search}%,store_id.ilike.%${search}%`);
+      query = query.or(`id.ilike.%${search}%,buyer_address.ilike.%${search}%,store_id.ilike.%${search}%`);
     }
 
     const { data: orders, error, count } = await query;
@@ -39,27 +39,27 @@ export async function GET(req: NextRequest) {
     // Format response
     const formattedOrders = (orders || []).map((order: any) => ({
       id: order.id,
-      userId: order.user_address,
+      userId: order.buyer_address,
       userName: order.profiles?.name || "Unknown",
-      userEmail: order.profiles?.email || "N/A",
+      userEmail: order.profiles?.phone || "N/A",
       storeId: order.store_id,
       storeName: order.stores?.name || "Unknown",
-      amount: order.total_amount,
+      amount: order.amount,
       status: order.status,
-      items: order.items_count || 0,
+      items: 1,
       createdAt: order.created_at,
       updatedAt: order.updated_at,
-      payment_method: order.payment_method || "USDC",
-      tx_signature: order.tx_signature || "N/A",
+      payment_method: "SOL",
+      tx_signature: order.tx_sig || "N/A",
     }));
 
     // Calculate totals
     const { data: allOrders } = await supabase
       .from("orders")
-      .select("total_amount, status");
+      .select("amount, status");
 
     const totalRevenue = (allOrders || []).reduce(
-      (sum, order) => sum + (order.total_amount || 0),
+      (sum, order) => sum + (order.amount || 0),
       0
     );
     const completedOrders = (allOrders || []).filter(
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
     }
     if (search) {
       countQuery = countQuery.or(
-        `id.ilike.%${search}%,user_address.ilike.%${search}%,store_id.ilike.%${search}%`
+        `id.ilike.%${search}%,buyer_address.ilike.%${search}%,store_id.ilike.%${search}%`
       );
     }
     const { count: totalCount } = await countQuery;

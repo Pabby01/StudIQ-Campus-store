@@ -19,11 +19,11 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from("profiles")
       .select("*")
-      .order("signup_date", { ascending: false })
+      .order("id", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,wallet_address.ilike.%${search}%`);
+      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,address.ilike.%${search}%`);
     }
 
     const { data: profiles, error, count } = await query;
@@ -36,10 +36,10 @@ export async function GET(req: NextRequest) {
         // Get orders
         const { data: orders } = await supabase
           .from("orders")
-          .select("total_amount, created_at")
-          .eq("user_address", profile.wallet_address);
+          .select("amount, created_at")
+          .eq("buyer_address", profile.address);
 
-        const totalSpent = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+        const totalSpent = orders?.reduce((sum, order) => sum + (order.amount || 0), 0) || 0;
         const avgOrderValue = orders && orders.length > 0 ? totalSpent / orders.length : 0;
         const lastPurchase = orders && orders.length > 0 ? orders[0].created_at : null;
 
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
         const { data: store } = await supabase
           .from("stores")
           .select("id")
-          .eq("owner_address", profile.wallet_address)
+          .eq("owner_address", profile.address)
           .single();
 
         const isSeller = !!store;
@@ -67,8 +67,8 @@ export async function GET(req: NextRequest) {
           (o) => new Date(o.created_at) >= thisMonthStart
         ) || [];
 
-        const lastMonthSpent = lastMonthOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-        const thisMonthSpent = thisMonthOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+        const lastMonthSpent = lastMonthOrders.reduce((sum, o) => sum + (o.amount || 0), 0);
+        const thisMonthSpent = thisMonthOrders.reduce((sum, o) => sum + (o.amount || 0), 0);
 
         const spendingTrend =
           lastMonthSpent > 0
@@ -77,15 +77,15 @@ export async function GET(req: NextRequest) {
             ? 100
             : 0;
 
-        // Parse device info from user_agent
+        // Get device info
         const deviceType = profile.device_type || "Unknown";
         const browser = profile.browser || "Unknown";
 
         return {
-          id: profile.wallet_address,
-          email: profile.email,
+          id: profile.address,
+          email: profile.phone || "N/A",
           name: profile.name || "Unknown",
-          wallet_address: profile.wallet_address,
+          wallet_address: profile.address,
           total_spent: Math.round(totalSpent),
           total_orders: orders?.length || 0,
           last_purchase: lastPurchase,
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
           country: profile.country || "Unknown",
           device_type: deviceType,
           browser,
-          signup_date: profile.signup_date,
+          signup_date: profile.created_at,
           last_login: profile.last_login,
           is_seller: isSeller,
           avg_order_value: Math.round(avgOrderValue),
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
     // Get total count
     let countQuery = supabase.from("profiles").select("id", { count: "exact" });
     if (search) {
-      countQuery = countQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%,wallet_address.ilike.%${search}%`);
+      countQuery = countQuery.or(`name.ilike.%${search}%,phone.ilike.%${search}%,address.ilike.%${search}%`);
     }
     const { count: totalCount } = await countQuery;
 

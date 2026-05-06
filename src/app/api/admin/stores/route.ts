@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from("stores")
-      .select("id, name, description, owner_address, featured, featured_order, image_url")
-      .order("featured_order", { ascending: true })
+      .select("*")
+      .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (search) {
@@ -35,8 +35,8 @@ export async function GET(req: NextRequest) {
         // Get owner profile
         const { data: owner } = await supabase
           .from("profiles")
-          .select("name, email, user_agent, city, country")
-          .eq("wallet_address", store.owner_address)
+          .select("name, phone, city, country")
+          .eq("address", store.owner_address)
           .single();
 
         // Get store stats
@@ -47,10 +47,10 @@ export async function GET(req: NextRequest) {
 
         const { data: orders } = await supabase
           .from("orders")
-          .select("total_amount", { count: "exact" })
+          .select("amount", { count: "exact" })
           .eq("store_id", store.id);
 
-        const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+        const totalRevenue = orders?.reduce((sum, order) => sum + (order.amount || 0), 0) || 0;
 
         return {
           id: store.id,
@@ -58,17 +58,17 @@ export async function GET(req: NextRequest) {
           description: store.description,
           ownerId: store.owner_address,
           ownerName: owner?.name || "Unknown",
-          ownerEmail: owner?.email || "N/A",
-          ownerPhone: owner?.user_agent?.split("(")[1]?.split(")")[0] || "N/A",
+          ownerEmail: owner?.phone || "N/A",
+          ownerPhone: owner?.phone || "N/A",
           city: owner?.city || "Unknown",
           country: owner?.country || "Unknown",
           totalProducts: products?.length || 0,
           totalOrders: orders?.length || 0,
           totalRevenue,
           rating: 4.5,
-          featured: store.featured,
-          createdAt: new Date().toISOString(),
-          image_url: store.image_url,
+          featured: false,
+          createdAt: store.created_at || new Date().toISOString(),
+          image_url: store.banner_url,
         };
       })
     );

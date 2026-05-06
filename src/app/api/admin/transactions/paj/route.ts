@@ -10,51 +10,68 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const status = searchParams.get("status") || "all";
-    const limit = 50;
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+
+    const offset = (page - 1) * limit;
 
     let query = supabase
       .from("paj_transactions")
-      .select("*, profiles:user_address(name)")
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      .select("*, profiles(name, phone)")
+      .order("created_at", { ascending: false });
 
-    if (status !== "all") {
+    if (status && status !== "all") {
       query = query.eq("status", status);
     }
 
-    const { data: transactions, error } = await query;
+    query = query.range(offset, offset + limit - 1);
+
+    const { data: transactions, error, count } = await query;
 
     if (error) throw error;
 
-    // Get statistics
-    let statsQuery = supabase.from("paj_transactions").select("status", { count: "exact" });
+    // Format response
+    const formattedTransactions = (transactions || []).map((tx: any) => ({
+      id: tx.id,
+      userId: tx.user_address,
+      userName: tx.profiles?.name || "Unknown",
+      amount: tx.amount,
+      status: tx.status,
+      createdAt: tx.created_at,
+      updatedAt: tx.updated_at,
+      reference_id: tx.reference_id,
+    }));
 
-    const { data: allTxns } = await supabase.from("paj_transactions").select("*");
+    // Calculate stats
+    const { data: allTransactions } = await supabase
+      .from("paj_transactions")
+      .select("amount, status");
 
-    const totalTransactions = allTxns?.length || 0;
-    const completedTransactions = allTxns?.filter((t) => t.status === "completed").length || 0;
-    const pendingTransactions = allTxns?.filter((t) => t.status === "pending").length || 0;
-    const failedTransactions = allTxns?.filter((t) => t.status === "failed").length || 0;
+    const totalTransactions = allTransactions?.length || 0;
+    const completedTransactions = (allTransactions || []).filter(
+      (t) => t.status === "completed"
+    ).length;
+    const pendingTransactions = (allTransactions || []).filter(
+      (t) => t.status === "pending"
+    ).length;
+    const failedTransactions = (allTransactions || []).filter(
+      (t) => t.status === "failed"
+    ).length;
 
     return NextResponse.json({
+      transactions: formattedTransactions,
+      total: count || 0,
       totalTransactions,
       completedTransactions,
       pendingTransactions,
       failedTransactions,
-      transactions: transactions?.map((t: any) => ({
-        id: t.id,
-        userId: t.user_address,
-        userName: t.profiles?.name || "Unknown",
-        amount: t.amount,
-        status: t.status,
-        createdAt: t.created_at,
-        updatedAt: t.updated_at,
-      })) || [],
+      page,
+      limit,
     });
   } catch (error) {
     console.error("Error fetching PAJ transactions:", error);
     return NextResponse.json(
-      { error: "Failed to fetch PAJ transactions" },
+      { error: "Failed to fetch transactions" },
       { status: 500 }
     );
   }

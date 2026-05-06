@@ -10,50 +10,69 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const status = searchParams.get("status") || "all";
-    const limit = 50;
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+
+    const offset = (page - 1) * limit;
 
     let query = supabase
       .from("withdrawals")
       .select("*, stores(name)")
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      .order("created_at", { ascending: false });
 
-    if (status !== "all") {
+    if (status && status !== "all") {
       query = query.eq("status", status);
     }
 
-    const { data: withdrawals, error } = await query;
+    query = query.range(offset, offset + limit - 1);
+
+    const { data: withdrawals, error, count } = await query;
 
     if (error) throw error;
 
-    // Get all withdrawals for stats
+    // Format response
+    const formattedWithdrawals = (withdrawals || []).map((w: any) => ({
+      id: w.id,
+      storeId: w.store_id,
+      storeName: w.stores?.name || "Unknown",
+      amount: w.amount,
+      status: w.status,
+      method: w.method || "Bank Transfer",
+      accountDetails: w.account_details || "",
+      createdAt: w.created_at,
+      updatedAt: w.updated_at,
+    }));
+
+    // Calculate stats
     const { data: allWithdrawals } = await supabase
       .from("withdrawals")
-      .select("status, amount");
+      .select("amount, status");
 
     const totalWithdrawals = allWithdrawals?.length || 0;
-    const totalAmount = allWithdrawals?.reduce((sum, w) => sum + (w.amount || 0), 0) || 0;
-    const completedWithdrawals = allWithdrawals?.filter((w) => w.status === "completed").length || 0;
-    const pendingWithdrawals = allWithdrawals?.filter((w) => w.status === "pending").length || 0;
-    const failedWithdrawals = allWithdrawals?.filter((w) => w.status === "failed").length || 0;
+    const totalAmount = (allWithdrawals || []).reduce(
+      (sum, w) => sum + (w.amount || 0),
+      0
+    );
+    const completedWithdrawals = (allWithdrawals || []).filter(
+      (w) => w.status === "completed"
+    ).length;
+    const pendingWithdrawals = (allWithdrawals || []).filter(
+      (w) => w.status === "pending"
+    ).length;
+    const failedWithdrawals = (allWithdrawals || []).filter(
+      (w) => w.status === "failed"
+    ).length;
 
     return NextResponse.json({
+      withdrawals: formattedWithdrawals,
+      total: count || 0,
       totalWithdrawals,
-      totalAmount,
+      totalAmount: Math.round(totalAmount),
       completedWithdrawals,
       pendingWithdrawals,
       failedWithdrawals,
-      withdrawals: withdrawals?.map((w: any) => ({
-        id: w.id,
-        storeId: w.store_id,
-        storeName: w.stores?.name || "Unknown",
-        amount: w.amount,
-        status: w.status,
-        method: w.method,
-        accountDetails: w.account_details,
-        createdAt: w.created_at,
-        updatedAt: w.updated_at,
-      })) || [],
+      page,
+      limit,
     });
   } catch (error) {
     console.error("Error fetching withdrawals:", error);

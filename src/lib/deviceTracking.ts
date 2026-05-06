@@ -188,7 +188,7 @@ export async function captureUserTracking(
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        wallet_address: walletAddress,
+          address: walletAddress,
         device_type: deviceInfo.device_type,
         device_os: deviceInfo.device_os,
         browser: deviceInfo.browser,

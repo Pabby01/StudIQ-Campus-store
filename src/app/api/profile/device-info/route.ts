@@ -10,7 +10,7 @@ export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      wallet_address,
+      address,
       device_type,
       device_os,
       browser,
@@ -20,9 +20,9 @@ export async function PUT(req: NextRequest) {
       country,
     } = body;
 
-    if (!wallet_address) {
+    if (!address) {
       return NextResponse.json(
-        { error: "Missing wallet address" },
+        { error: "Missing address" },
         { status: 400 }
       );
     }
@@ -40,7 +40,7 @@ export async function PUT(req: NextRequest) {
         country: country || null,
         last_login: new Date().toISOString(),
       })
-      .eq("wallet_address", wallet_address);
+      .eq("address", address);
 
     if (error) throw error;
 
