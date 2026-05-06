@@ -17,7 +17,9 @@ import {
   BarChart3,
   ShoppingCart,
   DollarSign,
-  Bell
+  Bell,
+  Zap,
+  TrendingDown,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -140,6 +142,16 @@ export default function AdminLayout({
       label: "Users",
       href: "/admin/users",
       icon: <Users className="w-5 h-5" />,
+    },
+    {
+      label: "Transactions",
+      href: "/admin/transactions/paj",
+      icon: <Zap className="w-5 h-5" />,
+    },
+    {
+      label: "Withdrawals",
+      href: "/admin/withdrawals",
+      icon: <TrendingDown className="w-5 h-5" />,
     },
     {
       label: "Settings",
