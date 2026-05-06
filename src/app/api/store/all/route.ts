@@ -30,6 +30,10 @@ export async function GET(req: Request) {
         return Response.json({
             ok: true,
             stores: data || [],
+        }, {
+            headers: {
+                "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
+            },
         });
     } catch (error) {
         console.error("Stores fetch error:", error);

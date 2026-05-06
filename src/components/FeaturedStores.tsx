@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
-import { Store, MapPin, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { Store, ArrowRight } from "lucide-react";
 
 interface StoreCardProps {
     store: {
         id: string;
         name: string;
         category: string;
-        description: string;
-        banner_url?: string;
+        description?: string | null;
+        banner_url?: string | null;
         profiles?: { name: string };
     };
 }
@@ -23,10 +22,14 @@ function StoreCard({ store }: StoreCardProps) {
             <Card className="group glass-card border-white/60 hover-lift cursor-pointer overflow-hidden transition-transform duration-300">
                 {store.banner_url ? (
                     <div className="relative h-32 overflow-hidden">
-                        <img
+                        <Image
                             src={store.banner_url}
                             alt={store.name}
+                            fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            loading="lazy"
+                            unoptimized
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
                     </div>
@@ -59,32 +62,38 @@ function StoreCard({ store }: StoreCardProps) {
     );
 }
 
-export default function FeaturedStores() {
-    const [stores, setStores] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+type FeaturedStoresProps = {
+    stores: any[];
+    loading?: boolean;
+};
 
-    useEffect(() => {
-        fetchStores();
-    }, []);
-
-    async function fetchStores() {
-        try {
-            const res = await fetch("/api/store/all?limit=3&featured=true");
-            if (res.ok) {
-                const data = await res.json();
-                setStores(data.stores || []);
-            }
-        } catch (error) {
-            console.error("Failed to fetch stores:", error);
-        } finally {
-            setLoading(false);
-        }
-    }
-
+export default function FeaturedStores({ stores, loading = false }: FeaturedStoresProps) {
     if (loading) {
         return (
-            <section className="glass-panel rounded-3xl p-8 text-center">
-                <div className="animate-pulse text-muted-text">Loading stores...</div>
+            <section className="glass-panel rounded-3xl p-5 sm:p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <div className="h-7 w-40 rounded-full bg-slate-200/70 animate-pulse mb-2" />
+                        <div className="h-4 w-64 max-w-full rounded-full bg-slate-200/60 animate-pulse" />
+                    </div>
+                    <div className="h-8 w-20 rounded-full bg-slate-200/60 animate-pulse" />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {[0, 1, 2].map((index) => (
+                        <div key={index} className="rounded-2xl border border-white/60 bg-white/70 overflow-hidden animate-pulse">
+                            <div className="h-32 bg-slate-200/80" />
+                            <div className="p-3 space-y-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="h-4 w-28 rounded-full bg-slate-200/80" />
+                                    <div className="h-4 w-16 rounded-full bg-slate-200/80" />
+                                </div>
+                                <div className="h-3 w-full rounded-full bg-slate-200/70" />
+                                <div className="h-3 w-4/5 rounded-full bg-slate-200/70" />
+                                <div className="h-3 w-24 rounded-full bg-slate-200/70" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </section>
         );
     }
@@ -110,16 +119,12 @@ export default function FeaturedStores() {
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {stores.map((store, index) => (
-                    <motion.div
+                    <div
                         key={store.id}
-                        initial={{ opacity: 0, y: 16, x: index % 2 === 0 ? -12 : 12 }}
-                        whileInView={{ opacity: 1, y: 0, x: 0 }}
-                        viewport={{ once: true, amount: 0.25 }}
-                        transition={{ duration: 0.35, ease: "easeOut" }}
-                        whileHover={{ y: -4, scale: 1.01 }}
+                        className="transition-transform duration-300 hover:-translate-y-1 hover:scale-[1.01]"
                     >
                         <StoreCard store={store} />
-                    </motion.div>
+                    </div>
                 ))}
             </div>
         </section>

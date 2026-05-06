@@ -80,7 +80,9 @@ export default function Home() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [nearbyStores, setNearbyStores] = useState<StoreType[]>([]);
+  const [featuredStores, setFeaturedStores] = useState<StoreType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [featuredStoresLoading, setFeaturedStoresLoading] = useState(true);
   const [mobileFeatureIndex, setMobileFeatureIndex] = useState(0);
   const [mobileStoreIndex, setMobileStoreIndex] = useState(0);
   const [isMobileFeaturePaused, setIsMobileFeaturePaused] = useState(false);
@@ -130,11 +132,26 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch products
-        const productsRes = await fetch("/api/product/search?limit=20");
+        // Fetch homepage data in parallel so the featured stores section does not wait on a second mount-time request.
+        const productsPromise = fetch("/api/product/search?limit=20");
+        const featuredStoresPromise = fetch("/api/store/all?limit=3&featured=true");
+
+        const productsRes = await productsPromise;
         const productsData = await productsRes.json();
         if (productsData.ok && productsData.products) {
           setProducts(productsData.products);
+        }
+
+        const featuredStoresRes = await featuredStoresPromise;
+        if (featuredStoresRes.ok) {
+          const featuredStoresData = await featuredStoresRes.json();
+          if (Array.isArray(featuredStoresData.stores)) {
+            setFeaturedStores(featuredStoresData.stores.slice(0, 3));
+          } else {
+            setFeaturedStores([]);
+          }
+        } else {
+          setFeaturedStores([]);
         }
 
         // Fetch nearby stores
@@ -175,8 +192,10 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
+        setFeaturedStores([]);
       } finally {
         setLoading(false);
+        setFeaturedStoresLoading(false);
       }
     };
 
@@ -427,7 +446,7 @@ export default function Home() {
         />
 
         {/* Featured Stores */}
-        <FeaturedStores />
+        <FeaturedStores stores={featuredStores as any} loading={featuredStoresLoading} />
 
         {/* Flash Deals */}
         <ProductRow
