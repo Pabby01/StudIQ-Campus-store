@@ -1,0 +1,241 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+  Users,
+  ShoppingCart,
+  DollarSign,
+  TrendingUp,
+  Calendar,
+  Loader2,
+} from "lucide-react";
+import Card from "@/components/ui/Card";
+import { motion } from "framer-motion";
+import AnalyticsChart from "@/components/analytics/AnalyticsChart";
+import StatCard from "@/components/analytics/StatCard";
+
+type AnalyticsData = {
+  totalUsers: number;
+  newUsersToday: number;
+  activeUsersThisMonth: number;
+  totalOrders: number;
+  ordersThisMonth: number;
+  totalRevenue: number;
+  revenueThisMonth: number;
+  avgOrderValue: number;
+  conversionRate: number;
+  chartData: {
+    labels: string[];
+    users: number[];
+    orders: number[];
+    revenue: number[];
+  };
+};
+
+export default function AnalyticsOverview() {
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState("30d");
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [dateRange]);
+
+  async function fetchAnalytics() {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/admin/analytics?range=${dateRange}`);
+      if (res.ok) {
+        const data = await res.json();
+        setData(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch analytics:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  const statCards: Array<{
+    label: string;
+    value: string | number;
+    change: string;
+    icon: any;
+    trend: "up" | "down" | "neutral";
+    color: "blue" | "green" | "purple" | "orange";
+  }> = [
+    {
+      label: "Total Users",
+      value: data?.totalUsers || 0,
+      change: `+${data?.newUsersToday || 0} today`,
+      icon: Users,
+      trend: "up",
+      color: "blue",
+    },
+    {
+      label: "Total Orders",
+      value: data?.totalOrders || 0,
+      change: `+${data?.ordersThisMonth || 0} this month`,
+      icon: ShoppingCart,
+      trend: "up",
+      color: "green",
+    },
+    {
+      label: "Total Revenue",
+      value: `$${(data?.totalRevenue || 0).toLocaleString()}`,
+      change: `+$${(data?.revenueThisMonth || 0).toLocaleString()} this month`,
+      icon: DollarSign,
+      trend: "up",
+      color: "purple",
+    },
+    {
+      label: "Avg Order Value",
+      value: `$${(data?.avgOrderValue || 0).toFixed(2)}`,
+      change: `${(data?.conversionRate || 0).toFixed(1)}% conversion`,
+      icon: TrendingUp,
+      trend: "neutral",
+      color: "orange",
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <h1 className="text-4xl font-bold text-slate-900">Analytics</h1>
+          <p className="text-slate-600 mt-1">Track your platform's performance</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-slate-600" />
+          <select
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="1y">Last year</option>
+          </select>
+        </div>
+      </motion.div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((stat, index) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <StatCard {...stat} />
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card>
+            <div className="p-6 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">User Growth</h3>
+              <p className="text-sm text-slate-600 mt-1">New users over time</p>
+            </div>
+            <div className="p-6">
+              {data?.chartData && (
+                <AnalyticsChart
+                  labels={data.chartData.labels}
+                  data={data.chartData.users}
+                  color="bg-blue-600"
+                  title="Users"
+                />
+              )}
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Card>
+            <div className="p-6 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">Revenue Trend</h3>
+              <p className="text-sm text-slate-600 mt-1">Revenue over time</p>
+            </div>
+            <div className="p-6">
+              {data?.chartData && (
+                <AnalyticsChart
+                  labels={data.chartData.labels}
+                  data={data.chartData.revenue}
+                  color="bg-green-600"
+                  title="Revenue"
+                />
+              )}
+            </div>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* Additional Stats */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <Card>
+          <div className="p-6 border-b border-slate-200">
+            <h3 className="text-lg font-bold text-slate-900">Key Metrics</h3>
+            <p className="text-sm text-slate-600 mt-1">Summary of important metrics</p>
+          </div>
+          <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm text-slate-600">Active Users (Month)</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">
+                {data?.activeUsersThisMonth || 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Month Orders</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">
+                {data?.ordersThisMonth || 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Month Revenue</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">
+                ${(data?.revenueThisMonth || 0).toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Conversion Rate</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">
+                {(data?.conversionRate || 0).toFixed(1)}%
+              </p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}
