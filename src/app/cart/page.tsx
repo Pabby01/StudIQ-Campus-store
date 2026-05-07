@@ -21,6 +21,7 @@ type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifyin
 
 import AuthModal from "@/components/AuthModal";
 import Dialog from "@/components/ui/Dialog";
+import Drawer from "@/components/ui/Drawer";
 import ReceiveModal from "@/components/wallet/ReceiveModal";
 import RampModal from "@/components/ramp/RampModal";
 
@@ -41,6 +42,8 @@ export default function CartPage() {
   const [showSaveDetailsModal, setShowSaveDetailsModal] = useState(false);
   const [saveDetailsLoading, setSaveDetailsLoading] = useState(false);
   const [saveAsDefault, setSaveAsDefault] = useState(true);
+  const [showSidePanel, setShowSidePanel] = useState(false);
+  const [sidePanelType, setSidePanelType] = useState<"paystack" | "crypto" | null>(null);
 
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -781,7 +784,8 @@ export default function CartPage() {
             type="button"
             onClick={() => {
               setShowPaymentModal(false);
-              setShowPaystackModal(true);
+              setSidePanelType("paystack");
+              setShowSidePanel(true);
             }}
             className="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 transition-all hover:border-primary-blue hover:bg-blue-50/60"
           >
@@ -808,7 +812,8 @@ export default function CartPage() {
             type="button"
             onClick={() => {
               setShowPaymentModal(false);
-              void checkout();
+              setSidePanelType("crypto");
+              setShowSidePanel(true);
             }}
             className="w-full text-left rounded-2xl border border-primary-blue bg-blue-50/70 p-4 transition-all hover:bg-blue-100"
           >
@@ -877,6 +882,37 @@ export default function CartPage() {
           </div>
         </div>
       </Dialog>
+      <Drawer
+        isOpen={showSidePanel && sidePanelType === "paystack"}
+        onClose={() => { setShowSidePanel(false); setSidePanelType(null); }}
+        title="Paystack checkout"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">Paystack support will be integrated soon. When available, you'll be able to pay with card or bank transfer here.</p>
+          <div className="mt-4">
+            <Button variant="primary" onClick={() => { setShowSidePanel(false); setSidePanelType(null); setShowPaystackModal(true); }}>
+              Learn more
+            </Button>
+          </div>
+        </div>
+      </Drawer>
+      <Drawer
+        isOpen={showSidePanel && sidePanelType === "crypto"}
+        onClose={() => { setShowSidePanel(false); setSidePanelType(null); }}
+        title="Pay with crypto wallet"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">Use your wallet to pay with SOL or stablecoins. Confirm to create the order and initiate the on-chain payment flow.</p>
+          <div className="mt-4 flex gap-2">
+            <Button variant="outline" className="w-full" onClick={() => { setShowSidePanel(false); setSidePanelType(null); }}>
+              Cancel
+            </Button>
+            <Button variant="primary" className="w-full" onClick={() => { setShowSidePanel(false); setSidePanelType(null); void checkout(); }}>
+              Confirm and Pay
+            </Button>
+          </div>
+        </div>
+      </Drawer>
       {/* Save checkout details modal shown after successful checkout to allow saving name/email as a saved profile address */}
       <Dialog
         isOpen={showSaveDetailsModal}
