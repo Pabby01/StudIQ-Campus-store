@@ -109,6 +109,36 @@ export default function CartPage() {
     }
   }, [email]);
 
+  // Pre-fill details from server-side profile when available to speed checkout
+  useEffect(() => {
+    let mounted = true;
+    async function loadProfile() {
+      try {
+        const res = await fetch('/api/profile/get');
+        if (!res.ok) return;
+        const profile = await res.json();
+        if (!profile || !mounted) return;
+
+        setDeliveryDetails((prev) => ({
+          name: prev.name || profile.full_name || profile.name || "",
+          email: prev.email || profile.email || email || "",
+          address: prev.address || profile.address || profile.street || "",
+          city: prev.city || profile.city || "",
+          zip: prev.zip || profile.zip || profile.postal_code || "",
+        }));
+      } catch (err) {
+        // ignore - best-effort prefill
+      }
+    }
+
+    // Only attempt if user is authenticated or we have a wallet address
+    if (email || walletAddress) {
+      void loadProfile();
+    }
+
+    return () => { mounted = false; };
+  }, [email, walletAddress]);
+
   useEffect(() => {
     if (deliveryMethod === "shipping" && !deliveryEnabled && pickupEnabled) {
       setDeliveryMethod("pickup");
