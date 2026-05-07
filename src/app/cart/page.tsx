@@ -38,6 +38,9 @@ export default function CartPage() {
   const [showRampModal, setShowRampModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPaystackModal, setShowPaystackModal] = useState(false);
+  const [showSaveDetailsModal, setShowSaveDetailsModal] = useState(false);
+  const [saveDetailsLoading, setSaveDetailsLoading] = useState(false);
+  const [saveAsDefault, setSaveAsDefault] = useState(true);
 
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +112,7 @@ export default function CartPage() {
     }
   }, [email]);
 
-  // Pre-fill details from server-side profile when available to speed checkout
+  // Pre-fill only name and email from server-side profile to speed checkout
   useEffect(() => {
     let mounted = true;
     async function loadProfile() {
@@ -120,18 +123,15 @@ export default function CartPage() {
         if (!profile || !mounted) return;
 
         setDeliveryDetails((prev) => ({
+          ...prev,
           name: prev.name || profile.full_name || profile.name || "",
           email: prev.email || profile.email || email || "",
-          address: prev.address || profile.address || profile.street || "",
-          city: prev.city || profile.city || "",
-          zip: prev.zip || profile.zip || profile.postal_code || "",
         }));
       } catch (err) {
         // ignore - best-effort prefill
       }
     }
 
-    // Only attempt if user is authenticated or we have a wallet address
     if (email || walletAddress) {
       void loadProfile();
     }
@@ -302,10 +302,8 @@ export default function CartPage() {
         // Let's assume for now valid POD orders just skip the tx.
 
         setCheckoutStatus("success");
-        setTimeout(() => {
-          clear();
-          window.location.href = `/checkout/success/${orderData.orderId}`;
-        }, 3000);
+        // Open save-details modal to allow user to save these checkout details
+        setShowSaveDetailsModal(true);
         return;
       }
 
@@ -378,12 +376,9 @@ export default function CartPage() {
         throw new Error(errorData.error || "Transaction verification failed");
       }
 
-      // Success!
+      // Success! prompt to save details before redirecting
       setCheckoutStatus("success");
-      setTimeout(() => {
-        clear();
-        window.location.href = `/checkout/success/${orderData.orderId}`;
-      }, 3000);
+      setShowSaveDetailsModal(true);
     } catch (err) {
       console.error("Checkout error:", err);
       setError(err instanceof Error ? err.message : "Checkout failed");
@@ -879,6 +874,67 @@ export default function CartPage() {
             <p className="text-sm leading-relaxed text-gray-600">
               The checkout UI is ready for Paystack, but the payment processor is still being wired up. Crypto wallet checkout remains available right now.
             </p>
+          </div>
+        </div>
+      </Dialog>
+      {/* Save checkout details modal shown after successful checkout to allow saving name/email as a saved profile address */}
+      <Dialog
+        isOpen={showSaveDetailsModal}
+        onClose={() => setShowSaveDetailsModal(false)}
+        title="Save checkout details"
+        footer={
+          <div className="w-full flex gap-2">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setShowSaveDetailsModal(false);
+                clear();
+                window.location.href = `/checkout/success/${orderId}`;
+              }}
+            >
+              Skip
+            </Button>
+            <Button
+              variant="primary"
+              className="w-full"
+              onClick={async () => {
+                setSaveDetailsLoading(true);
+                try {
+                  await fetch('/api/profile/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      full_name: deliveryDetails.name,
+                      email: deliveryDetails.email,
+                      save_as_default: saveAsDefault,
+                    }),
+                  });
+                } catch (e) {
+                  // ignore
+                } finally {
+                  setSaveDetailsLoading(false);
+                  setShowSaveDetailsModal(false);
+                  clear();
+                  window.location.href = `/checkout/success/${orderId}`;
+                }
+              }}
+            >
+              {saveDetailsLoading ? 'Saving...' : 'Save and Continue'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">Would you like to save your name and email for faster checkout next time?</p>
+          <div className="flex items-center gap-3">
+            <input
+              id="save-default"
+              type="checkbox"
+              checked={saveAsDefault}
+              onChange={(e) => setSaveAsDefault(e.target.checked)}
+            />
+            <label htmlFor="save-default" className="text-sm">Save as my default checkout details</label>
           </div>
         </div>
       </Dialog>
