@@ -122,51 +122,54 @@ export default function SettingsPage() {
               {/* Settings Items */}
               {section.items && (
                 <div className="space-y-4 border-t border-slate-200 pt-4">
-                  {section.items.map((item) => (
-                    <div
-                      key={item.label}
-                      className="flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="font-medium text-slate-900">
-                          {item.label}
-                        </p>
-                        <p className="text-sm text-slate-600">
-                          {item.description}
-                        </p>
-                      </div>
-                      {item.type === "select" ? (
-                        <select
-                          value={item.value}
-                          onChange={(e) => item.onChange(e.target.value)}
-                          className="px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          {item.options?.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            item.onChange && item.onChange(!item.enabled)
-                          }
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            item.enabled
-                              ? "bg-blue-600"
-                              : "bg-slate-300"
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              item.enabled ? "translate-x-6" : "translate-x-1"
+                  {section.items.map((item) => {
+                    const it: any = item;
+                    return (
+                      <div
+                        key={item.label}
+                        className="flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-medium text-slate-900">
+                            {item.label}
+                          </p>
+                          <p className="text-sm text-slate-600">
+                            {item.description}
+                          </p>
+                        </div>
+                        {it.type === "select" ? (
+                          <select
+                            value={it.value}
+                            onChange={(e) => it.onChange(e.target.value)}
+                            className="px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            {it.options?.map((opt: any) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              it.onChange && it.onChange(!it.enabled)
+                            }
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              it.enabled
+                                ? "bg-blue-600"
+                                : "bg-slate-300"
                             }`}
-                          />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                it.enabled ? "translate-x-6" : "translate-x-1"
+                              }`}
+                            />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </Card>

@@ -5,8 +5,8 @@ describe("cart store", () => {
   it("adds and totals items", () => {
     const cart = useCart.getState();
     cart.clear();
-    cart.add({ id: "a", name: "Item A", price: 10 });
-    cart.add({ id: "b", name: "Item B", price: 5 }, 2);
+    cart.add({ id: "a", name: "Item A", price: 10, storeId: "store1" });
+    cart.add({ id: "b", name: "Item B", price: 5, storeId: "store1" }, 2);
     expect(useCart.getState().total()).toBe(20);
   });
 });
