@@ -541,76 +541,7 @@ export default function CartPage() {
                   </div>
                 )}
 
-                {paymentMethod === "solana" && deliveryMethod === "shipping" && (
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Pay With</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setPaymentCurrency("USDC")}
-                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${paymentCurrency === "USDC"
-                          ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500"
-                          : "border-gray-200 hover:bg-gray-50"
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold">
-                            $
-                          </div>
-                          <span className="font-medium text-sm">USDC</span>
-                        </div>
-                        {paymentCurrency === "USDC" && <div className="w-2 h-2 rounded-full bg-blue-500" />}
-                      </button>
-                      <button
-                        onClick={() => setPaymentCurrency("USDT")}
-                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${paymentCurrency === "USDT"
-                          ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500"
-                          : "border-gray-200 hover:bg-gray-50"
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">
-                            ₮
-                          </div>
-                          <span className="font-medium text-sm">USDT</span>
-                        </div>
-                        {paymentCurrency === "USDT" && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
-                      </button>
-                    </div>
-                    <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50/60 p-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-text">Available balance</span>
-                        <span className="font-semibold text-gray-900">
-                          {!walletAddress && "Sign in to view"}
-                          {walletAddress && balanceLoading && "Loading..."}
-                          {walletAddress && !balanceLoading && formatTokenAmount(availableBalance, finalCurrency)}
-                        </span>
-                      </div>
-                      {balanceError && (
-                        <div className="mt-2 text-xs text-red-600">
-                          Balance unavailable. Please refresh or open your wallet.
-                        </div>
-                      )}
-                      {walletAddress && !balanceLoading && hasInsufficientBalance && (
-                        <div className="mt-2 text-xs text-red-600">
-                          Insufficient balance for this checkout.
-                        </div>
-                      )}
-                      {walletAddress && !balanceLoading && !hasInsufficientBalance && (
-                        <div className="mt-2 text-xs text-green-700">
-                          Balance looks good for this checkout.
-                        </div>
-                      )}
-                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                        <Button variant="outline" className="w-full" onClick={() => setShowRampModal(true)}>
-                          Deposit
-                        </Button>
-                        <Button variant="outline" className="w-full" onClick={() => setShowReceiveModal(true)}>
-                          Receive
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Payment currency selection and deposit/receive buttons removed per UX: payment currency is derived from product and deposit/receive handled in wallet view */}
                 {/* Auto-set to POD if Pickup? Or confirm? Let's default pickup to POD usually or allow both */}
                 {deliveryMethod === "pickup" && (
                   <div className="mb-6 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
@@ -721,11 +652,31 @@ export default function CartPage() {
                   <Button
                     variant="primary"
                     className="w-full"
-                    onClick={() => setShowPaymentModal(true)}
-                    disabled={
-                      (checkoutStatus !== "idle" && checkoutStatus !== "error") ||
-                      deliveryUnavailable
-                    }
+                    onClick={() => {
+                      // Prevent opening payment modal unless form is valid
+                      if (deliveryUnavailable) return;
+                      if (!isFormValid) {
+                        // Build inline errors and also show banner notification
+                        const newFieldErrors: { [key: string]: string } = {};
+                        if (!isEmailValid) newFieldErrors.email = "Valid email is required";
+                        if (!isNameValid) newFieldErrors.name = "Recipient name is required";
+                        if (deliveryMethod === "shipping") {
+                          if (trimmedAddress.length < 3) newFieldErrors.address = "Street address is required";
+                          if (trimmedCity.length < 2) newFieldErrors.city = "City is required";
+                          if (trimmedZip.length < 3) newFieldErrors.zip = "Zip code is required";
+                        }
+                        setFieldErrors(newFieldErrors);
+                        setError("Please complete the checkout form before continuing.");
+                        setCheckoutStatus("error");
+                        // Scroll to top so banner is visible
+                        if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                        return;
+                      }
+
+                      // form is valid, open payment modal
+                      setShowPaymentModal(true);
+                    }}
+                    disabled={checkoutStatus !== "idle" && checkoutStatus !== "error"}
                   >
                     {getButtonText()}
                   </Button>
