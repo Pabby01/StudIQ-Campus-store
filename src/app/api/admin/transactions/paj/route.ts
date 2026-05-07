@@ -21,108 +21,92 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const status = searchParams.get("status") || "all";
+    const flow = searchParams.get("flow") || "all";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
 
-    const [pajResult, rampResult, subscriptionResult] = await Promise.all([
-      supabase
-        .from("paj_transactions")
-        .select("id, user_address, amount, status, reference_id, created_at, updated_at")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("ramp_transactions")
-        .select("id, paj_id, user_address, fiat_amount, status, created_at, updated_at")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("subscription_transactions")
-        .select("id, user_address, amount, status, tx_signature, created_at")
-        .order("created_at", { ascending: false }),
-    ]);
+    const { data: rampRows, error } = await supabase
+      .from("ramp_transactions")
+      .select("id, paj_id, user_address, type, fiat_amount, crypto_amount, currency, mint, status, created_at, updated_at")
+      .order("created_at", { ascending: false });
 
-    if (pajResult.error && pajResult.error.code !== "42P01") {
-      throw pajResult.error;
-    }
-    if (rampResult.error && rampResult.error.code !== "42P01") {
-      throw rampResult.error;
-    }
-    if (subscriptionResult.error && subscriptionResult.error.code !== "42P01") {
-      throw subscriptionResult.error;
-    }
-
-    const pajRows = pajResult.data || [];
-    const rampRows = rampResult.data || [];
-    const subscriptionRows = subscriptionResult.data || [];
+    if (error) throw error;
 
     const userAddresses = new Set<string>();
-    pajRows.forEach((tx: any) => userAddresses.add(tx.user_address));
-    rampRows.forEach((tx: any) => userAddresses.add(tx.user_address));
-    subscriptionRows.forEach((tx: any) => userAddresses.add(tx.user_address));
+    (rampRows || []).forEach((tx: any) => userAddresses.add(tx.user_address));
 
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("address, name, email")
-      .in("address", Array.from(userAddresses));
+    let profileMap = new Map<string, { name: string | null; email: string | null }>();
+    if (userAddresses.size > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("address, name, email")
+        .in("address", Array.from(userAddresses));
 
-    const profileMap = new Map<string, { name: string | null; email: string | null }>();
-    (profiles || []).forEach((p: any) => {
-      profileMap.set(p.address, { name: p.name, email: p.email });
-    });
+      profileMap = new Map<string, { name: string | null; email: string | null }>();
+      (profiles || []).forEach((p: any) => {
+        profileMap.set(p.address, { name: p.name, email: p.email });
+      });
+    }
 
-    const mergedTransactions = [
-      ...pajRows.map((tx: any) => ({
+    const movementTransactions = (rampRows || []).map((tx: any) => {
+      const transactionType: "onramp" | "offramp" = tx.type === "offramp" ? "offramp" : "onramp";
+      const fiatCurrency = tx.currency || "NGN";
+      const cryptoCurrency = "USDC";
+
+      const fromCurrency = transactionType === "onramp" ? fiatCurrency : cryptoCurrency;
+      const toCurrency = transactionType === "onramp" ? cryptoCurrency : fiatCurrency;
+      const fromAmount = transactionType === "onramp" ? Number(tx.fiat_amount || 0) : Number(tx.crypto_amount || 0);
+      const toAmount = transactionType === "onramp" ? Number(tx.crypto_amount || 0) : Number(tx.fiat_amount || 0);
+
+      return {
         id: tx.id,
         userId: tx.user_address,
         userName: profileMap.get(tx.user_address)?.name || "Unknown",
         userEmail: profileMap.get(tx.user_address)?.email || null,
-        amount: Number(tx.amount || 0),
-        status: normalizeStatus(tx.status),
-        createdAt: tx.created_at,
-        updatedAt: tx.updated_at,
-        reference_id: tx.reference_id,
-        source: "paj_transactions",
-      })),
-      ...rampRows.map((tx: any) => ({
-        id: tx.id,
-        userId: tx.user_address,
-        userName: profileMap.get(tx.user_address)?.name || "Unknown",
-        userEmail: profileMap.get(tx.user_address)?.email || null,
+        type: transactionType,
+        fromCurrency,
+        toCurrency,
+        fromAmount,
+        toAmount,
+        fiatAmount: Number(tx.fiat_amount || 0),
+        cryptoAmount: Number(tx.crypto_amount || 0),
         amount: Number(tx.fiat_amount || 0),
         status: normalizeStatus(tx.status),
         createdAt: tx.created_at,
         updatedAt: tx.updated_at,
         reference_id: tx.paj_id,
+        mint: tx.mint,
         source: "ramp_transactions",
-      })),
-      ...subscriptionRows.map((tx: any) => ({
-        id: tx.id,
-        userId: tx.user_address,
-        userName: profileMap.get(tx.user_address)?.name || "Unknown",
-        userEmail: profileMap.get(tx.user_address)?.email || null,
-        amount: Number(tx.amount || 0),
-        status: normalizeStatus(tx.status),
-        createdAt: tx.created_at,
-        updatedAt: tx.created_at,
-        reference_id: tx.tx_signature,
-        source: "subscription_transactions",
-      })),
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      };
+    });
+
+    const flowFiltered =
+      flow === "all"
+        ? movementTransactions
+        : movementTransactions.filter((tx) => tx.type === flow);
 
     const statusFiltered =
       status === "all"
-        ? mergedTransactions
-        : mergedTransactions.filter((tx) => tx.status === status);
+        ? flowFiltered
+        : flowFiltered.filter((tx) => tx.status === status);
 
     const offset = (page - 1) * limit;
     const pagedTransactions = statusFiltered.slice(offset, offset + limit);
 
-    const totalTransactions = mergedTransactions.length;
-    const completedTransactions = mergedTransactions.filter((t) => t.status === "completed").length;
-    const pendingTransactions = mergedTransactions.filter((t) => t.status === "pending").length;
-    const failedTransactions = mergedTransactions.filter((t) => t.status === "failed").length;
+    const totalTransactions = movementTransactions.length;
+    const completedTransactions = movementTransactions.filter((t) => t.status === "completed").length;
+    const pendingTransactions = movementTransactions.filter((t) => t.status === "pending").length;
+    const failedTransactions = movementTransactions.filter((t) => t.status === "failed").length;
+
+    const typeBreakdown = {
+      onramp: movementTransactions.filter((t) => t.type === "onramp").length,
+      offramp: movementTransactions.filter((t) => t.type === "offramp").length,
+    };
+
     const sourceBreakdown = {
-      pajTransactions: mergedTransactions.filter((t) => t.source === "paj_transactions").length,
-      rampTransactions: mergedTransactions.filter((t) => t.source === "ramp_transactions").length,
-      subscriptionTransactions: mergedTransactions.filter((t) => t.source === "subscription_transactions").length,
+      pajTransactions: 0,
+      rampTransactions: movementTransactions.length,
+      subscriptionTransactions: 0,
     };
 
     return NextResponse.json({
@@ -132,6 +116,7 @@ export async function GET(req: NextRequest) {
       completedTransactions,
       pendingTransactions,
       failedTransactions,
+      typeBreakdown,
       sourceBreakdown,
       page,
       limit,
