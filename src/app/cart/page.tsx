@@ -21,7 +21,7 @@ type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifyin
 
 import AuthModal from "@/components/AuthModal";
 import Dialog from "@/components/ui/Dialog";
-import Drawer from "@/components/ui/Drawer";
+import SidePanel from "@/components/ui/SidePanel";
 import ReceiveModal from "@/components/wallet/ReceiveModal";
 import RampModal from "@/components/ramp/RampModal";
 
@@ -882,7 +882,7 @@ export default function CartPage() {
           </div>
         </div>
       </Dialog>
-      <Drawer
+      <SidePanel
         isOpen={showSidePanel && sidePanelType === "paystack"}
         onClose={() => { setShowSidePanel(false); setSidePanelType(null); }}
         title="Paystack checkout"
@@ -895,8 +895,8 @@ export default function CartPage() {
             </Button>
           </div>
         </div>
-      </Drawer>
-      <Drawer
+      </SidePanel>
+      <SidePanel
         isOpen={showSidePanel && sidePanelType === "crypto"}
         onClose={() => { setShowSidePanel(false); setSidePanelType(null); }}
         title="Pay with crypto wallet"
@@ -912,7 +912,7 @@ export default function CartPage() {
             </Button>
           </div>
         </div>
-      </Drawer>
+      </SidePanel>
       {/* Save checkout details modal shown after successful checkout to allow saving name/email as a saved profile address */}
       <Dialog
         isOpen={showSaveDetailsModal}

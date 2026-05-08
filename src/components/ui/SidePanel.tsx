@@ -30,8 +30,8 @@ export default function SidePanel({ isOpen, onClose, title, children, width = "w
       <div className="absolute inset-0 pointer-events-auto" onClick={onClose} />
 
       <aside
-        className={`pointer-events-auto fixed top-1/2 transform -translate-y-1/2 ${width} bg-white/95 border border-white/20 shadow-2xl rounded-2xl right-auto`
-        style={{ left: "calc(50% + 260px)" }}
+        className={`pointer-events-auto fixed top-1/2 transform -translate-y-1/2 ${width} bg-white/95 border border-white/20 shadow-2xl rounded-2xl right-auto`}
+        style={{ left: "calc(50% + 260px)", transform: "translateY(-50%)" }}
       >
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <h3 className="text-lg font-bold text-gray-900">{title}</h3>
