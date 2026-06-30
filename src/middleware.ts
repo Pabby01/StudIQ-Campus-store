@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const DEFAULT_MAX_REQUESTS = process.env.NODE_ENV === "production" ? 120 : 1000;
 const HIGH_MAX_REQUESTS = process.env.NODE_ENV === "production" ? 600 : 2000;
 
-// In-memory rate limit store (use Redis in production)
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+// Upstash Redis implementation
+const redis = Redis.fromEnv();
+const rateLimit = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(10, "10 s"),
+});
 
 function getRateLimitKey(req: NextRequest, bucket: string): string {
     const sessionId = req.cookies.get("sid")?.value;
@@ -19,78 +25,35 @@ function getRateLimitKey(req: NextRequest, bucket: string): string {
     return `${bucket}:${identity}`;
 }
 
-function checkRateLimit(key: string, maxRequests: number): { allowed: boolean; remaining: number } {
-    const now = Date.now();
-    const record = rateLimitStore.get(key);
-
-    if (!record || now > record.resetAt) {
-        // Create new record
-        rateLimitStore.set(key, {
-            count: 1,
-            resetAt: now + RATE_LIMIT_WINDOW,
-        });
-        return { allowed: true, remaining: maxRequests - 1 };
-    }
-
-    if (record.count >= maxRequests) {
-        return { allowed: false, remaining: 0 };
-    }
-
-    record.count++;
-    return { allowed: true, remaining: maxRequests - record.count };
-}
-
-// Clean up old entries periodically
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, record] of rateLimitStore.entries()) {
-        if (now > record.resetAt) {
-            rateLimitStore.delete(key);
-        }
-    }
-}, RATE_LIMIT_WINDOW);
-
-export default function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const method = request.method.toUpperCase();
 
-    const isReadHeavy =
-        method === "GET" &&
-        (pathname.startsWith("/api/dashboard/") ||
-            pathname.startsWith("/api/referrals/") ||
-            pathname.startsWith("/api/price/") ||
-            pathname.startsWith("/api/profile/check"));
+    const isFinancialRoute = 
+        pathname.startsWith("/api/checkout/") || 
+        pathname.startsWith("/api/escrow/");
 
-    const isAuthFlow =
-        pathname.startsWith("/api/auth/verify") ||
-        pathname.startsWith("/api/profile/update-wallet");
+    if (isFinancialRoute) {
+        const ip = request.headers.get("x-forwarded-for") ?? request.ip ?? "127.0.0.1";
+        const { success, limit, remaining, reset } = await rateLimit.limit(`ratelimit_${ip}`);
 
-    const maxRequests = isReadHeavy || isAuthFlow ? HIGH_MAX_REQUESTS : DEFAULT_MAX_REQUESTS;
-    const bucket = isReadHeavy ? "read" : isAuthFlow ? "auth" : "default";
-
-    // Handle CORS for API sync routes
-    if (pathname.startsWith('/api/sync/')) {
-        const key = getRateLimitKey(request, "sync");
-        const { allowed, remaining } = checkRateLimit(key, maxRequests);
-
-        if (!allowed) {
+        if (!success) {
             return NextResponse.json(
-                {
-                    ok: false,
-                    error: "Too many requests",
-                    code: "RATE_LIMIT_EXCEEDED",
-                },
-                {
+                { ok: false, error: "Too many requests" },
+                { 
                     status: 429,
                     headers: {
-                        "X-RateLimit-Limit": maxRequests.toString(),
-                        "X-RateLimit-Remaining": "0",
-                        "Retry-After": "60",
-                    },
+                        "X-RateLimit-Limit": limit.toString(),
+                        "X-RateLimit-Remaining": remaining.toString(),
+                        "X-RateLimit-Reset": reset.toString()
+                    }
                 }
             );
         }
+    }
 
+    // Handle CORS for API sync routes
+    if (pathname.startsWith('/api/sync/')) {
         const response = NextResponse.next();
 
         // CORS headers for sync API
@@ -118,37 +81,6 @@ export default function middleware(request: NextRequest) {
             });
         }
 
-        response.headers.set("X-RateLimit-Limit", maxRequests.toString());
-        response.headers.set("X-RateLimit-Remaining", remaining.toString());
-        return response;
-    }
-
-    // Apply rate limiting to other API routes
-    if (pathname.startsWith("/api/")) {
-        const key = getRateLimitKey(request, bucket);
-        const { allowed, remaining } = checkRateLimit(key, maxRequests);
-
-        if (!allowed) {
-            return NextResponse.json(
-                {
-                    ok: false,
-                    error: "Too many requests",
-                    code: "RATE_LIMIT_EXCEEDED",
-                },
-                {
-                    status: 429,
-                    headers: {
-                        "X-RateLimit-Limit": maxRequests.toString(),
-                        "X-RateLimit-Remaining": "0",
-                        "Retry-After": "60",
-                    },
-                }
-            );
-        }
-
-        const response = NextResponse.next();
-        response.headers.set("X-RateLimit-Limit", maxRequests.toString());
-        response.headers.set("X-RateLimit-Remaining", remaining.toString());
         return response;
     }
 

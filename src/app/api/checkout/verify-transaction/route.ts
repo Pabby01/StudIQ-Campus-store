@@ -100,7 +100,7 @@ export async function POST(req: Request) {
             .from("orders")
             .update({
                 status: "processing",
-                tx_signature: txSignature,
+                tx_sig: txSignature,
                 seller_payout: sellerPayout,
                 platform_fee: feeAmount,
                 updated_at: new Date().toISOString(),
@@ -109,6 +109,13 @@ export async function POST(req: Request) {
 
         if (updateError) {
             console.error("Order update error:", updateError);
+            if (updateError.code === "23505") {
+                // HTTP 409 Conflict for Replay attacks
+                return Response.json(
+                    { ok: false, error: "Transaction signature already processed." },
+                    { status: 409 }
+                );
+            }
             return Response.json(
                 { ok: false, error: "Failed to update order" },
                 { status: 500 }
