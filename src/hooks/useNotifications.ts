@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { getSupabaseClient } from "@/lib/supabase";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 
 export interface Notification {
@@ -17,8 +16,6 @@ export function useNotifications() {
     const [loading, setLoading] = useState(true);
     const { walletAddress } = useCivicWallet();
 
-    const supabase = getSupabaseClient();
-
     const fetchNotifications = async () => {
         try {
             if (!walletAddress) {
@@ -26,15 +23,9 @@ export function useNotifications() {
                 return;
             }
 
-            const { data, error } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', walletAddress)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                throw error;
-            }
+            const res = await fetch('/api/notifications');
+            if (!res.ok) throw new Error("Failed to fetch notifications");
+            const data = await res.json();
 
             setNotifications(data || []);
             setUnreadCount(data?.filter((n: Notification) => !n.read).length || 0);
@@ -47,15 +38,18 @@ export function useNotifications() {
 
     const markAsRead = async (id: string) => {
         try {
-            await supabase
-                .from('notifications')
-                .update({ read: true })
-                .eq('id', id);
+            const res = await fetch('/api/notifications', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'markRead', id })
+            });
 
-            setNotifications(prev =>
-                prev.map(n => n.id === id ? { ...n, read: true } : n)
-            );
-            setUnreadCount(prev => Math.max(0, prev - 1));
+            if (res.ok) {
+                setNotifications(prev =>
+                    prev.map(n => n.id === id ? { ...n, read: true } : n)
+                );
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
         } catch (error) {
             console.error('Error marking notification as read:', error);
         }
@@ -65,13 +59,16 @@ export function useNotifications() {
         try {
             if (!walletAddress) return;
 
-            await supabase
-                .from('notifications')
-                .update({ read: true })
-                .eq('user_id', walletAddress);
+            const res = await fetch('/api/notifications', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'markAllRead' })
+            });
 
-            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-            setUnreadCount(0);
+            if (res.ok) {
+                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                setUnreadCount(0);
+            }
         } catch (error) {
             console.error("Error marking all as read", error);
         }
@@ -79,13 +76,14 @@ export function useNotifications() {
 
     const deleteNotification = async (id: string) => {
         try {
-            await supabase
-                .from('notifications')
-                .delete()
-                .eq('id', id);
+            const res = await fetch(`/api/notifications?id=${id}`, {
+                method: 'DELETE'
+            });
 
-            setNotifications(prev => prev.filter(n => n.id !== id));
-            setUnreadCount(prev => notifications.find(n => n.id === id && !n.read) ? prev - 1 : prev);
+            if (res.ok) {
+                setNotifications(prev => prev.filter(n => n.id !== id));
+                setUnreadCount(prev => notifications.find(n => n.id === id && !n.read) ? prev - 1 : prev);
+            }
         } catch (error) {
             console.error('Error deleting notification:', error);
         }
