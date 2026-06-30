@@ -14,11 +14,15 @@ export const signinSchema = z.object({
 export const updateProfileSchema = z.object({
   address: z.string().min(10), // Allow both Solana addresses and civic_* placeholders
   name: z.string().min(2),
+  username: z.string().min(3).regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores").optional().nullable(),
+  country: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
   email: z.string().email().optional().nullable(),
   civic_user_id: z.string().optional().nullable(),
   verified_email: z.boolean().optional(),
-  school: z.string().min(2),
-  campus: z.string().min(2),
+  school: z.string().min(2).optional().nullable(),
+  campus: z.string().min(2).optional().nullable(),
   level: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   referralCode: z.union([z.string().length(6), z.literal(""), z.undefined()]).optional(),
