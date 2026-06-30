@@ -2,6 +2,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { updateProfileSchema } from "@/lib/validators";
 import { POINTS } from "@/lib/constants";
 import { getSessionWallet } from "@/lib/session";
+import { sendWelcomeBuyerEmail, sendWelcomeSellerEmail } from "@/lib/email";
 
 function generateShortCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -123,6 +124,7 @@ export async function POST(req: Request) {
         campus: parsed.data.campus ?? existing?.campus ?? null,
         level: parsed.data.level || existing?.level || null,
         phone: parsed.data.phone || existing?.phone || null,
+        primary_intent: parsed.data.primary_intent ?? existing?.primary_intent ?? 'buying',
         referral_code: referral_code_to_use,
         referred_by: existing?.referred_by ?? (referralCode && referralCode.length === 6 ? referralCode : null),
         last_login: new Date().toISOString(),
@@ -144,6 +146,19 @@ export async function POST(req: Request) {
     // Award points for new profile or profile completion
     const isComplete = data.name && data.school && data.campus;
     console.log("[Profile Update] isComplete:", isComplete);
+
+    // Send targeted welcome emails for new accounts
+    if (isNewProfile && data.email && data.name) {
+      try {
+        if (data.primary_intent === 'selling') {
+          await sendWelcomeSellerEmail(data.name, data.email);
+        } else {
+          await sendWelcomeBuyerEmail(data.name, data.email);
+        }
+      } catch (e) {
+        console.error("[Profile Update] Welcome email failed:", e);
+      }
+    }
 
     let pointsAwarded = false;
 

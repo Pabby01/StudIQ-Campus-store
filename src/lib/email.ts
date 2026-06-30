@@ -490,3 +490,69 @@ export async function sendOrderCompleted(
     return { success: false, error };
   }
 }
+
+// --- Welcome Emails ---
+
+export async function sendWelcomeBuyerEmail(userName: string, userEmail: string) {
+  try {
+    const content = `
+      <p style="font-size: 16px;">Welcome to StudIQ Campus Store, <strong>${userName}</strong>! 👋</p>
+      <p>We're thrilled to have you here. Since you're looking to buy, we recommend checking out the amazing products your fellow students are selling.</p>
+
+      <div class="info-box" style="background-color: #EEF2FF; border-left-color: #667EEA;">
+        <div class="info-label" style="color: #4338CA;">Get Started</div>
+        <div class="info-value" style="color: #4338CA;">Make Your First Purchase</div>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${APP_URL}/explore" class="btn" style="background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);">Explore the Marketplace</a>
+      </div>
+    `;
+
+    const html = getEmailTemplate('Welcome to StudIQ! 🎉', content, 'primary');
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: 'Welcome to StudIQ! Make your first purchase 🛍️',
+      html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email] Failed to send buyer welcome email:', error);
+    return { success: false, error };
+  }
+}
+
+export async function sendWelcomeSellerEmail(userName: string, userEmail: string) {
+  try {
+    const content = `
+      <p style="font-size: 16px;">Welcome to StudIQ Campus Store, <strong>${userName}</strong>! 🚀</p>
+      <p>We're excited to see what you have to offer. As a seller, your next step is to set up your store and list your first product.</p>
+
+      <div class="info-box" style="background-color: #ECFDF5; border-left-color: #10B981;">
+        <div class="info-label" style="color: #047857;">Get Started</div>
+        <div class="info-value" style="color: #047857;">Make Your First Sale</div>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${APP_URL}/dashboard/store/new" class="btn" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%);">Set Up Your Store</a>
+      </div>
+    `;
+
+    const html = getEmailTemplate('Welcome to StudIQ! 🚀', content, 'success');
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: 'Welcome to StudIQ! Start selling today 📈',
+      html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email] Failed to send seller welcome email:', error);
+    return { success: false, error };
+  }
+}

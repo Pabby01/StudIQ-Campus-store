@@ -23,7 +23,7 @@ export default function LoginPage() {
 
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -69,17 +69,17 @@ export default function LoginPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token, address: addressToUse }),
         });
-        
+
         if (res.ok) {
-            router.push("/dashboard");
+          router.push("/dashboard");
         } else {
-            toast.error("Login Failed", "Could not verify your identity. Please try again.");
+          toast.error("Login Failed", "Could not verify your identity. Please try again.");
         }
       } catch (err) {
         toast.error("Error", "An unexpected error occurred during login.");
       }
     };
-    
+
     handleLogin();
   }, [mounted, isLoading, user, token, walletAddress, civicUserId, router]);
 
@@ -107,22 +107,22 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-4">
-              <Input 
-                label="Username" 
-                name="username" 
-                placeholder="Enter your username" 
-                value={formData.username} 
-                onChange={handleInputChange} 
+              <Input
+                label="Username"
+                name="username"
+                placeholder="Enter your username"
+                value={formData.username}
+                onChange={handleInputChange}
               />
-              <Input 
-                label="Email Address" 
-                name="email" 
-                type="email" 
-                placeholder="Enter your email" 
-                value={formData.email} 
-                onChange={handleInputChange} 
+              <Input
+                label="Email Address"
+                name="email"
+                type="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleInputChange}
               />
-              
+
               <div className="pt-4">
                 {!user ? (
                   <div className="w-full bg-slate-50 border border-slate-200 p-6 rounded-2xl flex flex-col items-center">
@@ -131,7 +131,7 @@ export default function LoginPage() {
                   </div>
                 ) : (
                   <div className="flex justify-center p-4">
-                      <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                   </div>
                 )}
               </div>
@@ -142,11 +142,11 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-        
+
         {/* Right side: Image Carousel */}
         <div className="hidden lg:flex w-1/2 bg-slate-900 relative items-center justify-center overflow-hidden">
           <AnimatePresence mode="wait">
-            <motion.img 
+            <motion.img
               key={currentImg}
               src={images[currentImg]}
               initial={{ opacity: 0, scale: 1.05 }}

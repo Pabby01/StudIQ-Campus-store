@@ -25,6 +25,7 @@ export const updateProfileSchema = z.object({
   campus: z.string().min(2).optional().nullable(),
   level: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
+  primary_intent: z.enum(["buying", "selling"]).default("buying").optional().nullable(),
   referralCode: z.union([z.string().length(6), z.literal(""), z.undefined()]).optional(),
 });
 

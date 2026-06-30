@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Country, State, City } from "country-state-city";
 import { useUser } from "@civic/auth-web3/react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -48,7 +49,12 @@ export default function SignupPage() {
     state: "",
     city: "",
     phone: "",
+    primary_intent: "buying",
   });
+
+  const countries = useMemo(() => Country.getAllCountries(), []);
+  const states = useMemo(() => formData.country ? State.getStatesOfCountry(formData.country) : [], [formData.country]);
+  const cities = useMemo(() => formData.country && formData.state ? City.getCitiesOfState(formData.country, formData.state) : [], [formData.country, formData.state]);
 
   useEffect(() => {
     setMounted(true);
@@ -135,6 +141,7 @@ export default function SignupPage() {
       state: formData.state,
       city: formData.city,
       phone: formData.phone,
+      primary_intent: formData.primary_intent,
       verified_email: true,
       ...(referralCodeValue ? { referralCode: referralCodeValue } : {}),
     };
@@ -275,31 +282,64 @@ export default function SignupPage() {
             <Input label="Username" name="username" placeholder="johndoe123" value={formData.username} onChange={handleInputChange} error={errors.username} />
             <Input label="Email Address" name="email" type="email" placeholder="john@example.com" value={formData.email} onChange={handleInputChange} error={errors.email} />
             
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">What is your primary goal?</label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, primary_intent: "buying" })}
+                  className={`p-4 border rounded-xl text-left transition-all ${formData.primary_intent === "buying" ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600" : "border-slate-200 hover:border-blue-300"}`}
+                >
+                  <div className="font-semibold text-slate-900">Buying</div>
+                  <div className="text-xs text-slate-500 mt-1">I want to discover and buy items.</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, primary_intent: "selling" })}
+                  className={`p-4 border rounded-xl text-left transition-all ${formData.primary_intent === "selling" ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600" : "border-slate-200 hover:border-blue-300"}`}
+                >
+                  <div className="font-semibold text-slate-900">Selling</div>
+                  <div className="text-xs text-slate-500 mt-1">I want to set up a store and sell.</div>
+                </button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-700">Country</label>
-                <select name="country" value={formData.country} onChange={handleInputChange} className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                  <option value="">Select...</option>
-                  <option value="NG">Nigeria</option>
-                  <option value="US">United States</option>
-                  <option value="UK">United Kingdom</option>
+                <select name="country" value={formData.country} onChange={(e) => setFormData({ ...formData, country: e.target.value, state: "", city: "" })} className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
+                  <option value="">Select Country...</option>
+                  {countries.map(c => (
+                    <option key={c.isoCode} value={c.isoCode}>{c.name}</option>
+                  ))}
                 </select>
                 {errors.country && <p className="text-xs text-red-500">{errors.country}</p>}
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-700">State/Region</label>
-                <select name="state" value={formData.state} onChange={handleInputChange} className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">
-                  <option value="">Select...</option>
-                  <option value="Lagos">Lagos</option>
-                  <option value="Abuja">Abuja</option>
-                  <option value="Oyo">Oyo</option>
+                <select name="state" value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value, city: "" })} disabled={!formData.country} className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors disabled:opacity-50">
+                  <option value="">Select State...</option>
+                  {states.map(s => (
+                    <option key={s.isoCode} value={s.isoCode}>{s.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <Input label="City" name="city" placeholder="e.g. Yaba" value={formData.city} onChange={handleInputChange} error={errors.city} />
-              <Input label="WhatsApp / Phone" name="phone" type="tel" placeholder="+234..." value={formData.phone} onChange={handleInputChange} error={errors.phone} />
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">City</label>
+                <select name="city" value={formData.city} onChange={handleInputChange} disabled={!formData.state} className="w-full h-11 px-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors disabled:opacity-50">
+                  <option value="">Select City...</option>
+                  {cities.map(c => (
+                    <option key={c.name} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+                {errors.city && <p className="text-xs text-red-500">{errors.city}</p>}
+              </div>
+              <div className="space-y-1 pt-1">
+                <Input label="WhatsApp / Phone" name="phone" type="tel" placeholder="+234..." value={formData.phone} onChange={handleInputChange} error={errors.phone} />
+              </div>
             </div>
 
             <div>
