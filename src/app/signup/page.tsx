@@ -32,6 +32,13 @@ export default function SignupPage() {
   const [referralOwner, setReferralOwner] = useState<string | null>(null);
   const [celebrationData, setCelebrationData] = useState<{ pointsEarned: number; name: string } | null>(null);
 
+  const images = [
+    "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
+  ];
+  const [currentImg, setCurrentImg] = useState(0);
+
   // Form State
   const [formData, setFormData] = useState({
     name: "",
@@ -45,6 +52,10 @@ export default function SignupPage() {
 
   useEffect(() => {
     setMounted(true);
+    const timer = setInterval(() => {
+      setCurrentImg((prev) => (prev + 1) % images.length);
+    }, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -220,25 +231,39 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Left side: Image/Marketing */}
-      <div className="hidden lg:flex w-1/2 bg-slate-900 relative items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 mix-blend-overlay" />
-        <img 
-          src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" 
-          alt="Students collaborating"
-          className="absolute inset-0 w-full h-full object-cover opacity-40"
-        />
-        <div className="relative z-10 p-12 max-w-xl text-white">
-          <h1 className="text-5xl font-black mb-6 leading-tight">Join the Campus Economy.</h1>
-          <p className="text-xl text-slate-300 font-light">
-            Create your unique identity, earn rewards, and connect with peers instantly securely powered by Civic.
-          </p>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 lg:p-8 pt-24">
+      <div className="w-full max-w-7xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[800px]">
+        {/* Left side: Image Carousel */}
+        <div className="hidden lg:flex w-1/2 bg-slate-900 relative items-center justify-center overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.img 
+              key={currentImg}
+              src={images[currentImg]}
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1 }}
+              alt="Students collaborating"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </AnimatePresence>
+          <div className="absolute inset-0 bg-black/60 mix-blend-multiply" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="relative z-10 p-12 max-w-xl text-center">
+            <h1 className="text-5xl font-black mb-6 leading-tight text-white drop-shadow-lg">Join the Campus Economy.</h1>
+            <p className="text-xl text-slate-100 font-medium drop-shadow-md">
+              Create your unique identity, earn rewards, and connect with peers instantly securely powered by Civic.
+            </p>
+            <div className="mt-8 flex justify-center gap-2">
+              {images.map((_, i) => (
+                <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === currentImg ? 'bg-white w-6' : 'bg-white/50'}`} />
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Right side: Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 overflow-y-auto">
+        {/* Right side: Form */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-center p-8 lg:p-12 overflow-y-auto">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center lg:text-left">
             <h2 className="text-3xl font-bold text-slate-900">Create Account</h2>
@@ -301,6 +326,7 @@ export default function SignupPage() {
               Already have an account? <button onClick={() => router.push('/login')} className="text-blue-600 font-semibold hover:underline">Log in</button>
             </p>
           </div>
+        </div>
         </div>
       </div>
     </div>
