@@ -2,13 +2,16 @@ import { NextResponse } from 'next/server';
 import { Redis } from "@upstash/redis";
 
 export const dynamic = 'force-dynamic';
-const redis = Redis.fromEnv();
+const hasRedis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
+const redis = hasRedis ? Redis.fromEnv() : null;
 
 export async function GET() {
     try {
-        const cachedPrice = await redis.get("price:sol_usd");
-        if (cachedPrice) {
-            return NextResponse.json({ price: Number(cachedPrice), source: "redis-cache" });
+        if (redis) {
+            const cachedPrice = await redis.get("price:sol_usd");
+            if (cachedPrice) {
+                return NextResponse.json({ price: Number(cachedPrice), source: "redis-cache" });
+            }
         }
 
         const res = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112", {
@@ -21,7 +24,7 @@ export async function GET() {
         const price = Number(data.data["So11111111111111111111111111111111111111112"]?.price);
         
         if (price) {
-            await redis.set("price:sol_usd", price, { ex: 30 }); // 30 second TTL
+            if (redis) await redis.set("price:sol_usd", price, { ex: 30 }); // 30 second TTL
             return NextResponse.json({ price, source: "jupiter-api" });
         }
         
