@@ -160,7 +160,7 @@ export default function LoginPage() {
           <div className="absolute inset-0 bg-black/60 mix-blend-multiply" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           <div className="relative z-10 p-12 max-w-xl text-center">
-            <h1 className="text-5xl font-black mb-6 leading-tight text-white drop-shadow-lg">Welcome back to the store.</h1>
+            <h1 className="text-5xl font-black mb-6 leading-tight !text-white drop-shadow-lg">Welcome back to the store.</h1>
             <p className="text-xl text-slate-100 font-medium drop-shadow-md">
               Continue where you left off. Manage your store, discover items, and earn more points.
             </p>

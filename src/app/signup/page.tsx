@@ -257,7 +257,7 @@ export default function SignupPage() {
           <div className="absolute inset-0 bg-black/60 mix-blend-multiply" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           <div className="relative z-10 p-12 max-w-xl text-center">
-            <h1 className="text-5xl font-black mb-6 leading-tight text-white drop-shadow-lg">Join the Campus Economy.</h1>
+            <h1 className="text-5xl font-black mb-6 leading-tight !text-white drop-shadow-lg">Join the Campus Economy.</h1>
             <p className="text-xl text-slate-100 font-medium drop-shadow-md">
               Create your unique identity, earn rewards, and connect with peers instantly securely powered by Civic.
             </p>
