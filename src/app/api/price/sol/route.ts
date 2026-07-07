@@ -14,14 +14,14 @@ export async function GET() {
             }
         }
 
-        const res = await fetch("https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112", {
+        const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd", {
             headers: { Accept: "application/json" }
         });
 
-        if (!res.ok) throw new Error("Jupiter API Error");
+        if (!res.ok) throw new Error("CoinGecko API Error");
         const data = await res.json();
         
-        const price = Number(data.data["So11111111111111111111111111111111111111112"]?.price);
+        const price = Number(data?.solana?.usd);
         
         if (price) {
             if (redis) await redis.set("price:sol_usd", price, { ex: 30 }); // 30 second TTL
