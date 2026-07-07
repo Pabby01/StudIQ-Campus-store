@@ -26,7 +26,7 @@ function getRateLimitKey(req: NextRequest, bucket: string): string {
     return `${bucket}:${identity}`;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const method = request.method.toUpperCase();
 
@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith("/api/escrow/");
 
     if (isFinancialRoute && rateLimit) {
-        const ip = request.headers.get("x-forwarded-for") ?? request.ip ?? "127.0.0.1";
+        const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? "127.0.0.1";
         const { success, limit, remaining, reset } = await rateLimit.limit(`ratelimit_${ip}`);
 
         if (!success) {
