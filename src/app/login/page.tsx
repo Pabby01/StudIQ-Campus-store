@@ -24,10 +24,7 @@ export default function LoginPage() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-  });
+
 
   const images = [
     "https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
@@ -83,9 +80,7 @@ export default function LoginPage() {
     handleLogin();
   }, [mounted, isLoading, user, token, walletAddress, civicUserId, router]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+
 
   if (!mounted || isLoading) {
     return (
@@ -107,22 +102,6 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-4">
-              <Input
-                label="Username"
-                name="username"
-                placeholder="Enter your username"
-                value={formData.username}
-                onChange={handleInputChange}
-              />
-              <Input
-                label="Email Address"
-                name="email"
-                type="email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleInputChange}
-              />
-
               <div className="pt-4">
                 {!user ? (
                   <div className="w-full bg-slate-50 border border-slate-200 p-6 rounded-2xl flex flex-col items-center">
