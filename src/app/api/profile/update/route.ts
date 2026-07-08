@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     }
 
     const isNewProfile = !existing;
-    const wasIncomplete = existing && (!existing.school || !existing.campus || !existing.name);
+    const wasIncomplete = existing && (!existing.country || !existing.name);
 
     console.log("[Profile Update] isNewProfile:", isNewProfile, "wasIncomplete:", wasIncomplete);
 
@@ -144,7 +144,7 @@ export async function POST(req: Request) {
     }
 
     // Award points for new profile or profile completion
-    const isComplete = data.name && data.school && data.campus;
+    const isComplete = !!(data.name && data.address && data.country);
     console.log("[Profile Update] isComplete:", isComplete);
 
     // Send targeted welcome emails for new accounts

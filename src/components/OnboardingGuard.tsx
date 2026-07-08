@@ -29,6 +29,7 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
         // Skip auth/onboarding pages and admin to avoid redirect loops
         if (
             pathname === "/onboarding" ||
+            pathname === "/signup" ||
             pathname === "/auth" ||
             pathname?.startsWith("/admin")
         ) return;

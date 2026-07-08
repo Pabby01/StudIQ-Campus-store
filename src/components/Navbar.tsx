@@ -220,10 +220,10 @@ export default function Navbar() {
 
             {!user && (
               <div className="pl-2 sm:ml-2 sm:border-l border-slate-200 flex items-center gap-1 sm:gap-2">
-                 <Link href="/login" className="text-sm font-medium text-slate-700 hover:text-primary-blue transition-colors px-3 py-2">
+                 <Link href="/auth" className="text-sm font-medium text-slate-700 hover:text-primary-blue transition-colors px-3 py-2">
                     Log In
                  </Link>
-                 <Link href="/signup" className="text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors px-4 py-2 rounded-full shadow-sm">
+                 <Link href="/auth" className="text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors px-4 py-2 rounded-full shadow-sm">
                     Sign Up
                  </Link>
               </div>

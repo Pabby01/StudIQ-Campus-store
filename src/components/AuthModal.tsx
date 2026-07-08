@@ -39,13 +39,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                 <div className="w-full max-w-sm space-y-3">
                     <Button 
-                        onClick={() => { onClose(); router.push('/login'); }}
+                        onClick={() => { onClose(); router.push('/auth'); }}
                         className="w-full flex justify-center py-3"
                     >
                         Log In
                     </Button>
                     <button 
-                        onClick={() => { onClose(); router.push('/signup'); }}
+                        onClick={() => { onClose(); router.push('/auth'); }}
                         className="w-full flex justify-center py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
                     >
                         Create an Account

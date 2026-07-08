@@ -38,12 +38,12 @@ export async function GET(req: Request) {
         const supabase = getSupabaseServerClient();
 
         // Try lookups in priority order: email → wallet address → civic_user_id
-        let data: { address: string; email: string | null; name: string | null; civic_user_id: string | null; school: string | null; campus: string | null } | null = null;
+        let data: { address: string; email: string | null; name: string | null; civic_user_id: string | null; country: string | null } | null = null;
 
         if (email) {
             const res = await supabase
                 .from("profiles")
-                .select("address, email, name, civic_user_id, school, campus")
+                .select("address, email, name, civic_user_id, country")
                 .eq("email", email)
                 .maybeSingle();
             data = res.data;
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
         if (!data && address) {
             const res = await supabase
                 .from("profiles")
-                .select("address, email, name, civic_user_id, school, campus")
+                .select("address, email, name, civic_user_id, country")
                 .eq("address", address)
                 .maybeSingle();
             data = res.data;
@@ -61,7 +61,7 @@ export async function GET(req: Request) {
         if (!data && civicId) {
             const res = await supabase
                 .from("profiles")
-                .select("address, email, name, civic_user_id, school, campus")
+                .select("address, email, name, civic_user_id, country")
                 .eq("civic_user_id", civicId)
                 .maybeSingle();
             data = res.data;
@@ -71,8 +71,8 @@ export async function GET(req: Request) {
             return NextResponse.json({ exists: false, isComplete: false });
         }
 
-        // A profile is considered complete when it has the three core fields
-        const isComplete = !!(data.name && data.school && data.campus);
+        // A profile is considered complete when it has these core fields
+        const isComplete = !!(data.name && data.address && data.country);
 
         return NextResponse.json({
             exists: true,
