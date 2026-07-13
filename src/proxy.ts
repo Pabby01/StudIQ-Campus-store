@@ -112,9 +112,9 @@ export async function proxy(request: NextRequest) {
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.civic.com; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.civic.com; " +
         "font-src 'self' https://fonts.gstatic.com; " +
-        "media-src 'self' data: blob:; " +
-        "frame-src 'self' https://connect.solflare.com https://phantom.app https://*.civic.com https://auth.metakeep.xyz https://*.metakeep.xyz; " +
-        "connect-src 'self' https://studiq.fun https://www.studiq.fun https://store.studiq.fun https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.helius-rpc.com wss://*.helius-rpc.com https://mainnet.helius-rpc.com wss://mainnet.helius-rpc.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com https://*.civic.com https://*.metakeep.xyz https://sepolia-preconf.base.org https://mainnet.base.org https://price.jup.ag https://api.jup.ag https://*.paj.cash;"
+        "media-src 'self' data: blob: https://cdn.pixabay.com; " +
+        "frame-src 'self' https://connect.solflare.com https://phantom.app https://*.civic.com https://auth.metakeep.xyz https://*.metakeep.xyz https://*.zdfi.me https://*.zendfi.com; " +
+        "connect-src 'self' https://studiq.fun https://www.studiq.fun https://store.studiq.fun https://api.devnet.solana.com https://api.mainnet-beta.solana.com wss://api.devnet.solana.com wss://api.mainnet-beta.solana.com https://*.helius-rpc.com wss://*.helius-rpc.com https://mainnet.helius-rpc.com wss://mainnet.helius-rpc.com https://*.supabase.co wss://*.supabase.co https://connect.solflare.com https://*.civic.com https://*.metakeep.xyz https://sepolia-preconf.base.org https://mainnet.base.org https://price.jup.ag https://api.jup.ag https://*.paj.cash https://*.zdfi.me https://*.zendfi.com;"
     );
 
     return response;
