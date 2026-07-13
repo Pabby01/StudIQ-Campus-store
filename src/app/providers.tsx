@@ -51,7 +51,7 @@ export default function Providers({ children }: { children: ReactNode }) {
       chains={[]}
       endpoints={{
         rpcs: {
-          84532: { http: ["https://sepolia.base.org"] }
+          84532: { http: ["https://rpc.ankr.com/base_sepolia"] }
         }
       }}
       onSignIn={async (user) => {
