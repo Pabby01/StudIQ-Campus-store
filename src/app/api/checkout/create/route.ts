@@ -167,7 +167,7 @@ export async function POST(req: Request) {
     const storeId = prods[0].store_id;
     const { data: store } = await supabase
       .from("stores")
-      .select("owner_address, delivery_fee, delivery_enabled, pickup_enabled")
+      .select("name, owner_address, delivery_fee, delivery_enabled, pickup_enabled")
       .eq("id", storeId)
       .single();
 
@@ -273,7 +273,7 @@ export async function POST(req: Request) {
 
     // Step 8: Send email notifications (Only for non-crypto orders immediately)
     // For crypto, we send after verification in /api/checkout/verify-transaction
-    if (parsed.data.paymentMethod !== 'solana') {
+    if (parsed.data.paymentMethod !== 'solana' && parsed.data.paymentMethod !== 'zend') {
       try {
         // Import email functions
         const { sendOrderConfirmation, sendSellerNotification } = await import('@/lib/email');
@@ -377,8 +377,22 @@ export async function POST(req: Request) {
     let payUrl = null;
     if (parsed.data.paymentMethod === 'solana' || parsed.data.paymentMethod === 'zend') {
       try {
+        let apiKey = process.env.ZEND_API_KEY || "";
+        if (!apiKey) {
+          try {
+            const fs = require('fs');
+            const path = require('path');
+            const os = require('os');
+            const configPath = path.join(os.homedir(), '.zend', 'config.json');
+            const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            apiKey = config.apiKey || "";
+          } catch (e) {
+            console.error("Could not read ~/.zend/config.json fallback");
+          }
+        }
+
         const zendClient = createZendClient({
-          apiKey: process.env.ZEND_API_KEY || "",
+          apiKey: apiKey,
         });
         
         // Determine host for redirect URL
