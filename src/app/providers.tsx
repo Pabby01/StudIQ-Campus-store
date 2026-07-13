@@ -49,6 +49,11 @@ export default function Providers({ children }: { children: ReactNode }) {
       autoRedirect={false}
       redirectUrl={typeof window !== 'undefined' ? window.location.origin : undefined}
       chains={[]}
+      endpoints={{
+        rpcs: {
+          84532: { http: ["https://sepolia.base.org"] }
+        }
+      }}
       onSignIn={async (user) => {
         // Sign in handled
       }}
