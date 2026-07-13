@@ -649,8 +649,8 @@ export default function CartPage() {
                         return;
                       }
 
-                      // form is valid, open payment modal
-                      setShowPaymentModal(true);
+                      // form is valid, proceed directly to checkout
+                      void checkout();
                     }}
                     disabled={checkoutStatus !== "idle" && checkoutStatus !== "error"}
                   >
