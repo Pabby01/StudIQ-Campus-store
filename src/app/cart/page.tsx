@@ -16,7 +16,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { checkoutCreateSchema } from "@/lib/validators";
 import { useStore } from "@/hooks/useStore";
-import { useTokenBalances } from "@/hooks/useTokenBalances";
+
 
 type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifying" | "success" | "error";
 
@@ -67,7 +67,7 @@ export default function CartPage() {
 
   const solPrice = useCart((s) => s.solPrice);
   const fetchSolPrice = useCart((s) => s.fetchSolPrice);
-  const { tokens, loading: balanceLoading, error: balanceError } = useTokenBalances(walletAddress, SOLANA_CONFIG.network);
+  // useTokenBalances removed since Zend handles it
   const storeId = items[0]?.storeId ?? null;
   const { store: storeResponse } = useStore(storeId);
   const store = storeResponse?.store;
@@ -194,9 +194,7 @@ export default function CartPage() {
   const ngnOrderTotal = orderTotal; // Already in NGN
   const ngnFinalTotal = finalAmount; // Already in NGN
   const formatNgn = (value: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
-  const walletUsdcBalance = tokens.find((t) => t.symbol === "USDC")?.balance ?? 0;
-  const walletUsdtBalance = tokens.find((t) => t.symbol === "USDT")?.balance ?? 0;
-  const availableBalance = finalCurrency === "USDT" ? walletUsdtBalance : walletUsdcBalance;
+  const availableBalance = 0;
   const showBalanceSection = false; // Zend handles balance checks internally
   const hasInsufficientBalance = false;
   const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
@@ -773,13 +771,13 @@ export default function CartPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h4 className="text-base font-semibold text-black">Pay with crypto wallet</h4>
+                  <h4 className="text-base font-semibold text-black">Pay with Zend</h4>
                   <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-700">
                     Live
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-text">
-                  Use your wallet to pay with SOL or stablecoins, then confirm the transaction.
+                  Pay securely with crypto using Zend Checkout.
                 </p>
               </div>
               <ArrowRight className="mt-1 h-4 w-4 text-primary-blue" />
@@ -849,10 +847,10 @@ export default function CartPage() {
       <SidePanel
         isOpen={showSidePanel && sidePanelType === "crypto"}
         onClose={() => { setShowSidePanel(false); setSidePanelType(null); }}
-        title="Pay with crypto wallet"
+        title="Pay with Zend"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">Use your wallet to pay with SOL or stablecoins. Confirm to create the order and initiate the on-chain payment flow.</p>
+          <p className="text-sm text-gray-600">You will be redirected to Zend Checkout to securely pay for this order.</p>
           <div className="mt-4 flex gap-2">
             <Button variant="outline" className="w-full" onClick={() => { setShowSidePanel(false); setSidePanelType(null); }}>
               Cancel
