@@ -12,7 +12,8 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin, CreditCard, Coins, Lock, Sparkles, ArrowRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { checkoutCreateSchema } from "@/lib/validators";
 import { useStore } from "@/hooks/useStore";
 import { useTokenBalances } from "@/hooks/useTokenBalances";
@@ -51,7 +52,7 @@ export default function CartPage() {
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string | undefined }>({});
 
   const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup">("shipping");
-  const [paymentMethod, setPaymentMethod] = useState<"solana" | "pod">("solana");
+  const [paymentMethod, setPaymentMethod] = useState<"zend" | "pod">("zend");
 
   const [deliveryDetails, setDeliveryDetails] = useState({
     name: "",
@@ -91,6 +92,36 @@ export default function CartPage() {
       }
     }
   }, [items]);
+
+  const searchParams = useSearchParams();
+  const zendReturnToken = searchParams?.get("zend_return_token");
+  const orderIdParam = searchParams?.get("orderId");
+
+  useEffect(() => {
+    if (zendReturnToken && orderIdParam) {
+      const verifyZend = async () => {
+        setCheckoutStatus("verifying");
+        try {
+          const res = await fetch("/api/checkout/verify-zend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId: orderIdParam, zend_return_token: zendReturnToken }),
+          });
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || "Payment verification failed");
+          }
+          setCheckoutStatus("success");
+          setShowSaveDetailsModal(true);
+        } catch (err) {
+          console.error("Zend verification error:", err);
+          setError(err instanceof Error ? err.message : "Verification failed");
+          setCheckoutStatus("error");
+        }
+      };
+      verifyZend();
+    }
+  }, [zendReturnToken, orderIdParam]);
 
   // Ensure price is fetched if missing or stale (Store handles caching)
   useEffect(() => {
@@ -166,8 +197,8 @@ export default function CartPage() {
   const walletUsdcBalance = tokens.find((t) => t.symbol === "USDC")?.balance ?? 0;
   const walletUsdtBalance = tokens.find((t) => t.symbol === "USDT")?.balance ?? 0;
   const availableBalance = finalCurrency === "USDT" ? walletUsdtBalance : walletUsdcBalance;
-  const showBalanceSection = paymentMethod === "solana" && deliveryMethod === "shipping";
-  const hasInsufficientBalance = showBalanceSection && isRateReady && finalAmount > 0 && !balanceLoading && availableBalance < finalAmount;
+  const showBalanceSection = false; // Zend handles balance checks internally
+  const hasInsufficientBalance = false;
   const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
   const validationPayload = {
     buyer: walletAddress || "",
@@ -227,12 +258,6 @@ export default function CartPage() {
       return;
     }
 
-    if (finalPaymentMethod === "solana" && !walletAddress) {
-      setError("Wallet not ready for crypto payment. Please wait or use Pay on Delivery.");
-      setCheckoutStatus("error");
-      return;
-    }
-
     const validation = checkoutCreateSchema.safeParse(validationPayload);
 
     if (!validation.success) {
@@ -258,22 +283,6 @@ export default function CartPage() {
       setError("Please fix the highlighted fields");
       setCheckoutStatus("error");
       return;
-    }
-
-    if (finalPaymentMethod === "solana") {
-      if (balanceLoading) {
-        setError("Wallet balance is loading. Please wait a moment.");
-        setCheckoutStatus("error");
-        return;
-      }
-      const requiredAmount = finalAmount;
-      const currentBalance = availableBalance;
-      if (requiredAmount > 0 && currentBalance < requiredAmount) {
-        setError(`Insufficient ${finalCurrency} balance. Available: ${formatTokenAmount(currentBalance, finalCurrency)}.`);
-        setShowInsufficientModal(true);
-        setCheckoutStatus("error");
-        return;
-      }
     }
 
     try {
@@ -310,73 +319,14 @@ export default function CartPage() {
         return;
       }
 
-      // Validate Recipient Address for Crypto
-      if (!orderData.payTo) {
-        throw new Error("Store wallet address is missing. Cannot verify payment destination.");
-      }
-
-      // Step 2: Create Solana transaction
-      // Calulated in render, but recalculate or use ref to ensure freshness? State is fine.
-
-      // ...
-      // Step 2: Create Solana transaction
-      setCheckoutStatus("signing");
-
-      // Verify rate availability if conversion needed
-      if (!isRateReady && finalAmount === 0 && paymentMethod === 'solana') {
-        throw new Error("Exchange rate not active. Please refresh.");
-      }
-
-      // Use the calculated amounts
-      const transferAmount = finalAmount;
-      const mint = finalCurrency === "USDC" ? SOLANA_CONFIG.usdcMint : undefined;
-      const decimals = finalCurrency === "USDC" ? 6 : 9;
-
-      const transaction = await createTransferTransaction(
-        walletAddress,
-        orderData.payTo,
-        transferAmount,
-        mint,
-        SOLANA_CONFIG.network,
-        decimals
-      );
-      // ... same as before
-
-
-      // Step 3: Sign and send transaction
-      if (!walletAddress || !signTransaction) {
-        throw new Error("Wallet does not support transaction signing");
-      }
-
-      // Use 'as any' to bypass strict type checks between legacy/versioned if needed
-      // but VersionedTransaction is generally supported by modern adapters
-      const signedTx = await signTransaction(transaction as any);
-
-      // Send transaction using our RPC connection to ensure devnet consistency
-      const signature = await broadcastTransaction(signedTx);
-
-      if (!signature) {
-        throw new Error("Failed to send transaction");
-      }
-
-      // Step 4: Wait for confirmation
-      setCheckoutStatus("confirming");
-      await waitForConfirmation(signature, 60000);
-
-      // Step 5: Verify transaction on backend
-      setCheckoutStatus("verifying");
-      const verifyRes = await fetch("/api/checkout/verify-transaction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: orderData.orderId,
-          txSignature: signature,
-        }),
-      });
-
-      if (!verifyRes.ok) {
-        const errorData = await verifyRes.json();
-        throw new Error(errorData.error || "Transaction verification failed");
+      // Redirect to Zend Payment Link
+      if (finalPaymentMethod === "zend") {
+        if (!orderData.payUrl) {
+          throw new Error("Payment link generation failed.");
+        }
+        setCheckoutStatus("verifying");
+        window.location.href = orderData.payUrl;
+        return;
       }
 
       // Success! prompt to save details before redirecting

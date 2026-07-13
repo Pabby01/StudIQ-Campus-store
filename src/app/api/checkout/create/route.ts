@@ -5,6 +5,7 @@ import { getSessionWallet } from "@/lib/session";
 import { SOLANA_CONFIG } from "@/lib/solana-config";
 import { getTokenValue, Currency } from "paj_ramp";
 import { PAJ_CONFIG } from "@/lib/paj";
+import { createZendClient } from "pay-with-zend-sdk";
 
 const DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 const MAINNET_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
@@ -196,13 +197,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("seller_tier")
-      .eq("address", store.owner_address)
-      .single();
-
-    const feePercent = profile?.seller_tier === "premium" ? 3 : 10;
+    const feePercent = 5;
 
     const needsNgnRate = prods.some((p) => p.price_ngn);
     const ngnPerUsd = needsNgnRate ? await getNgnPerUsd() : null;
@@ -219,30 +214,27 @@ export async function POST(req: Request) {
     const feeAmount = subtotal * (feePercent / 100);
     const vendorEarnings = subtotal - feeAmount + deliveryFee;
 
-    // Platform wallet receives all payments
-    const platformWallet = SOLANA_CONFIG.platformWallet;
-
-    // Step 6: Create order (Updated)
-    const { data: newOrder, error: orderError } = await supabase // Renamed 'order' to 'newOrder'
+    // Step 6: Create order
+    const { data: newOrder, error: orderError } = await supabase
       .from("orders")
       .insert({
         buyer_address: buyerAddress,
         store_id: storeId,
-        amount: amount, // Use totalAmount
+        amount: amount, 
         fee_percent: feePercent,
         fee_amount: feeAmount,
         vendor_earnings: vendorEarnings,
         status: "pending",
         currency: parsed.data.currency,
-        delivery_method: parsed.data.deliveryMethod, // Kept existing field
-        delivery_info: parsed.data.deliveryDetails, // Kept existing field
-        payment_method: parsed.data.paymentMethod, // Kept existing field
-        buyer_email: parsed.data.buyerEmail, // Kept existing field
+        delivery_method: parsed.data.deliveryMethod,
+        delivery_info: parsed.data.deliveryDetails,
+        payment_method: parsed.data.paymentMethod,
+        buyer_email: parsed.data.buyerEmail,
       })
-      .select("id") // Select only id, as before
+      .select("id")
       .single();
 
-    if (orderError || !newOrder) { // Use newOrder
+    if (orderError || !newOrder) {
       console.error("[Checkout Create] Order creation error:", orderError);
       // Release reservations
       for (const reservation of reservations) {
@@ -251,13 +243,12 @@ export async function POST(req: Request) {
         });
       }
 
-      // The instruction's rollback logic for inventory was different,
-      // but the existing reservation release is more robust for this flow.
       return Response.json(
         { ok: false, error: "Failed to create order", details: orderError?.message },
         { status: 500 }
       );
     }
+    
     // Step 7: Create order items
     const itemsRows = items.map((i) => {
       const p = prods.find((pp) => pp.id === i.productId)!;
@@ -356,7 +347,7 @@ export async function POST(req: Request) {
       }
     }
 
-    if (parsed.data.paymentMethod !== 'solana') {
+    if (parsed.data.paymentMethod !== 'solana' && parsed.data.paymentMethod !== 'zend') {
       try {
         if (buyerAddress) {
           await triggerNotification({
@@ -382,10 +373,45 @@ export async function POST(req: Request) {
       }
     }
 
+    // Step 9: Create Zend Payment Link
+    let payUrl = null;
+    if (parsed.data.paymentMethod === 'solana' || parsed.data.paymentMethod === 'zend') {
+      try {
+        const zendClient = createZendClient({
+          apiKey: process.env.ZEND_API_KEY || "",
+        });
+        
+        // Determine host for redirect URL
+        const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+        const proto = req.headers.get("x-forwarded-proto") ?? "https";
+        const origin = req.headers.get("origin") ?? (host ? `${proto}://${host}` : null);
+        
+        const redirectUrl = origin ? `${origin}/cart?orderId=${newOrder.id}` : undefined;
+
+        const payment = await zendClient.createZendPayment({
+          amount: amount,
+          description: `Order #${newOrder.id.slice(0, 8)} at ${store.name || 'Campus Store'}`,
+          redirectUrl: redirectUrl,
+        });
+        
+        // Store the Zend payment ID in the tx_sig field temporarily so we can verify it later
+        await supabase.from("orders").update({ tx_sig: payment.id }).eq("id", newOrder.id);
+        
+        payUrl = payment.linkUrl;
+      } catch (zendErr) {
+        console.error("[Checkout Create] Zend Payment Error:", zendErr);
+        // We could fail the order here, or return an error
+        return Response.json(
+          { ok: false, error: "Failed to initialize payment gateway." },
+          { status: 500 }
+        );
+      }
+    }
+
     return Response.json({
       ok: true,
       orderId: newOrder.id,
-      payTo: platformWallet,
+      payUrl: payUrl,
       amount: amount,
       currency: parsed.data.currency,
     });
