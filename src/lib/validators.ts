@@ -62,7 +62,7 @@ export const createProductSchema = z.object({
 export const updateProductSchema = createProductSchema.extend({ id: z.string().min(1) });
 
 export const checkoutCreateSchema = z.object({
-  buyer: z.string().min(32),
+  buyer: z.string().min(10),
   storeId: z.string().min(1),
   items: z.array(
     z.object({ productId: z.string().min(1), qty: z.number().int().positive() })
@@ -77,7 +77,7 @@ export const checkoutCreateSchema = z.object({
     fee: z.number().nonnegative().optional(),
     notes: z.string().optional(),
   }),
-  paymentMethod: z.enum(["solana", "pod"]).optional(),
+  paymentMethod: z.enum(["solana", "pod", "zend"]).optional(),
   buyerEmail: z.string().email(),
 });
 
