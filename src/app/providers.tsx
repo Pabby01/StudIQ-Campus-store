@@ -48,6 +48,7 @@ export default function Providers({ children }: { children: ReactNode }) {
       clientId={civicClientId!}
       autoRedirect={false}
       redirectUrl={typeof window !== 'undefined' ? window.location.origin : undefined}
+      chains={[]}
       onSignIn={async (user) => {
         // Sign in handled
       }}
