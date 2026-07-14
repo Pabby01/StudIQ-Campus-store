@@ -38,7 +38,7 @@ const slides: Slide[] = [
         title: "Flash Deal: Campus Tech Week",
         subtitle: "Up to 60% off new smartphones & accessories",
         cta: "Shop deal",
-        image: "https://images.unsplash.com/photo-1517059224940-d4af9eec41e5?auto=format&fit=crop&w=1400&q=80",
+        image: "/campus-tech.jpg",
         badge: "Limited time",
         accent: "from-cyan-100 via-white to-blue-100",
         link: "/search?category=Electronics",
@@ -215,8 +215,8 @@ export default function HeroCarousel() {
                             setIsAutoPlaying(false);
                         }}
                         className={`h-2 rounded-full transition-all ${index === currentSlide
-                                ? "bg-white w-8"
-                                : "bg-white/50 w-2 hover:bg-white/75"
+                            ? "bg-white w-8"
+                            : "bg-white/50 w-2 hover:bg-white/75"
                             }`}
                     />
                 ))}

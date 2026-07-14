@@ -225,9 +225,12 @@ export default function CartPage() {
   const isShippingValid = deliveryMethod === "pickup" || (trimmedAddress.length >= 3 && trimmedCity.length >= 2 && trimmedZip.length >= 3);
   const isFormValid = items.length > 0 && isEmailValid && isNameValid && isShippingValid;
 
-  async function checkout() {
+  async function checkout(methodOverride?: "passpoint" | "zend") {
     if (checkoutStatus !== "idle") return;
     setFieldErrors({});
+
+    const activePaymentMethod = deliveryMethod === "pickup" ? "pod" : (methodOverride || paymentMethod);
+    const currentValidationPayload = { ...validationPayload, paymentMethod: activePaymentMethod };
 
     // Determine final payment method: if pickup, force POD/POP logic
     if (items.length === 0) {
@@ -246,8 +249,9 @@ export default function CartPage() {
         if (trimmedZip.length < 3) newFieldErrors.zip = "Zip code is required";
       }
       setFieldErrors(newFieldErrors);
-      setError("All fields must be filled before checkout.");
+      setError("Please complete the checkout form before continuing.");
       setCheckoutStatus("error");
+      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -256,7 +260,7 @@ export default function CartPage() {
       return;
     }
 
-    const validation = checkoutCreateSchema.safeParse(validationPayload);
+    const validation = checkoutCreateSchema.safeParse(currentValidationPayload);
 
     if (!validation.success) {
       const flattened = validation.error.flatten();
@@ -289,7 +293,7 @@ export default function CartPage() {
       const createRes = await fetch("/api/checkout/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validationPayload),
+        body: JSON.stringify(currentValidationPayload),
       });
 
       if (!createRes.ok) {
@@ -318,7 +322,7 @@ export default function CartPage() {
       }
 
       // Redirect to Zend Payment Link
-      if (finalPaymentMethod === "zend") {
+      if (activePaymentMethod === "zend") {
         if (!orderData.payUrl) {
           throw new Error("Payment link generation failed.");
         }
@@ -627,34 +631,29 @@ export default function CartPage() {
                 <div className="space-y-2">
                   <Button
                     variant="primary"
-                    className="w-full"
+                    className="w-full flex items-center justify-center gap-2"
                     onClick={() => {
-                      // Prevent opening payment modal unless form is valid
                       if (deliveryUnavailable) return;
-                      if (!isFormValid) {
-                        // Build inline errors and also show banner notification
-                        const newFieldErrors: { [key: string]: string } = {};
-                        if (!isEmailValid) newFieldErrors.email = "Valid email is required";
-                        if (!isNameValid) newFieldErrors.name = "Recipient name is required";
-                        if (deliveryMethod === "shipping") {
-                          if (trimmedAddress.length < 3) newFieldErrors.address = "Street address is required";
-                          if (trimmedCity.length < 2) newFieldErrors.city = "City is required";
-                          if (trimmedZip.length < 3) newFieldErrors.zip = "Zip code is required";
-                        }
-                        setFieldErrors(newFieldErrors);
-                        setError("Please complete the checkout form before continuing.");
-                        setCheckoutStatus("error");
-                        // Scroll to top so banner is visible
-                        if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-                        return;
-                      }
-
-                      // form is valid, proceed directly to checkout
-                      void checkout();
+                      setPaymentMethod("passpoint");
+                      void checkout("passpoint");
                     }}
                     disabled={checkoutStatus !== "idle" && checkoutStatus !== "error"}
                   >
-                    {getButtonText()}
+                    <CreditCard className="w-5 h-5" />
+                    {checkoutStatus !== "idle" && checkoutStatus !== "error" && paymentMethod === "passpoint" ? getButtonText() : "Pay with Passpoint"}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2 border-primary-blue text-primary-blue hover:bg-blue-50"
+                    onClick={() => {
+                      if (deliveryUnavailable) return;
+                      void checkout("zend");
+                    }}
+                    disabled={true}
+                  >
+                    <Coins className="w-5 h-5" />
+                    Pay with Zend (Coming Soon)
                   </Button>
                   <Button
                     variant="outline"
