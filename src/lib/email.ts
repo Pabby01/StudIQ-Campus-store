@@ -624,11 +624,11 @@ END:VCALENDAR`;
         </head>
         <body>
           <div class="container">
-            <img src="${APP_URL}/webinar.jpg" alt="Webinar Flyer" class="banner" />
+            <img src="https://www.studiq.fun/webinar.jpg" alt="Webinar Flyer" class="banner" />
             
             <div class="content">
               <div class="header-links">
-                Questions about Zero-Loss Dapps: Securing Capital on Solana? <a href="${APP_URL}/Webinar">View event details</a> or <a href="mailto:support@studiq.fun">Contact the organizer</a>
+                Questions about Zero-Loss Dapps: Securing Capital on Solana? <a href="https://www.studiq.fun/Webinar">View event details</a> or <a href="mailto:support@studiq.fun">Contact the organizer</a>
               </div>
 
               <div class="order-summary">
@@ -664,7 +664,7 @@ END:VCALENDAR`;
                 </p>
                 
                 <p class="footer-text">
-                  This order is subject to StudIQ <a href="${APP_URL}/terms">Terms of Service</a> and <a href="${APP_URL}/privacy">Privacy Policy</a>.
+                  This order is subject to StudIQ <a href="https://www.studiq.fun/terms">Terms of Service</a> and <a href="https://www.studiq.fun/privacy">Privacy Policy</a>.
                 </p>
               </div>
 
