@@ -373,7 +373,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Step 9: Create Zend Payment Link
+    // Step 9: Create Payment Link (Zend or Passpoint)
     let payUrl = null;
     if (parsed.data.paymentMethod === 'solana' || parsed.data.paymentMethod === 'zend') {
       try {
@@ -423,6 +423,61 @@ export async function POST(req: Request) {
           { ok: false, error: "Failed to initialize payment gateway." },
           { status: 500 }
         );
+      }
+    } else if (parsed.data.paymentMethod === 'passpoint') {
+      try {
+        const passpointKey = process.env.PASSPOINT_SECRET_KEY || "";
+        if (!passpointKey) {
+          return Response.json({ ok: false, error: "Passpoint API keys not configured." }, { status: 500 });
+        }
+
+        const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+        const proto = req.headers.get("x-forwarded-proto") ?? "https";
+        const origin = req.headers.get("origin") ?? (host ? `${proto}://${host}` : null);
+        let redirectUrl = origin ? `${origin}/cart?orderId=${newOrder.id}` : undefined;
+
+        // Convert the USD amount back to NGN for Passpoint to natively charge Naira
+        const passpointAmount = ngnPerUsd ? amount * ngnPerUsd : amount * 1500;
+
+        const passpointRes = await fetch("https://api.passpoint.dev/v1/collections", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${passpointKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            amount: passpointAmount.toFixed(2),
+            source: "NGN",
+            destination: "NGN",
+            channel: "card", // or bank_transfer
+            reference: newOrder.id,
+            redirect_url: redirectUrl,
+            customer: {
+              email: parsed.data.buyerEmail || "customer@example.com",
+              name: "Campus Store Customer"
+            }
+          })
+        });
+
+        if (!passpointRes.ok) {
+          const errData = await passpointRes.text();
+          console.error("Passpoint API error:", errData);
+          return Response.json({ ok: false, error: "Failed to initialize Passpoint." }, { status: 500 });
+        }
+
+        const passpointData = await passpointRes.json();
+        
+        // Passpoint usually returns the payment link in data.url or data.checkout_url
+        payUrl = passpointData?.data?.url || passpointData?.data?.checkout_url || passpointData?.url;
+
+        if (!payUrl) {
+           console.error("Passpoint API missing URL:", passpointData);
+           return Response.json({ ok: false, error: "Invalid response from Passpoint." }, { status: 500 });
+        }
+
+      } catch (err) {
+        console.error("[Checkout Create] Passpoint Error:", err);
+        return Response.json({ ok: false, error: "Failed to initialize Passpoint gateway." }, { status: 500 });
       }
     }
 

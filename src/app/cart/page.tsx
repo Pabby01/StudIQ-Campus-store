@@ -52,7 +52,7 @@ export default function CartPage() {
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string | undefined }>({});
 
   const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup">("shipping");
-  const [paymentMethod, setPaymentMethod] = useState<"zend" | "pod">("zend");
+  const [paymentMethod, setPaymentMethod] = useState<"zend" | "pod" | "passpoint">("zend");
 
   const [deliveryDetails, setDeliveryDetails] = useState({
     name: "",
@@ -732,10 +732,10 @@ export default function CartPage() {
             type="button"
             onClick={() => {
               setShowPaymentModal(false);
-              setSidePanelType("paystack");
-              setShowSidePanel(true);
+              setPaymentMethod("passpoint");
+              checkout();
             }}
-            className="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 transition-all hover:border-primary-blue hover:bg-blue-50/60"
+            className="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 transition-all hover:border-blue-500 hover:bg-blue-50/60"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
@@ -743,13 +743,13 @@ export default function CartPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h4 className="text-base font-semibold text-black">Pay with Paystack</h4>
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                    Coming soon
+                  <h4 className="text-base font-semibold text-black">Pay with Passpoint</h4>
+                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+                    Live
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-text">
-                  Card and bank payment integration will land here next.
+                  Pay natively in Naira (NGN) via Card or Bank Transfer.
                 </p>
               </div>
               <ArrowRight className="mt-1 h-4 w-4 text-gray-400" />
@@ -808,42 +808,7 @@ export default function CartPage() {
           </button>
         </div>
       </Dialog>
-      <Dialog
-        isOpen={showPaystackModal}
-        onClose={() => setShowPaystackModal(false)}
-        title="Paystack is coming next"
-        footer={
-          <Button variant="primary" className="w-full" onClick={() => setShowPaystackModal(false)}>
-            Got it
-          </Button>
-        }
-      >
-        <div className="space-y-4 text-center py-2">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-blue-50 text-primary-blue shadow-sm">
-            <Sparkles className="h-7 w-7" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-black text-gray-900 tracking-tight">Paystack checkout is not live yet</h3>
-            <p className="text-sm leading-relaxed text-gray-600">
-              The checkout UI is ready for Paystack, but the payment processor is still being wired up. Crypto wallet checkout remains available right now.
-            </p>
-          </div>
-        </div>
-      </Dialog>
-      <SidePanel
-        isOpen={showSidePanel && sidePanelType === "paystack"}
-        onClose={() => { setShowSidePanel(false); setSidePanelType(null); }}
-        title="Paystack checkout"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">Paystack support will be integrated soon. When available, you'll be able to pay with card or bank transfer here.</p>
-          <div className="mt-4">
-            <Button variant="primary" onClick={() => { setShowSidePanel(false); setSidePanelType(null); setShowPaystackModal(true); }}>
-              Learn more
-            </Button>
-          </div>
-        </div>
-      </SidePanel>
+
       <SidePanel
         isOpen={showSidePanel && sidePanelType === "crypto"}
         onClose={() => { setShowSidePanel(false); setSidePanelType(null); }}
