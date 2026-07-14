@@ -595,14 +595,7 @@ export async function sendWebinarRegistrationEmail(
         </head>
         <body>
           <div class="container">
-            <!-- Banner placeholder: gradient representing the Solana/Safestack theme -->
-            <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%); display: flex; align-items: center; justify-content: center; text-align: center;">
-              <div>
-                <div style="color: #60a5fa; font-weight: bold; font-size: 18px; margin-bottom: 8px;">🛡️ StudIQ x Safestack</div>
-                <div style="color: white; font-weight: 900; font-size: 32px; line-height: 1.2;">Zero-Loss Dapps</div>
-                <div style="color: #a78bfa; font-size: 16px; margin-top: 4px;">Securing Capital on Solana</div>
-              </div>
-            </div>
+            <img src="${APP_URL}/webinar.jpg" alt="Webinar Flyer" class="banner" />
             
             <div class="content">
               <div class="header-links">
@@ -610,6 +603,15 @@ export async function sendWebinarRegistrationEmail(
               </div>
 
               <div class="order-summary">
+                <h2>Event Details</h2>
+                <div style="margin-bottom: 20px;">
+                  <p class="meta-text" style="color: #ffffff; font-weight: 600; font-size: 16px;">Date and Time</p>
+                  <p class="meta-text">Friday, July 17, 2026</p>
+                  <p class="meta-text">6:00 PM WAT</p>
+                </div>
+                
+                <div class="divider"></div>
+
                 <h2>Order Summary</h2>
                 <p class="meta-text">Order <a href="#" class="meta-link">#${orderId}</a></p>
                 <p class="meta-text">Order date: ${orderDate}</p>
