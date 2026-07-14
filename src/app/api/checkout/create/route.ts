@@ -400,7 +400,11 @@ export async function POST(req: Request) {
         const proto = req.headers.get("x-forwarded-proto") ?? "https";
         const origin = req.headers.get("origin") ?? (host ? `${proto}://${host}` : null);
         
-        const redirectUrl = origin ? `${origin}/cart?orderId=${newOrder.id}` : undefined;
+        let redirectUrl = origin ? `${origin}/cart?orderId=${newOrder.id}` : undefined;
+        // Zend requires HTTPS for redirect URLs. Skip if testing on localhost HTTP
+        if (redirectUrl && !redirectUrl.startsWith("https://")) {
+          redirectUrl = undefined;
+        }
 
         const payment = await zendClient.createZendPayment({
           amount: amount,
