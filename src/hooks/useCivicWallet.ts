@@ -22,19 +22,18 @@ export function useCivicWallet() {
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
     const hasEstablishedSession = useRef(false);
 
-    // Caching state for immediate rendering
-    const [cachedSession, setCachedSession] = useState<{walletAddress: string | null, email: string | null}>({ walletAddress: null, email: null });
-
-    useEffect(() => {
+    // Caching state for immediate rendering - initialized synchronously to prevent flicker
+    const [cachedSession, setCachedSession] = useState<{walletAddress: string | null, email: string | null}>(() => {
         if (typeof window !== 'undefined') {
             const stored = localStorage.getItem('civic_cached_session');
             if (stored) {
                 try {
-                    setCachedSession(JSON.parse(stored));
+                    return JSON.parse(stored);
                 } catch (e) {}
             }
         }
-    }, []);
+        return { walletAddress: null, email: null };
+    });
 
     // Get the Solana context from userContext
     const solanaContext = (userContext as any).solana;
@@ -158,7 +157,7 @@ export function useCivicWallet() {
         walletAddress,
         hasEmbeddedWallet: hasWallet,
         isConnected: !!walletAddress,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user || !!cachedSession.email,
         isCreatingWallet: isCreatingWallet || walletCreationInProgress,
 
         // Create wallet function for manual trigger
