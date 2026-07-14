@@ -67,8 +67,8 @@ export const checkoutCreateSchema = z.object({
   items: z.array(
     z.object({ productId: z.string().min(1), qty: z.number().int().positive() })
   ).min(1),
-  currency: z.enum(["USDC", "USDT"]),
-  deliveryMethod: z.enum(["shipping", "pickup"]),
+  currency: z.enum(["USDC", "USDT"]).default("USDC"),
+  deliveryMethod: z.enum(["shipping", "pickup"]).default("shipping"),
   deliveryDetails: z.object({
     name: z.string().min(2),
     address: z.string().min(3),
@@ -77,7 +77,7 @@ export const checkoutCreateSchema = z.object({
     fee: z.number().nonnegative().optional(),
     notes: z.string().optional(),
   }),
-  paymentMethod: z.enum(["solana", "zend", "passpoint"]).optional(),
+  paymentMethod: z.enum(["solana", "zend", "passpoint", "wallet"]).optional(),
   buyerEmail: z.string().email(),
 });
 

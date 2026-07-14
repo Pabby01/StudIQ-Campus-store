@@ -19,6 +19,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing reference/orderId" }, { status: 400 });
     }
 
+    // Handle Wallet Deposits
+    if (orderId.startsWith("DEP_")) {
+      const parts = orderId.split("_");
+      // Format: DEP_walletaddress_amount_timestamp
+      if (parts.length >= 4) {
+        const address = parts[1];
+        const amount = parseFloat(parts[2]);
+        
+        // Ensure atomic update, but simple RPC or direct update is fine if idempotent
+        // Actually, Passpoint can send multiple webhooks. To prevent double-crediting, we should track deposit IDs.
+        // For now, we'll just increment wallet balance and assume Passpoint deduplicates, 
+        // OR we can just rely on the tx_ref uniqueness if we had a transactions table.
+        // Let's do a direct update. Note: without a transactions table, double webhooks could double-credit.
+        // Best approach is a simple RPC: credit_wallet_if_not_processed. 
+        // For simplicity, we'll do an RPC call:
+        const { error } = await supabase.rpc("credit_wallet", {
+          p_address: address,
+          p_amount: amount,
+          p_tx_ref: orderId
+        });
+        
+        if (error) {
+          console.error("Failed to credit wallet:", error);
+          return NextResponse.json({ error: "Failed to credit wallet" }, { status: 500 });
+        }
+        return NextResponse.json({ success: true, message: "Wallet deposited" });
+      }
+    }
+
     // Verify order exists
     const { data: order } = await supabase
       .from("orders")

@@ -9,13 +9,21 @@ create table if not exists profiles (
   referral_code text,
   referred_by text,
   seller_tier text default 'free',
-  points int default 0
+  points int default 0,
+  wallet_balance numeric default 0
 );
 
 create table if not exists wallet_auth_nonce (
   address text primary key,
   nonce text not null,
   expires_at timestamptz not null
+);
+
+create table if not exists processed_deposits (
+  tx_ref text primary key,
+  address text not null references profiles(address),
+  amount numeric not null,
+  created_at timestamptz default now()
 );
 
 create table if not exists stores (

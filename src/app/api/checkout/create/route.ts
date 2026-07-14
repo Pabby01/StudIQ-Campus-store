@@ -217,26 +217,48 @@ export async function POST(req: Request) {
     // Generate 4-Digit Secure Verification PIN
     const escrowPin = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // Step 6: Create order
-    const { data: newOrder, error: orderError } = await supabase
-      .from("orders")
-      .insert({
-        buyer_address: buyerAddress,
-        store_id: storeId,
-        amount: amount, 
-        fee_percent: feePercent,
-        fee_amount: feeAmount,
-        vendor_earnings: vendorEarnings,
-        status: "pending",
-        currency: parsed.data.currency,
-        delivery_method: parsed.data.deliveryMethod,
-        delivery_info: parsed.data.deliveryDetails,
-        payment_method: parsed.data.paymentMethod,
-        buyer_email: parsed.data.buyerEmail,
-        escrow_pin: escrowPin,
-      })
-      .select("id")
-      .single();
+    let newOrder;
+    let orderError;
+
+    if (parsed.data.paymentMethod === "wallet") {
+      const { data: orderId, error } = await supabase.rpc("checkout_with_wallet", {
+        p_buyer_address: buyerAddress,
+        p_store_id: storeId,
+        p_amount: amount,
+        p_fee_percent: feePercent,
+        p_fee_amount: feeAmount,
+        p_vendor_earnings: vendorEarnings,
+        p_currency: parsed.data.currency,
+        p_delivery_method: parsed.data.deliveryMethod,
+        p_delivery_info: parsed.data.deliveryDetails,
+        p_buyer_email: parsed.data.buyerEmail,
+        p_escrow_pin: escrowPin,
+      });
+      orderError = error;
+      newOrder = orderId ? { id: orderId } : null;
+    } else {
+      const result = await supabase
+        .from("orders")
+        .insert({
+          buyer_address: buyerAddress,
+          store_id: storeId,
+          amount: amount, 
+          fee_percent: feePercent,
+          fee_amount: feeAmount,
+          vendor_earnings: vendorEarnings,
+          status: "pending",
+          currency: parsed.data.currency,
+          delivery_method: parsed.data.deliveryMethod,
+          delivery_info: parsed.data.deliveryDetails,
+          payment_method: parsed.data.paymentMethod,
+          buyer_email: parsed.data.buyerEmail,
+          escrow_pin: escrowPin,
+        })
+        .select("id")
+        .single();
+      newOrder = result.data;
+      orderError = result.error;
+    }
 
     if (orderError || !newOrder) {
       console.error("[Checkout Create] Order creation error:", orderError);

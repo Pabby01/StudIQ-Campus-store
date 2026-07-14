@@ -11,11 +11,12 @@ import { SOLANA_CONFIG } from "@/lib/solana-config";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
-import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin, CreditCard, Coins, Lock, Sparkles, ArrowRight } from "lucide-react";
+import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin, CreditCard, Coins, Lock, Sparkles, ArrowRight, Wallet } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { checkoutCreateSchema } from "@/lib/validators";
 import { useStore } from "@/hooks/useStore";
+import useSWR from "swr";
 
 
 type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifying" | "success" | "error";
@@ -52,7 +53,13 @@ export default function CartPage() {
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string | undefined }>({});
 
   const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup">("shipping");
-  const [paymentMethod, setPaymentMethod] = useState<"zend" | "pod" | "passpoint">("zend");
+  const [paymentMethod, setPaymentMethod] = useState<"zend" | "pod" | "passpoint" | "wallet">("zend");
+
+  const { data: profileData } = useSWR(
+    walletAddress ? `/api/profile?address=${walletAddress}` : null,
+    (url: string) => fetch(url).then(res => res.json())
+  );
+  const walletBalance = profileData?.profile?.wallet_balance || 0;
 
   const [deliveryDetails, setDeliveryDetails] = useState({
     name: "",
@@ -194,9 +201,9 @@ export default function CartPage() {
   const ngnOrderTotal = orderTotal; // Already in NGN
   const ngnFinalTotal = finalAmount; // Already in NGN
   const formatNgn = (value: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
-  const availableBalance = 0;
+  const availableBalance = walletBalance;
   const showBalanceSection = false; // Zend handles balance checks internally
-  const hasInsufficientBalance = false;
+  const hasInsufficientBalance = availableBalance < orderTotal;
   const finalPaymentMethod = paymentMethod;
   const validationPayload = {
     buyer: walletAddress || "",
@@ -225,7 +232,7 @@ export default function CartPage() {
   const isShippingValid = deliveryMethod === "pickup" || (trimmedAddress.length >= 3 && trimmedCity.length >= 2 && trimmedZip.length >= 3);
   const isFormValid = items.length > 0 && isEmailValid && isNameValid && isShippingValid;
 
-  async function checkout(methodOverride?: "passpoint" | "zend") {
+  async function checkout(methodOverride?: "passpoint" | "zend" | "wallet") {
     if (checkoutStatus !== "idle") return;
     setFieldErrors({});
 
@@ -628,6 +635,33 @@ export default function CartPage() {
                     <CreditCard className="w-5 h-5" />
                     {checkoutStatus !== "idle" && checkoutStatus !== "error" && paymentMethod === "passpoint" ? getButtonText() : "Pay with Passpoint"}
                   </Button>
+
+                  {hasInsufficientBalance ? (
+                    <Button
+                      variant="primary"
+                      className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white"
+                      onClick={() => {
+                        window.location.href = "/dashboard/wallet/deposit";
+                      }}
+                    >
+                      <Wallet className="w-5 h-5" />
+                      Topup Wallet (₦{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => {
+                        if (deliveryUnavailable) return;
+                        setPaymentMethod("wallet");
+                        void checkout("wallet");
+                      }}
+                      disabled={checkoutStatus !== "idle" && checkoutStatus !== "error"}
+                    >
+                      <Wallet className="w-5 h-5" />
+                      {checkoutStatus !== "idle" && checkoutStatus !== "error" && paymentMethod === "wallet" ? getButtonText() : `Pay with Wallet (₦${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
+                    </Button>
+                  )}
 
                   <Button
                     variant="outline"
