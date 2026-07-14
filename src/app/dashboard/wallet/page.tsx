@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCivicWallet } from "@/hooks/useCivicWallet";
 import { useTokenBalances } from "@/hooks/useTokenBalances";
 import WalletCard from "@/components/wallet/WalletCard";
@@ -31,6 +31,17 @@ export default function WalletPage() {
     const [rampType, setRampType] = useState<"onramp" | "offramp">("onramp");
     const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
     const [comingSoonFeature, setComingSoonFeature] = useState("");
+
+    // Automatically open deposit modal if action=deposit is passed
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get("action") === "deposit") {
+                setIsRampOpen(true);
+                setRampType("onramp");
+            }
+        }
+    }, []);
 
     // If loading user or not authenticated
     if (!walletAddress) {
@@ -112,7 +123,7 @@ export default function WalletPage() {
             <Dialog
                 isOpen={isComingSoonOpen}
                 onClose={() => setIsComingSoonOpen(false)}
-                title="Coming Soon! 🚀"
+                title="Coming Soon!"
                 footer={
                     <Button variant="primary" className="w-full h-12 rounded-xl font-bold" onClick={() => setIsComingSoonOpen(false)}>
                         Got it, I&apos;ll be waiting!

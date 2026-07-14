@@ -6,10 +6,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ShoppingCart, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft, Bell, User, Search, LayoutDashboard, LogOut, ChevronDown } from "lucide-react";
+import { ShoppingCart, Store, TrendingUp, Package, Trophy, HelpCircle, ArrowLeft, Bell, User, Search, LayoutDashboard, LogOut, ChevronDown, Wallet } from "lucide-react";
 import { useUser } from "@civic/auth-web3/react";
 import CivicAuthButton from "@/components/CivicAuthButton";
 import { useCart } from "@/store/cart";
+import { useWalletAuth } from "@/hooks/useWalletAuth";
+import useSWR from "swr";
 
 export default function Navbar() {
   const router = useRouter();
@@ -24,6 +26,15 @@ export default function Navbar() {
   const fetchSolPrice = useCart((s) => s.fetchSolPrice);
   const [isCompact, setIsCompact] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { address } = useWalletAuth();
+  
+  const { data: profile } = useSWR(
+    address ? `/api/profile?address=${address}` : null,
+    (url: string) => fetch(url).then(res => res.json())
+  );
+  
+  const walletBalance = profile?.profile?.wallet_balance || 0;
+
   const avatarUrl =
     (user as { picture?: string; image?: string; avatar?: string } | null)?.picture ||
     (user as { picture?: string; image?: string; avatar?: string } | null)?.image ||
@@ -153,8 +164,15 @@ export default function Navbar() {
               )}
             </Link>
 
-            {user && (
+            {(user || address) && (
               <>
+                <div className="hidden sm:flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                  <Wallet className="w-4 h-4 text-primary-blue" />
+                  <span className="text-sm font-bold text-slate-700">
+                    ₦{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+
                 <Link
                   href="/dashboard"
                   className="p-2 text-slate-600 hover:text-primary-blue hover:bg-slate-100 rounded-full transition-all duration-200"
@@ -218,9 +236,14 @@ export default function Navbar() {
               </>
             )}
 
-            {!user && (
-              <div className="pl-2 border-l border-slate-200">
-                 <CivicAuthButton />
+            {!user && !address && (
+              <div className="pl-2 sm:ml-2 sm:border-l border-slate-200 flex items-center gap-1 sm:gap-2">
+                 <Link href="/auth" className="text-sm font-medium text-slate-700 hover:text-primary-blue transition-colors px-3 py-2">
+                    Log In
+                 </Link>
+                 <Link href="/auth" className="text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors px-4 py-2 rounded-full shadow-sm">
+                    Sign Up
+                 </Link>
               </div>
             )}
           </div>

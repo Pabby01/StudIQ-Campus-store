@@ -5,6 +5,7 @@ import { getSessionWallet } from "@/lib/session";
 import { SOLANA_CONFIG } from "@/lib/solana-config";
 import { getTokenValue, Currency } from "paj_ramp";
 import { PAJ_CONFIG } from "@/lib/paj";
+import { createZendClient } from "pay-with-zend-sdk";
 
 const DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 const MAINNET_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
@@ -166,7 +167,7 @@ export async function POST(req: Request) {
     const storeId = prods[0].store_id;
     const { data: store } = await supabase
       .from("stores")
-      .select("owner_address, delivery_fee, delivery_enabled, pickup_enabled")
+      .select("name, owner_address, delivery_fee, delivery_enabled, pickup_enabled")
       .eq("id", storeId)
       .single();
 
@@ -196,13 +197,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("seller_tier")
-      .eq("address", store.owner_address)
-      .single();
-
-    const feePercent = profile?.seller_tier === "premium" ? 3 : 10;
+    const feePercent = 5;
 
     const needsNgnRate = prods.some((p) => p.price_ngn);
     const ngnPerUsd = needsNgnRate ? await getNgnPerUsd() : null;
@@ -219,30 +214,53 @@ export async function POST(req: Request) {
     const feeAmount = subtotal * (feePercent / 100);
     const vendorEarnings = subtotal - feeAmount + deliveryFee;
 
-    // Platform wallet receives all payments
-    const platformWallet = SOLANA_CONFIG.platformWallet;
+    // Generate 4-Digit Secure Verification PIN
+    const escrowPin = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // Step 6: Create order (Updated)
-    const { data: newOrder, error: orderError } = await supabase // Renamed 'order' to 'newOrder'
-      .from("orders")
-      .insert({
-        buyer_address: buyerAddress,
-        store_id: storeId,
-        amount: amount, // Use totalAmount
-        fee_percent: feePercent,
-        fee_amount: feeAmount,
-        vendor_earnings: vendorEarnings,
-        status: "pending",
-        currency: parsed.data.currency,
-        delivery_method: parsed.data.deliveryMethod, // Kept existing field
-        delivery_info: parsed.data.deliveryDetails, // Kept existing field
-        payment_method: parsed.data.paymentMethod, // Kept existing field
-        buyer_email: parsed.data.buyerEmail, // Kept existing field
-      })
-      .select("id") // Select only id, as before
-      .single();
+    let newOrder;
+    let orderError;
 
-    if (orderError || !newOrder) { // Use newOrder
+    if (parsed.data.paymentMethod === "wallet") {
+      const { data: orderId, error } = await supabase.rpc("checkout_with_wallet", {
+        p_buyer_address: buyerAddress,
+        p_store_id: storeId,
+        p_amount: amount,
+        p_fee_percent: feePercent,
+        p_fee_amount: feeAmount,
+        p_vendor_earnings: vendorEarnings,
+        p_currency: parsed.data.currency,
+        p_delivery_method: parsed.data.deliveryMethod,
+        p_delivery_info: parsed.data.deliveryDetails,
+        p_buyer_email: parsed.data.buyerEmail,
+        p_escrow_pin: escrowPin,
+      });
+      orderError = error;
+      newOrder = orderId ? { id: orderId } : null;
+    } else {
+      const result = await supabase
+        .from("orders")
+        .insert({
+          buyer_address: buyerAddress,
+          store_id: storeId,
+          amount: amount, 
+          fee_percent: feePercent,
+          fee_amount: feeAmount,
+          vendor_earnings: vendorEarnings,
+          status: "pending",
+          currency: parsed.data.currency,
+          delivery_method: parsed.data.deliveryMethod,
+          delivery_info: parsed.data.deliveryDetails,
+          payment_method: parsed.data.paymentMethod,
+          buyer_email: parsed.data.buyerEmail,
+          escrow_pin: escrowPin,
+        })
+        .select("id")
+        .single();
+      newOrder = result.data;
+      orderError = result.error;
+    }
+
+    if (orderError || !newOrder) {
       console.error("[Checkout Create] Order creation error:", orderError);
       // Release reservations
       for (const reservation of reservations) {
@@ -251,13 +269,12 @@ export async function POST(req: Request) {
         });
       }
 
-      // The instruction's rollback logic for inventory was different,
-      // but the existing reservation release is more robust for this flow.
       return Response.json(
         { ok: false, error: "Failed to create order", details: orderError?.message },
         { status: 500 }
       );
     }
+    
     // Step 7: Create order items
     const itemsRows = items.map((i) => {
       const p = prods.find((pp) => pp.id === i.productId)!;
@@ -282,7 +299,7 @@ export async function POST(req: Request) {
 
     // Step 8: Send email notifications (Only for non-crypto orders immediately)
     // For crypto, we send after verification in /api/checkout/verify-transaction
-    if (parsed.data.paymentMethod !== 'solana') {
+    if (parsed.data.paymentMethod !== 'solana' && parsed.data.paymentMethod !== 'zend') {
       try {
         // Import email functions
         const { sendOrderConfirmation, sendSellerNotification } = await import('@/lib/email');
@@ -324,6 +341,7 @@ export async function POST(req: Request) {
             city: parsed.data.deliveryDetails?.city || '',
             zip: parsed.data.deliveryDetails?.zip || '',
           } : undefined,
+          escrowPin,
         };
 
         // Send buyer confirmation (non-blocking)
@@ -356,7 +374,7 @@ export async function POST(req: Request) {
       }
     }
 
-    if (parsed.data.paymentMethod !== 'solana') {
+    if (parsed.data.paymentMethod !== 'solana' && parsed.data.paymentMethod !== 'zend') {
       try {
         if (buyerAddress) {
           await triggerNotification({
@@ -382,10 +400,118 @@ export async function POST(req: Request) {
       }
     }
 
+    // Step 9: Create Payment Link (Zend or Passpoint)
+    let payUrl = null;
+    if (parsed.data.paymentMethod === 'solana' || parsed.data.paymentMethod === 'zend') {
+      try {
+        let apiKey = process.env.ZEND_API_KEY || "";
+        if (!apiKey) {
+          try {
+            const fs = require('fs');
+            const path = require('path');
+            const os = require('os');
+            const configPath = path.join(os.homedir(), '.zend', 'config.json');
+            const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            apiKey = config.apiKey || "";
+          } catch (e) {
+            console.error("Could not read ~/.zend/config.json fallback");
+          }
+        }
+
+        const zendClient = createZendClient({
+          apiKey: apiKey,
+        });
+        
+        // Determine host for redirect URL
+        const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+        const proto = req.headers.get("x-forwarded-proto") ?? "https";
+        const origin = req.headers.get("origin") ?? (host ? `${proto}://${host}` : null);
+        
+        let redirectUrl = origin ? `${origin}/cart?orderId=${newOrder.id}` : undefined;
+        // Zend requires HTTPS for redirect URLs. Skip if testing on localhost HTTP
+        if (redirectUrl && !redirectUrl.startsWith("https://")) {
+          redirectUrl = undefined;
+        }
+
+        const payment = await zendClient.createZendPayment({
+          amount: amount,
+          description: `Order #${newOrder.id.slice(0, 8)} at ${store.name || 'Campus Store'}`,
+          redirectUrl: redirectUrl,
+        });
+        
+        // Store the Zend payment ID in the tx_sig field temporarily so we can verify it later
+        await supabase.from("orders").update({ tx_sig: payment.id }).eq("id", newOrder.id);
+        
+        payUrl = payment.linkUrl;
+      } catch (zendErr) {
+        console.error("[Checkout Create] Zend Payment Error:", zendErr);
+        // We could fail the order here, or return an error
+        return Response.json(
+          { ok: false, error: "Failed to initialize payment gateway." },
+          { status: 500 }
+        );
+      }
+    } else if (parsed.data.paymentMethod === 'passpoint') {
+      try {
+        const passpointKey = process.env.PASSPOINT_SECRET_KEY || "";
+        if (!passpointKey) {
+          return Response.json({ ok: false, error: "Passpoint API keys not configured." }, { status: 500 });
+        }
+
+        const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+        const proto = req.headers.get("x-forwarded-proto") ?? "https";
+        const origin = req.headers.get("origin") ?? (host ? `${proto}://${host}` : null);
+        let redirectUrl = origin ? `${origin}/cart?orderId=${newOrder.id}` : undefined;
+
+        // Convert the USD amount back to NGN for Passpoint to natively charge Naira
+        const passpointAmount = ngnPerUsd ? amount * ngnPerUsd : amount * 1500;
+
+        const passpointRes = await fetch("https://api.passpoint.dev/v1/collections", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${passpointKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            amount: passpointAmount.toFixed(2),
+            source: "NGN",
+            destination: "NGN",
+            channel: "card", // or bank_transfer
+            reference: newOrder.id,
+            redirect_url: redirectUrl,
+            customer: {
+              email: parsed.data.buyerEmail || "customer@example.com",
+              name: "Campus Store Customer"
+            }
+          })
+        });
+
+        if (!passpointRes.ok) {
+          const errData = await passpointRes.text();
+          console.error("Passpoint API error:", errData);
+          return Response.json({ ok: false, error: "Failed to initialize Passpoint." }, { status: 500 });
+        }
+
+        const passpointData = await passpointRes.json();
+        
+        // Passpoint usually returns the payment link in data.url or data.checkout_url
+        payUrl = passpointData?.data?.url || passpointData?.data?.checkout_url || passpointData?.url;
+
+        if (!payUrl) {
+           console.error("Passpoint API missing URL:", passpointData);
+           return Response.json({ ok: false, error: "Invalid response from Passpoint." }, { status: 500 });
+        }
+
+      } catch (err) {
+        console.error("[Checkout Create] Passpoint Error:", err);
+        return Response.json({ ok: false, error: "Failed to initialize Passpoint gateway." }, { status: 500 });
+      }
+    }
+
     return Response.json({
       ok: true,
       orderId: newOrder.id,
-      payTo: platformWallet,
+      payUrl: payUrl,
       amount: amount,
       currency: parsed.data.currency,
     });

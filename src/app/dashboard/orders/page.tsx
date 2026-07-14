@@ -31,6 +31,7 @@ type Order = {
   store: {
     name: string;
   };
+  escrow_pin?: string | null;
 };
 
 export default function DashboardOrdersPage() {
@@ -145,6 +146,19 @@ export default function DashboardOrdersPage() {
                     </Link>
                   </div>
                 </div>
+
+                {/* Escrow PIN Section */}
+                {(order.status === 'pending' || order.status === 'shipped') && order.escrow_pin && (
+                  <div className="bg-amber-50 px-5 sm:px-6 py-3 border-b border-amber-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-amber-900">Secure Verification PIN</p>
+                      <p className="text-xs text-amber-700">Give this 4-digit PIN to the seller to finalize the order.</p>
+                    </div>
+                    <div className="bg-amber-100 px-4 py-2 rounded-lg border border-amber-200 shadow-sm">
+                      <span className="text-xl font-bold tracking-[0.2em] text-amber-900">{order.escrow_pin}</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Order Items */}
                 <div className="p-5 sm:p-6">

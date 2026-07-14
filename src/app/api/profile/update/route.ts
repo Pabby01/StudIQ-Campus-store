@@ -2,6 +2,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { updateProfileSchema } from "@/lib/validators";
 import { POINTS } from "@/lib/constants";
 import { getSessionWallet } from "@/lib/session";
+import { sendWelcomeBuyerEmail, sendWelcomeSellerEmail } from "@/lib/email";
 
 function generateShortCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
     }
 
     const isNewProfile = !existing;
-    const wasIncomplete = existing && (!existing.school || !existing.campus || !existing.name);
+    const wasIncomplete = existing && (!existing.country || !existing.name);
 
     console.log("[Profile Update] isNewProfile:", isNewProfile, "wasIncomplete:", wasIncomplete);
 
@@ -91,19 +92,39 @@ export async function POST(req: Request) {
       }
     }
 
+    // Check username uniqueness if provided
+    if (parsed.data.username && parsed.data.username !== existing?.username) {
+      const { data: usernameClash } = await supabase
+        .from("profiles")
+        .select("address")
+        .eq("username", parsed.data.username)
+        .maybeSingle();
+
+      if (usernameClash) {
+        return Response.json(
+          { ok: false, error: "Username is already taken" },
+          { status: 409 }
+        );
+      }
+    }
+
     const { data, error } = await supabase
       .from("profiles")
       .upsert({
         address: parsed.data.address,
         name: parsed.data.name,
-        // Use provided value, or fall back to existing value, or null/default
+        username: parsed.data.username ?? existing?.username ?? null,
+        country: parsed.data.country ?? existing?.country ?? null,
+        state: parsed.data.state ?? existing?.state ?? null,
+        city: parsed.data.city ?? existing?.city ?? null,
         email: parsed.data.email ?? existing?.email ?? null,
         civic_user_id: parsed.data.civic_user_id ?? existing?.civic_user_id ?? null,
         verified_email: parsed.data.verified_email ?? existing?.verified_email ?? false,
-        school: parsed.data.school,
-        campus: parsed.data.campus,
+        school: parsed.data.school ?? existing?.school ?? null,
+        campus: parsed.data.campus ?? existing?.campus ?? null,
         level: parsed.data.level || existing?.level || null,
         phone: parsed.data.phone || existing?.phone || null,
+        primary_intent: parsed.data.primary_intent ?? existing?.primary_intent ?? 'buying',
         referral_code: referral_code_to_use,
         referred_by: existing?.referred_by ?? (referralCode && referralCode.length === 6 ? referralCode : null),
         last_login: new Date().toISOString(),
@@ -113,6 +134,9 @@ export async function POST(req: Request) {
 
     if (error) {
       console.error("[Profile Update] Update error:", error);
+      if (error.code === '23505' && error.message.includes('username')) {
+        return Response.json({ ok: false, error: "Username is already taken" }, { status: 409 });
+      }
       return Response.json(
         { ok: false, error: "Failed to update profile" },
         { status: 500 }
@@ -120,8 +144,21 @@ export async function POST(req: Request) {
     }
 
     // Award points for new profile or profile completion
-    const isComplete = data.name && data.school && data.campus;
+    const isComplete = !!(data.name && data.address && data.country);
     console.log("[Profile Update] isComplete:", isComplete);
+
+    // Send targeted welcome emails for new accounts
+    if (isNewProfile && data.email && data.name) {
+      try {
+        if (data.primary_intent === 'selling') {
+          await sendWelcomeSellerEmail(data.name, data.email);
+        } else {
+          await sendWelcomeBuyerEmail(data.name, data.email);
+        }
+      } catch (e) {
+        console.error("[Profile Update] Welcome email failed:", e);
+      }
+    }
 
     let pointsAwarded = false;
 

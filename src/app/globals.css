@@ -1,4 +1,4 @@
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -25,7 +25,7 @@
   --radius-xl: 1rem;
 
   /* Font */
-  --font-sans: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
 }
 
 html,
@@ -48,56 +48,72 @@ h3,
 h4,
 h5,
 h6 {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--black);
 }
 
 h1 {
-  font-size: 1.875rem;
-  line-height: 2.25rem;
+  font-size: 1.5rem;
+  line-height: 2rem;
 }
 
 @media (min-width: 768px) {
+  h1 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
   h1 {
     font-size: 2.25rem;
     line-height: 2.5rem;
   }
 }
 
-@media (min-width: 1024px) {
-  h1 {
-    font-size: 3rem;
-    line-height: 1;
-  }
-}
-
 h2 {
-  font-size: 1.5rem;
-  line-height: 2rem;
-}
-
-@media (min-width: 768px) {
-  h2 {
-    font-size: 1.875rem;
-    line-height: 2.25rem;
-  }
-}
-
-h3 {
   font-size: 1.25rem;
   line-height: 1.75rem;
 }
 
 @media (min-width: 768px) {
-  h3 {
+  h2 {
     font-size: 1.5rem;
     line-height: 2rem;
   }
 }
 
-p {
+h3 {
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+}
+
+@media (min-width: 768px) {
+  h3 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+}
+
+h4 {
   font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+h5 {
+  font-size: 0.95rem;
+  line-height: 1.5rem;
+}
+
+h6 {
+  font-size: 0.9rem;
+  line-height: 1.375rem;
+}
+
+p {
+  font-size: 0.95rem;
   line-height: 1.625;
+  font-weight: 400;
 }
 
 a {

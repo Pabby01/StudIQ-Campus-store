@@ -11,20 +11,24 @@ import { SOLANA_CONFIG } from "@/lib/solana-config";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
-import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin, CreditCard, Coins, Lock, Sparkles, ArrowRight, Wallet } from "lucide-react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { checkoutCreateSchema } from "@/lib/validators";
 import { useStore } from "@/hooks/useStore";
-import { useTokenBalances } from "@/hooks/useTokenBalances";
+import useSWR from "swr";
+
 
 type CheckoutStatus = "idle" | "creating" | "signing" | "confirming" | "verifying" | "success" | "error";
 
 import AuthModal from "@/components/AuthModal";
 import Dialog from "@/components/ui/Dialog";
+import SidePanel from "@/components/ui/SidePanel";
 import ReceiveModal from "@/components/wallet/ReceiveModal";
 import RampModal from "@/components/ramp/RampModal";
 
 export default function CartPage() {
+  const router = useRouter();
   const items = useCart((s) => s.items);
   const remove = useCart((s) => s.remove);
   const clear = useCart((s) => s.clear);
@@ -36,14 +40,27 @@ export default function CartPage() {
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showRampModal, setShowRampModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaystackModal, setShowPaystackModal] = useState(false);
+  const [showSaveDetailsModal, setShowSaveDetailsModal] = useState(false);
+  const [saveDetailsLoading, setSaveDetailsLoading] = useState(false);
+  const [saveAsDefault, setSaveAsDefault] = useState(true);
+  const [showSidePanel, setShowSidePanel] = useState(false);
+  const [sidePanelType, setSidePanelType] = useState<"paystack" | "crypto" | null>(null);
 
   const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string | undefined }>({});
 
   const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup">("shipping");
-  const [paymentMethod, setPaymentMethod] = useState<"solana" | "pod">("solana");
+  const [paymentMethod, setPaymentMethod] = useState<"zend" | "pod" | "passpoint" | "wallet">("zend");
+
+  const { data: profileData } = useSWR(
+    walletAddress ? `/api/profile?address=${walletAddress}` : null,
+    (url: string) => fetch(url).then(res => res.json())
+  );
+  const walletBalance = profileData?.profile?.wallet_balance || 0;
 
   const [deliveryDetails, setDeliveryDetails] = useState({
     name: "",
@@ -58,7 +75,7 @@ export default function CartPage() {
 
   const solPrice = useCart((s) => s.solPrice);
   const fetchSolPrice = useCart((s) => s.fetchSolPrice);
-  const { tokens, loading: balanceLoading, error: balanceError } = useTokenBalances(walletAddress, SOLANA_CONFIG.network);
+  // useTokenBalances removed since Zend handles it
   const storeId = items[0]?.storeId ?? null;
   const { store: storeResponse } = useStore(storeId);
   const store = storeResponse?.store;
@@ -84,6 +101,36 @@ export default function CartPage() {
     }
   }, [items]);
 
+  const searchParams = useSearchParams();
+  const zendReturnToken = searchParams?.get("zend_return_token");
+  const orderIdParam = searchParams?.get("orderId");
+
+  useEffect(() => {
+    if (zendReturnToken && orderIdParam) {
+      const verifyZend = async () => {
+        setCheckoutStatus("verifying");
+        try {
+          const res = await fetch("/api/checkout/verify-zend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId: orderIdParam, zend_return_token: zendReturnToken }),
+          });
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || "Payment verification failed");
+          }
+          setCheckoutStatus("success");
+          setShowSaveDetailsModal(true);
+        } catch (err) {
+          console.error("Zend verification error:", err);
+          setError(err instanceof Error ? err.message : "Verification failed");
+          setCheckoutStatus("error");
+        }
+      };
+      verifyZend();
+    }
+  }, [zendReturnToken, orderIdParam]);
+
   // Ensure price is fetched if missing or stale (Store handles caching)
   useEffect(() => {
     fetchSolPrice();
@@ -107,6 +154,33 @@ export default function CartPage() {
     }
   }, [email]);
 
+  // Pre-fill only name and email from server-side profile to speed checkout
+  useEffect(() => {
+    let mounted = true;
+    async function loadProfile() {
+      try {
+        const res = await fetch('/api/profile/get');
+        if (!res.ok) return;
+        const profile = await res.json();
+        if (!profile || !mounted) return;
+
+        setDeliveryDetails((prev) => ({
+          ...prev,
+          name: prev.name || profile.full_name || profile.name || "",
+          email: prev.email || profile.email || email || "",
+        }));
+      } catch (err) {
+        // ignore - best-effort prefill
+      }
+    }
+
+    if (email || walletAddress) {
+      void loadProfile();
+    }
+
+    return () => { mounted = false; };
+  }, [email, walletAddress]);
+
   useEffect(() => {
     if (deliveryMethod === "shipping" && !deliveryEnabled && pickupEnabled) {
       setDeliveryMethod("pickup");
@@ -128,12 +202,10 @@ export default function CartPage() {
   const ngnOrderTotal = orderTotal; // Already in NGN
   const ngnFinalTotal = finalAmount; // Already in NGN
   const formatNgn = (value: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
-  const walletUsdcBalance = tokens.find((t) => t.symbol === "USDC")?.balance ?? 0;
-  const walletUsdtBalance = tokens.find((t) => t.symbol === "USDT")?.balance ?? 0;
-  const availableBalance = finalCurrency === "USDT" ? walletUsdtBalance : walletUsdcBalance;
-  const showBalanceSection = paymentMethod === "solana" && deliveryMethod === "shipping";
-  const hasInsufficientBalance = showBalanceSection && isRateReady && finalAmount > 0 && !balanceLoading && availableBalance < finalAmount;
-  const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
+  const availableBalance = walletBalance;
+  const showBalanceSection = false; // Zend handles balance checks internally
+  const hasInsufficientBalance = availableBalance < orderTotal;
+  const finalPaymentMethod = paymentMethod;
   const validationPayload = {
     buyer: walletAddress || "",
     storeId: items[0]?.storeId || "",
@@ -161,9 +233,12 @@ export default function CartPage() {
   const isShippingValid = deliveryMethod === "pickup" || (trimmedAddress.length >= 3 && trimmedCity.length >= 2 && trimmedZip.length >= 3);
   const isFormValid = items.length > 0 && isEmailValid && isNameValid && isShippingValid;
 
-  async function checkout() {
+  async function checkout(methodOverride?: "passpoint" | "zend" | "wallet") {
     if (checkoutStatus !== "idle") return;
     setFieldErrors({});
+
+  const activePaymentMethod = methodOverride || paymentMethod;
+  const currentValidationPayload = { ...validationPayload, paymentMethod: activePaymentMethod };
 
     // Determine final payment method: if pickup, force POD/POP logic
     if (items.length === 0) {
@@ -182,8 +257,9 @@ export default function CartPage() {
         if (trimmedZip.length < 3) newFieldErrors.zip = "Zip code is required";
       }
       setFieldErrors(newFieldErrors);
-      setError("All fields must be filled before checkout.");
+      setError("Please complete the checkout form before continuing.");
       setCheckoutStatus("error");
+      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -192,13 +268,7 @@ export default function CartPage() {
       return;
     }
 
-    if (finalPaymentMethod === "solana" && !walletAddress) {
-      setError("Wallet not ready for crypto payment. Please wait or use Pay on Delivery.");
-      setCheckoutStatus("error");
-      return;
-    }
-
-    const validation = checkoutCreateSchema.safeParse(validationPayload);
+    const validation = checkoutCreateSchema.safeParse(currentValidationPayload);
 
     if (!validation.success) {
       const flattened = validation.error.flatten();
@@ -225,29 +295,13 @@ export default function CartPage() {
       return;
     }
 
-    if (finalPaymentMethod === "solana") {
-      if (balanceLoading) {
-        setError("Wallet balance is loading. Please wait a moment.");
-        setCheckoutStatus("error");
-        return;
-      }
-      const requiredAmount = finalAmount;
-      const currentBalance = availableBalance;
-      if (requiredAmount > 0 && currentBalance < requiredAmount) {
-        setError(`Insufficient ${finalCurrency} balance. Available: ${formatTokenAmount(currentBalance, finalCurrency)}.`);
-        setShowInsufficientModal(true);
-        setCheckoutStatus("error");
-        return;
-      }
-    }
-
     try {
       setCheckoutStatus("creating");
 
       const createRes = await fetch("/api/checkout/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validationPayload),
+        body: JSON.stringify(currentValidationPayload),
       });
 
       if (!createRes.ok) {
@@ -259,99 +313,21 @@ export default function CartPage() {
       const orderData = await createRes.json();
       setOrderId(orderData.orderId);
 
-      // Handle Pay on Delivery or Free Orders
-      if (deliveryMethod === "pickup" || (orderData.paymentMethod === "pod")) {
-        // Need to pass this intent to backend or just handle success since order is "pending" payment
-        // For this demo, we assume the backend marked it as 'pending_payment' or similar if we sent a flag.
-        // Let's update the checkout-create API to accept a payment method flag? 
-        // Or simply: if we selected "Cash on Delivery", we skip the blockchain part.
+      // Proceed to success and save-details modal for Passpoint (since Passpoint redirects after form or has its own flow handled in API/modal)
 
-        // Wait, we didn't send "paymentMethod" to the create API yet.
-        // Let's assume for now valid POD orders just skip the tx.
-
-        setCheckoutStatus("success");
-        setTimeout(() => {
-          clear();
-          window.location.href = `/checkout/success/${orderData.orderId}`;
-        }, 3000);
+      // Redirect to Zend Payment Link
+      if (activePaymentMethod === "zend") {
+        if (!orderData.payUrl) {
+          throw new Error("Payment link generation failed.");
+        }
+        setCheckoutStatus("verifying");
+        window.location.href = orderData.payUrl;
         return;
       }
 
-      // Validate Recipient Address for Crypto
-      if (!orderData.payTo) {
-        throw new Error("Store wallet address is missing. Cannot verify payment destination.");
-      }
-
-      // Step 2: Create Solana transaction
-      // Calulated in render, but recalculate or use ref to ensure freshness? State is fine.
-
-      // ...
-      // Step 2: Create Solana transaction
-      setCheckoutStatus("signing");
-
-      // Verify rate availability if conversion needed
-      if (!isRateReady && finalAmount === 0 && paymentMethod === 'solana') {
-        throw new Error("Exchange rate not active. Please refresh.");
-      }
-
-      // Use the calculated amounts
-      const transferAmount = finalAmount;
-      const mint = finalCurrency === "USDC" ? SOLANA_CONFIG.usdcMint : undefined;
-      const decimals = finalCurrency === "USDC" ? 6 : 9;
-
-      const transaction = await createTransferTransaction(
-        walletAddress,
-        orderData.payTo,
-        transferAmount,
-        mint,
-        SOLANA_CONFIG.network,
-        decimals
-      );
-      // ... same as before
-
-
-      // Step 3: Sign and send transaction
-      if (!walletAddress || !signTransaction) {
-        throw new Error("Wallet does not support transaction signing");
-      }
-
-      // Use 'as any' to bypass strict type checks between legacy/versioned if needed
-      // but VersionedTransaction is generally supported by modern adapters
-      const signedTx = await signTransaction(transaction as any);
-
-      // Send transaction using our RPC connection to ensure devnet consistency
-      const signature = await broadcastTransaction(signedTx);
-
-      if (!signature) {
-        throw new Error("Failed to send transaction");
-      }
-
-      // Step 4: Wait for confirmation
-      setCheckoutStatus("confirming");
-      await waitForConfirmation(signature, 60000);
-
-      // Step 5: Verify transaction on backend
-      setCheckoutStatus("verifying");
-      const verifyRes = await fetch("/api/checkout/verify-transaction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: orderData.orderId,
-          txSignature: signature,
-        }),
-      });
-
-      if (!verifyRes.ok) {
-        const errorData = await verifyRes.json();
-        throw new Error(errorData.error || "Transaction verification failed");
-      }
-
-      // Success!
+      // Success! prompt to save details before redirecting
       setCheckoutStatus("success");
-      setTimeout(() => {
-        clear();
-        window.location.href = `/checkout/success/${orderData.orderId}`;
-      }, 3000);
+      setShowSaveDetailsModal(true);
     } catch (err) {
       console.error("Checkout error:", err);
       setError(err instanceof Error ? err.message : "Checkout failed");
@@ -366,9 +342,7 @@ export default function CartPage() {
     if (checkoutStatus === "verifying") return "Verifying...";
     if (checkoutStatus === "success") return "Complete!";
 
-    if (deliveryMethod === "pickup") return "Place Pickup Order";
-    if (paymentMethod === "pod") return "Place Order (Cash on Delivery)";
-    return "Checkout with Stablecoin";
+    return "Pay Now";
   };
 
   const getStatusMessage = () => {
@@ -541,103 +515,7 @@ export default function CartPage() {
                   </div>
                 )}
 
-                {/* Payment Method Selection */}
-                {deliveryMethod === "shipping" && items.every(i => i.isPodEnabled) && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-black mb-3">Payment Method</h3>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <button
-                        onClick={() => setPaymentMethod("solana")}
-                        className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === "solana"
-                          ? "border-primary-blue bg-blue-50 text-primary-blue"
-                          : "border-border-gray hover:bg-gray-50"
-                          }`}
-                      >
-                        <span className="font-medium">Solana (Crypto)</span>
-                      </button>
-                      <button
-                        onClick={() => setPaymentMethod("pod")}
-                        className={`flex-1 py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === "pod"
-                          ? "border-green-600 bg-green-50 text-green-700"
-                          : "border-border-gray hover:bg-gray-50"
-                          }`}
-                      >
-                        <span className="font-medium">Cash on Delivery</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {paymentMethod === "solana" && deliveryMethod === "shipping" && (
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Pay With</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setPaymentCurrency("USDC")}
-                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${paymentCurrency === "USDC"
-                          ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500"
-                          : "border-gray-200 hover:bg-gray-50"
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold">
-                            $
-                          </div>
-                          <span className="font-medium text-sm">USDC</span>
-                        </div>
-                        {paymentCurrency === "USDC" && <div className="w-2 h-2 rounded-full bg-blue-500" />}
-                      </button>
-                      <button
-                        onClick={() => setPaymentCurrency("USDT")}
-                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${paymentCurrency === "USDT"
-                          ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500"
-                          : "border-gray-200 hover:bg-gray-50"
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">
-                            ₮
-                          </div>
-                          <span className="font-medium text-sm">USDT</span>
-                        </div>
-                        {paymentCurrency === "USDT" && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
-                      </button>
-                    </div>
-                    <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50/60 p-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-text">Available balance</span>
-                        <span className="font-semibold text-gray-900">
-                          {!walletAddress && "Connect wallet to view"}
-                          {walletAddress && balanceLoading && "Loading..."}
-                          {walletAddress && !balanceLoading && formatTokenAmount(availableBalance, finalCurrency)}
-                        </span>
-                      </div>
-                      {balanceError && (
-                        <div className="mt-2 text-xs text-red-600">
-                          Balance unavailable. Please refresh or open your wallet.
-                        </div>
-                      )}
-                      {walletAddress && !balanceLoading && hasInsufficientBalance && (
-                        <div className="mt-2 text-xs text-red-600">
-                          Insufficient balance for this checkout.
-                        </div>
-                      )}
-                      {walletAddress && !balanceLoading && !hasInsufficientBalance && (
-                        <div className="mt-2 text-xs text-green-700">
-                          Balance looks good for this checkout.
-                        </div>
-                      )}
-                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                        <Button variant="outline" className="w-full" onClick={() => setShowRampModal(true)}>
-                          Deposit
-                        </Button>
-                        <Button variant="outline" className="w-full" onClick={() => setShowReceiveModal(true)}>
-                          Receive
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Payment currency selection and deposit/receive buttons removed per UX: payment currency is derived from product and deposit/receive handled in wallet view */}
                 {/* Auto-set to POD if Pickup? Or confirm? Let's default pickup to POD usually or allow both */}
                 {deliveryMethod === "pickup" && (
                   <div className="mb-6 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
@@ -651,14 +529,20 @@ export default function CartPage() {
                     placeholder="john@example.com"
                     type="email"
                     value={deliveryDetails.email}
-                    onChange={(e) => setDeliveryDetails({ ...deliveryDetails, email: e.target.value })}
+                    onChange={(e) => {
+                      setDeliveryDetails({ ...deliveryDetails, email: e.target.value });
+                      if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: undefined });
+                    }}
                     error={fieldErrors.email}
                   />
                   <Input
                     label="Recipient Name"
                     placeholder="Full Name"
                     value={deliveryDetails.name}
-                    onChange={(e) => setDeliveryDetails({ ...deliveryDetails, name: e.target.value })}
+                    onChange={(e) => {
+                      setDeliveryDetails({ ...deliveryDetails, name: e.target.value });
+                      if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: undefined });
+                    }}
                     error={fieldErrors.name}
                   />
                   {deliveryMethod === "shipping" && (
@@ -667,7 +551,10 @@ export default function CartPage() {
                         label="Street Address"
                         placeholder="123 Campus Dr"
                         value={deliveryDetails.address}
-                        onChange={(e) => setDeliveryDetails({ ...deliveryDetails, address: e.target.value })}
+                        onChange={(e) => {
+                          setDeliveryDetails({ ...deliveryDetails, address: e.target.value });
+                          if (fieldErrors.address) setFieldErrors({ ...fieldErrors, address: undefined });
+                        }}
                         error={fieldErrors.address}
                       />
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -675,14 +562,20 @@ export default function CartPage() {
                           label="City"
                           placeholder="San Francisco"
                           value={deliveryDetails.city}
-                          onChange={(e) => setDeliveryDetails({ ...deliveryDetails, city: e.target.value })}
+                          onChange={(e) => {
+                            setDeliveryDetails({ ...deliveryDetails, city: e.target.value });
+                            if (fieldErrors.city) setFieldErrors({ ...fieldErrors, city: undefined });
+                          }}
                           error={fieldErrors.city}
                         />
                         <Input
                           label="Zip Code"
                           placeholder="94105"
                           value={deliveryDetails.zip}
-                          onChange={(e) => setDeliveryDetails({ ...deliveryDetails, zip: e.target.value })}
+                          onChange={(e) => {
+                            setDeliveryDetails({ ...deliveryDetails, zip: e.target.value });
+                            if (fieldErrors.zip) setFieldErrors({ ...fieldErrors, zip: undefined });
+                          }}
                           error={fieldErrors.zip}
                         />
                       </div>
@@ -732,15 +625,56 @@ export default function CartPage() {
                 <div className="space-y-2">
                   <Button
                     variant="primary"
-                    className="w-full"
-                    onClick={() => void checkout()}
-                    disabled={
-                      (checkoutStatus !== "idle" && checkoutStatus !== "error") ||
-                      (!isRateReady && paymentMethod === 'solana') ||
-                      deliveryUnavailable
-                    }
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={() => {
+                      if (deliveryUnavailable) return;
+                      setPaymentMethod("passpoint");
+                      void checkout("passpoint");
+                    }}
+                    disabled={checkoutStatus !== "idle" && checkoutStatus !== "error"}
                   >
-                    {!isRateReady && paymentMethod === 'solana' ? "Fetching Rates..." : getButtonText()}
+                    <CreditCard className="w-5 h-5" />
+                    {checkoutStatus !== "idle" && checkoutStatus !== "error" && paymentMethod === "passpoint" ? getButtonText() : "Pay with Passpoint"}
+                  </Button>
+
+                  {hasInsufficientBalance ? (
+                    <Button
+                      variant="primary"
+                      className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white"
+                      onClick={() => {
+                        router.push("/dashboard/wallet?action=deposit");
+                      }}
+                    >
+                      <Wallet className="w-5 h-5" />
+                      Topup Wallet (₦{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => {
+                        if (deliveryUnavailable) return;
+                        setPaymentMethod("wallet");
+                        void checkout("wallet");
+                      }}
+                      disabled={checkoutStatus !== "idle" && checkoutStatus !== "error"}
+                    >
+                      <Wallet className="w-5 h-5" />
+                      {checkoutStatus !== "idle" && checkoutStatus !== "error" && paymentMethod === "wallet" ? getButtonText() : `Pay with Wallet (₦${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2 border-primary-blue text-primary-blue hover:bg-blue-50"
+                    onClick={() => {
+                      if (deliveryUnavailable) return;
+                      void checkout("zend");
+                    }}
+                    disabled={true}
+                  >
+                    <Coins className="w-5 h-5" />
+                    Pay with Zend (Coming Soon)
                   </Button>
                   <Button
                     variant="outline"
@@ -804,6 +738,175 @@ export default function CartPage() {
         onClose={() => setShowRampModal(false)}
         initialType="onramp"
       />
+      <Dialog
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        title="Choose payment method"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Pick how you want to pay. Crypto checkout is live now, Paystack is being integrated, and StudPoints is visible but not active yet.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowPaymentModal(false);
+              setPaymentMethod("passpoint");
+              checkout();
+            }}
+            className="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 transition-all hover:border-blue-500 hover:bg-blue-50/60"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
+                <CreditCard className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-semibold text-black">Pay with Passpoint</h4>
+                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+                    Live
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-text">
+                  Pay natively in Naira (NGN) via Card or Bank Transfer.
+                </p>
+              </div>
+              <ArrowRight className="mt-1 h-4 w-4 text-gray-400" />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowPaymentModal(false);
+              setSidePanelType("crypto");
+              setShowSidePanel(true);
+            }}
+            className="w-full text-left rounded-2xl border border-primary-blue bg-blue-50/70 p-4 transition-all hover:bg-blue-100"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-blue text-white">
+                <Coins className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-semibold text-black">Pay with Zend</h4>
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-700">
+                    Live
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-text">
+                  Pay securely with crypto using Zend Checkout.
+                </p>
+              </div>
+              <ArrowRight className="mt-1 h-4 w-4 text-primary-blue" />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            disabled
+            className="w-full text-left rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4 opacity-60"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-200 text-gray-500">
+                <Lock className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-semibold text-black">Pay with StudPoints</h4>
+                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-600">
+                    Disabled
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-text">
+                  This option is not active yet, but it will be available later.
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </Dialog>
+
+      <SidePanel
+        isOpen={showSidePanel && sidePanelType === "crypto"}
+        onClose={() => { setShowSidePanel(false); setSidePanelType(null); }}
+        title="Pay with Zend"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">You will be redirected to Zend Checkout to securely pay for this order.</p>
+          <div className="mt-4 flex gap-2">
+            <Button variant="outline" className="w-full" onClick={() => { setShowSidePanel(false); setSidePanelType(null); }}>
+              Cancel
+            </Button>
+            <Button variant="primary" className="w-full" onClick={() => { setShowSidePanel(false); setSidePanelType(null); void checkout(); }}>
+              Confirm and Pay
+            </Button>
+          </div>
+        </div>
+      </SidePanel>
+      {/* Save checkout details modal shown after successful checkout to allow saving name/email as a saved profile address */}
+      <Dialog
+        isOpen={showSaveDetailsModal}
+        onClose={() => setShowSaveDetailsModal(false)}
+        title="Save checkout details"
+        footer={
+          <div className="w-full flex gap-2">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setShowSaveDetailsModal(false);
+                clear();
+                window.location.href = `/checkout/success/${orderId}`;
+              }}
+            >
+              Skip
+            </Button>
+            <Button
+              variant="primary"
+              className="w-full"
+              onClick={async () => {
+                setSaveDetailsLoading(true);
+                try {
+                  await fetch('/api/profile/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      full_name: deliveryDetails.name,
+                      email: deliveryDetails.email,
+                      save_as_default: saveAsDefault,
+                    }),
+                  });
+                } catch (e) {
+                  // ignore
+                } finally {
+                  setSaveDetailsLoading(false);
+                  setShowSaveDetailsModal(false);
+                  clear();
+                  window.location.href = `/checkout/success/${orderId}`;
+                }
+              }}
+            >
+              {saveDetailsLoading ? 'Saving...' : 'Save and Continue'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">Would you like to save your name and email for faster checkout next time?</p>
+          <div className="flex items-center gap-3">
+            <input
+              id="save-default"
+              type="checkbox"
+              checked={saveAsDefault}
+              onChange={(e) => setSaveAsDefault(e.target.checked)}
+            />
+            <label htmlFor="save-default" className="text-sm">Save as my default checkout details</label>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }

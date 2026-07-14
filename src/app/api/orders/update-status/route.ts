@@ -23,10 +23,20 @@ export async function POST(req: Request) {
     return Response.json({ ok: false });
   }
   const supabase = getSupabaseServerClient();
-  const { data: o } = await supabase.from("orders").select("store_id, buyer_address, buyer_email").eq("id", orderId).single();
+  const { data: o } = await supabase.from("orders").select("store_id, buyer_address, buyer_email, escrow_pin").eq("id", orderId).single();
   if (!o) return Response.json({ ok: false }, { status: 404 });
   const { data: s } = await supabase.from("stores").select("owner_address").eq("id", o.store_id).single();
   if (!s || s.owner_address !== address) return Response.json({ ok: false }, { status: 403 });
+
+  // Escrow PIN Validation for completion
+  if (status === 'completed' && o.escrow_pin) {
+    if (body.pin !== o.escrow_pin) {
+      return Response.json(
+        { ok: false, error: "Invalid Escrow PIN. Please ask the buyer for the correct 4-digit PIN to release funds." },
+        { status: 401 }
+      );
+    }
+  }
 
   // Update order status
   await supabase.from("orders").update({ status }).eq("id", orderId);

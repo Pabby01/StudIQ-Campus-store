@@ -34,7 +34,7 @@ export default function ConnectPage() {
         const profile = await profileRes.json();
 
         if (profile && profile.name && profile.school && profile.campus) {
-          // Existing user - go to home
+          // Existing user - send them back into the app
           router.push("/");
         } else {
           // New or incomplete user - go to onboarding
@@ -71,22 +71,25 @@ export default function ConnectPage() {
           <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <Wallet className="w-8 h-8 text-primary-blue" />
           </div>
-          <h1 className="text-2xl font-bold text-black mb-2">Connect Your Wallet</h1>
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.25em] text-blue-700 mb-4">
+            Secure sign in
+          </div>
+          <h1 className="text-2xl font-black text-black mb-2">Sign In to Continue</h1>
           <p className="text-muted-text">
-            Connect your Solana wallet to access the campus marketplace
+            Sign in to access the campus marketplace and continue your setup.
           </p>
         </div>
 
         <div className="mb-6">
           <p className="text-sm text-center text-muted-text mb-4">
-            Click the "Connect" button in the navbar to get started
+            Click the "Sign In" button in the navbar to get started
           </p>
           <Button
             variant="primary"
             className="w-full"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/auth")}
           >
-            Go to Homepage
+            Sign In
           </Button>
         </div>
 

@@ -4,41 +4,8 @@ import { getSupabaseServerClient } from "./supabase";
  * Get platform fee percentage based on seller's subscription plan
  */
 export async function getPlatformFee(sellerAddress: string): Promise<number> {
-    const supabase = getSupabaseServerClient();
-
-    try {
-        // Get seller's active subscription
-        const { data: subscription } = await supabase
-            .from("user_subscriptions")
-            .select(`
-                subscription_plans (platform_fee_percentage)
-            `)
-            .eq("user_address", sellerAddress)
-            .eq("status", "active")
-            .maybeSingle();
-
-        if (subscription && subscription.subscription_plans) {
-            const plansValue = subscription.subscription_plans as unknown;
-
-            if (Array.isArray(plansValue)) {
-                const firstPlan = plansValue[0] as { platform_fee_percentage?: number } | undefined;
-                if (firstPlan && typeof firstPlan.platform_fee_percentage === "number") {
-                    return firstPlan.platform_fee_percentage;
-                }
-            } else {
-                const plan = plansValue as { platform_fee_percentage?: number } | null;
-                if (plan && typeof plan.platform_fee_percentage === "number") {
-                    return plan.platform_fee_percentage;
-                }
-            }
-        }
-
-        // Default to free tier (5%)
-        return 5.0;
-    } catch (error) {
-        console.error("Error fetching platform fee:", error);
-        return 5.0; // Default to free tier on error
-    }
+    // We are now using a flat 5% platform fee for all sellers
+    return 5.0;
 }
 
 /**

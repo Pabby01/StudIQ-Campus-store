@@ -51,6 +51,14 @@ const dealTicker = [
 
 const adCards = [
   {
+    title: "Zero-Loss Dapps",
+    subtitle: "Webinar: Securing Capital on Solana",
+    image: "/webinar.jpg",
+    href: "/Webinar",
+    tag: "REGISTER NOW",
+    special: true
+  },
+  {
     title: "Campus Tech Week",
     subtitle: "Up to 60% off tech essentials",
     image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
@@ -80,7 +88,9 @@ export default function Home() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [nearbyStores, setNearbyStores] = useState<StoreType[]>([]);
+  const [featuredStores, setFeaturedStores] = useState<StoreType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [featuredStoresLoading, setFeaturedStoresLoading] = useState(true);
   const [mobileFeatureIndex, setMobileFeatureIndex] = useState(0);
   const [mobileStoreIndex, setMobileStoreIndex] = useState(0);
   const [isMobileFeaturePaused, setIsMobileFeaturePaused] = useState(false);
@@ -130,11 +140,26 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch products
-        const productsRes = await fetch("/api/product/search?limit=20");
+        // Fetch homepage data in parallel so the featured stores section does not wait on a second mount-time request.
+        const productsPromise = fetch("/api/product/search?limit=20");
+        const featuredStoresPromise = fetch("/api/store/all?limit=3&featured=true");
+
+        const productsRes = await productsPromise;
         const productsData = await productsRes.json();
         if (productsData.ok && productsData.products) {
           setProducts(productsData.products);
+        }
+
+        const featuredStoresRes = await featuredStoresPromise;
+        if (featuredStoresRes.ok) {
+          const featuredStoresData = await featuredStoresRes.json();
+          if (Array.isArray(featuredStoresData.stores)) {
+            setFeaturedStores(featuredStoresData.stores.slice(0, 3));
+          } else {
+            setFeaturedStores([]);
+          }
+        } else {
+          setFeaturedStores([]);
         }
 
         // Fetch nearby stores
@@ -175,8 +200,10 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
+        setFeaturedStores([]);
       } finally {
         setLoading(false);
+        setFeaturedStoresLoading(false);
       }
     };
 
@@ -345,7 +372,7 @@ export default function Home() {
                 <Link
                   key={`${ad.title}-${index}`}
                   href={ad.href}
-                  className="group relative h-40 w-[230px] overflow-hidden rounded-[22px] border border-white/80 bg-white shadow-lg sm:h-44 sm:w-[260px]"
+                  className={`group relative h-40 w-[230px] overflow-hidden rounded-[22px] border bg-white shadow-lg sm:h-44 sm:w-[260px] ${(ad as any).special ? 'border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.3)] ring-2 ring-emerald-400/50' : 'border-white/80'}`}
                 >
                   <Image
                     src={ad.image}
@@ -357,7 +384,9 @@ export default function Home() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">Sponsored</p>
+                    <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${(ad as any).special ? 'text-emerald-400 font-bold' : 'text-white/70'}`}>
+                      {(ad as any).tag || 'Sponsored'}
+                    </p>
                     <h3 className="mt-1 text-base font-bold leading-tight">{ad.title}</h3>
                     <p className="mt-1 text-xs text-white/80">{ad.subtitle}</p>
                   </div>
@@ -427,7 +456,7 @@ export default function Home() {
         />
 
         {/* Featured Stores */}
-        <FeaturedStores />
+        <FeaturedStores stores={featuredStores as any} loading={featuredStoresLoading} />
 
         {/* Flash Deals */}
         <ProductRow

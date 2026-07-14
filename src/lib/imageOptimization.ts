@@ -1,67 +1,30 @@
+import imageCompression from 'browser-image-compression';
+
 export type OptimizedImageOptions = {
   maxDimension?: number;
   quality?: number;
 };
 
-const DEFAULT_OPTIONS: Required<OptimizedImageOptions> = {
-  maxDimension: 1600,
-  quality: 0.82,
-};
-
-export async function optimizeImageFile(file: File, options: OptimizedImageOptions = {}): Promise<File> {
-  if (typeof window === "undefined") {
+export async function optimizeImageFile(file: File, options?: OptimizedImageOptions): Promise<File> {
+  if (typeof window === "undefined" || !file.type.startsWith("image/") || file.type === "image/gif") {
     return file;
   }
 
-  const { maxDimension, quality } = { ...DEFAULT_OPTIONS, ...options };
-
-  if (!file.type.startsWith("image/") || file.type === "image/gif") {
-    return file;
-  }
+  const compressionOptions = {
+    maxSizeMB: 0.3, // Enforce 300KB limit
+    maxWidthOrHeight: options?.maxDimension || 1080, // Enforce 1080px limit
+    useWebWorker: true,
+    fileType: 'image/webp'
+  };
 
   try {
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
-    const width = Math.max(1, Math.round(bitmap.width * scale));
-    const height = Math.max(1, Math.round(bitmap.height * scale));
-
-    if (scale === 1 && file.size < 800 * 1024) {
-      bitmap.close();
-      return file;
-    }
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      bitmap.close();
-      return file;
-    }
-
-    ctx.drawImage(bitmap, 0, 0, width, height);
-    bitmap.close();
-
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((nextBlob) => resolve(nextBlob), "image/webp", quality);
-    });
-
-    if (!blob) {
-      return file;
-    }
-
-    return new File([blob], replaceExtension(file.name, "webp"), {
+    const compressedFile = await imageCompression(file, compressionOptions);
+    return new File([compressedFile], file.name.replace(/\.[^/.]+$/, ".webp"), {
       type: "image/webp",
-      lastModified: file.lastModified,
+      lastModified: Date.now(),
     });
-  } catch {
+  } catch (error) {
+    console.error("Compression failed:", error);
     return file;
   }
-}
-
-function replaceExtension(fileName: string, nextExtension: string) {
-  const lastDot = fileName.lastIndexOf(".");
-  const baseName = lastDot > 0 ? fileName.slice(0, lastDot) : fileName;
-  return `${baseName}.${nextExtension}`;
 }

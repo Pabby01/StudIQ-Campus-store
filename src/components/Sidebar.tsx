@@ -91,8 +91,8 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
 
             <div className="p-4 mt-auto">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
-                    <h4 className="font-medium mb-1">Start Selling</h4>
-                    <p className="text-xs text-slate-300 mb-3">Create your store and reach students.</p>
+                    <h4 className="font-medium text-white mb-1">Start Selling</h4>
+                    <p className="text-xs text-slate-300  mb-3">Create your store and reach students.</p>
                     <Button
                         variant="primary"
                         className="w-full bg-white text-slate-900 hover:bg-slate-100 border-none h-9 text-sm"

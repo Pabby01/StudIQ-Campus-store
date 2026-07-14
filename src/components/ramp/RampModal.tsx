@@ -819,7 +819,7 @@ export default function RampModal({ isOpen, onClose, initialType }: RampModalPro
                                     <CheckCircle2 className={`w-12 h-12 ${isOnramp ? 'text-green-600' : 'text-orange-600'}`} />
                                 </div>
                             </div>
-                            <h3 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Success! 🚀</h3>
+                            <h3 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Success!</h3>
                             <p className="text-gray-500 mb-8 max-w-[280px] mx-auto font-medium leading-relaxed">
                                 Your {type === 'onramp' ? 'purchase' : 'withdrawal'} has been initiated and is being processed.
                             </p>

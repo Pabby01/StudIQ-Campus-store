@@ -1,0 +1,4 @@
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS username text UNIQUE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS country text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS state text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS city text;

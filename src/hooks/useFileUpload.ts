@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { getSupabaseClient } from '@/lib/supabase';
 
 interface UploadProgress {
     loaded: number;
@@ -22,32 +21,15 @@ interface UseFileUploadReturn {
 }
 
 /**
- * Custom hook for uploading files to Supabase Storage
+ * Custom hook for uploading files securely via pre-signed URLs
  * 
  * @param {string} defaultBucket - Default storage bucket name (default: 'products')
  * @returns Uploader interface with upload function and state
- * 
- * @example
- * const { upload, uploading, progress, error } = useFileUpload();
- * 
- * const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
- *   const file = e.target.files?.[0];
- *   if (file) {
- *     try {
- *       const result = await upload(file, 'products', 'listings');
- *       console.log('Uploaded:', result.url);
- *     } catch (err) {
- *       console.error('Upload failed:', err);
- *     }
- *   }
- * };
  */
 export function useFileUpload(defaultBucket: string = 'products'): UseFileUploadReturn {
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState<UploadProgress | null>(null);
     const [error, setError] = useState<string | null>(null);
-
-    const supabase = getSupabaseClient();
 
     const upload = useCallback(
         async (file: File, bucket: string = defaultBucket, folder: string = ''): Promise<UploadResult> => {
@@ -57,17 +39,11 @@ export function useFileUpload(defaultBucket: string = 'products'): UseFileUpload
 
             try {
                 // Validate file
-                if (!file) {
-                    throw new Error('No file provided');
-                }
+                if (!file) throw new Error('No file provided');
 
-                // Validate file size (max 5MB for product images)
                 const maxSize = 5 * 1024 * 1024; // 5MB
-                if (file.size > maxSize) {
-                    throw new Error('File size must be less than 5MB');
-                }
+                if (file.size > maxSize) throw new Error('File size must be less than 5MB');
 
-                // Validate file type
                 const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
                 if (!allowedTypes.includes(file.type)) {
                     throw new Error('File must be an image (JPEG, PNG, WebP, or GIF)');
@@ -80,30 +56,45 @@ export function useFileUpload(defaultBucket: string = 'products'): UseFileUpload
                 const fileName = `${timestamp}_${randomString}.${fileExt}`;
                 const filePath = folder ? `${folder}/${fileName}` : fileName;
 
-                // Upload file to Supabase Storage
-                const { data, error: uploadError } = await supabase.storage
-                    .from(bucket)
-                    .upload(filePath, file, {
-                        cacheControl: '3600',
-                        upsert: false,
-                    });
+                // 1. Get signed upload URL from secure backend
+                const urlRes = await fetch('/api/storage/upload-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bucket, path: filePath })
+                });
 
-                if (uploadError) {
-                    throw uploadError;
+                if (!urlRes.ok) {
+                    const data = await urlRes.json();
+                    throw new Error(data.error || 'Failed to get upload URL');
                 }
 
-                // Update progress to 100%
+                const { signedUrl, token } = await urlRes.json();
+
+                // 2. Upload file to signed URL
+                const uploadRes = await fetch(signedUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': file.type,
+                    },
+                    body: file,
+                });
+
+                if (!uploadRes.ok) {
+                    throw new Error('Failed to upload file to storage');
+                }
+
                 setProgress({ loaded: file.size, total: file.size, percentage: 100 });
 
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from(bucket)
-                    .getPublicUrl(data.path);
+                // The public URL can be constructed if bucket is public, but we should parse it from the signed URL
+                // signedUrl is like https://<project>.supabase.co/storage/v1/object/upload/sign/<bucket>/<path>?token=...
+                const baseUrl = signedUrl.split('/object/upload/sign/')[0];
+                const publicUrl = `${baseUrl}/object/public/${bucket}/${filePath}`;
 
                 return {
                     url: publicUrl,
-                    path: data.path,
-                    fullPath: `${bucket}/${data.path}`,
+                    path: filePath,
+                    fullPath: `${bucket}/${filePath}`,
                 };
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Upload failed';
@@ -113,7 +104,7 @@ export function useFileUpload(defaultBucket: string = 'products'): UseFileUpload
                 setUploading(false);
             }
         },
-        [defaultBucket, supabase]
+        [defaultBucket]
     );
 
     const reset = useCallback(() => {

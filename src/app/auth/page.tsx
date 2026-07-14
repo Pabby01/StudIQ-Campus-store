@@ -39,7 +39,7 @@ export default function AuthPage() {
         <div className="flex-1 space-y-6 text-center lg:text-left">
           <div>
             <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">
-              🎓 Built for Nigerian Campus Students
+              Built for Nigerian Campus Students
             </div>
             <h1 className="text-4xl font-extrabold text-slate-900 leading-tight">
               Your Campus.<br />

@@ -22,6 +22,19 @@ export function useCivicWallet() {
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
     const hasEstablishedSession = useRef(false);
 
+    // Caching state for immediate rendering - initialized synchronously to prevent flicker
+    const [cachedSession, setCachedSession] = useState<{walletAddress: string | null, email: string | null}>(() => {
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('civic_cached_session');
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch (e) {}
+            }
+        }
+        return { walletAddress: null, email: null };
+    });
+
     // Get the Solana context from userContext
     const solanaContext = (userContext as any).solana;
     const walletCreationInProgress = (userContext as any).walletCreationInProgress;
@@ -32,13 +45,26 @@ export function useCivicWallet() {
     // Get wallet address from Civic's solana context or user object
     const civicWalletAddress = solanaContext?.address || (user as any)?.solana?.address || null;
 
-    // Get wallet address from Civic embedded wallet OR Solana wallet adapter
-    const walletAddress = civicWalletAddress || wallet.publicKey?.toBase58() || null;
+    // Get active wallet address from Civic embedded wallet OR Solana wallet adapter
+    const activeWalletAddress = civicWalletAddress || wallet.publicKey?.toBase58() || null;
+    
+    // Fallback to cached session if not yet loaded
+    const walletAddress = activeWalletAddress || cachedSession.walletAddress;
 
     // Get user info
     const userAny = user as any;
-    const email = userAny?.email || null;
+    const activeEmail = userAny?.email || null;
+    const email = activeEmail || cachedSession.email;
     const civicUserId = userAny?.id || userAny?.sub || null;
+
+    useEffect(() => {
+        if (activeWalletAddress || activeEmail) {
+            localStorage.setItem('civic_cached_session', JSON.stringify({
+                walletAddress: activeWalletAddress || cachedSession.walletAddress,
+                email: activeEmail || cachedSession.email
+            }));
+        }
+    }, [activeWalletAddress, activeEmail, cachedSession]);
 
 
     // Try to create embedded wallet if user exists but no wallet
@@ -131,7 +157,7 @@ export function useCivicWallet() {
         walletAddress,
         hasEmbeddedWallet: hasWallet,
         isConnected: !!walletAddress,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user || !!cachedSession.email,
         isCreatingWallet: isCreatingWallet || walletCreationInProgress,
 
         // Create wallet function for manual trigger

@@ -74,7 +74,7 @@ export const ReviewSnippetDisplay: React.FC<ReviewSnippetDisplayProps> = ({
       {review && (
         <div className="text-xs bg-blue-50 border border-blue-200 rounded p-2">
           <p className="font-medium text-blue-900 truncate">
-            {review.reviewerName} <span className="font-normal">gave {review.rating} ⭐</span>
+            {review.reviewerName} <span className="font-normal">gave {review.rating} stars</span>
           </p>
           <p className="text-blue-800 line-clamp-2 mt-1">"{review.content}"</p>
         </div>

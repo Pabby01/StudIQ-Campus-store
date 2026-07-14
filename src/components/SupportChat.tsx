@@ -17,7 +17,7 @@ const cleanAssistantText = (text: string) => {
 export default function SupportChat() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
-        { role: "assistant", content: "Hey! I'm Studi, your campus shopping buddy! 🎓 \n\nAsk me about products, deliveries, or how to earn rewards!" }
+        { role: "assistant", content: "Hey! I'm Studi, your campus shopping buddy!\n\nAsk me about products, deliveries, or how to earn rewards!" }
     ]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);

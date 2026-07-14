@@ -1,79 +1,84 @@
-import { getSupabaseServerClient } from "@/lib/supabase";
-import { requireAdmin } from "@/lib/admin-auth";
-import { getSessionWallet } from "@/lib/session";
+import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: Request) {
-    try {
-        const address = await getSessionWallet(req);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-        // Verify admin access via session
-        await requireAdmin(address);
+export async function GET(req: NextRequest) {
+  try {
+    const searchParams = req.nextUrl.searchParams;
+    const status = searchParams.get("status") || "all";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
 
-        const { searchParams } = new URL(req.url);
-        const status = searchParams.get("status") || "pending";
+    const offset = (page - 1) * limit;
 
-        const supabase = getSupabaseServerClient();
+    let query = supabase
+      .from("withdrawals")
+      .select("*, stores(name)")
+      .order("created_at", { ascending: false });
 
-        // Get withdrawal requests with seller details
-        const { data: withdrawals, error } = await supabase
-            .from("withdrawal_requests")
-            .select("*")
-            .eq("status", status)
-            .order("requested_at", { ascending: true });
-
-        if (error) {
-            console.error("[Admin Withdrawals] Database error:", error);
-            return Response.json(
-                { ok: false, error: "Failed to fetch withdrawals" },
-                { status: 500 }
-            );
-        }
-
-        // Enrich with seller information
-        const enrichedWithdrawals = await Promise.all(
-            (withdrawals || []).map(async (w) => {
-                const { data: profile } = await supabase
-                    .from("profiles")
-                    .select("name, email")
-                    .eq("address", w.seller_address)
-                    .single();
-
-                return {
-                    id: w.id,
-                    sellerAddress: w.seller_address,
-                    sellerName: profile?.name || "Unknown",
-                    sellerEmail: profile?.email || "",
-                    amount: parseFloat(w.amount),
-                    currency: w.currency,
-                    orderIds: w.order_ids || [],
-                    orderCount: w.order_ids?.length || 0,
-                    requestedAt: w.requested_at,
-                    processedAt: w.processed_at,
-                    completedAt: w.completed_at,
-                    status: w.status,
-                    transactionSignature: w.transaction_signature,
-                    notes: w.notes,
-                };
-            })
-        );
-
-        return Response.json({
-            ok: true,
-            withdrawals: enrichedWithdrawals,
-        });
-    } catch (error: any) {
-        console.error("[Admin Withdrawals] Error:", error);
-
-        if (error.message?.includes("Unauthorized")) {
-            return Response.json(
-                { ok: false, error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
-        return Response.json(
-            { ok: false, error: "Internal server error" },
-            { status: 500 }
-        );
+    if (status && status !== "all") {
+      query = query.eq("status", status);
     }
+
+    query = query.range(offset, offset + limit - 1);
+
+    const { data: withdrawals, error, count } = await query;
+
+    if (error) throw error;
+
+    // Format response
+    const formattedWithdrawals = (withdrawals || []).map((w: any) => ({
+      id: w.id,
+      storeId: w.store_id,
+      storeName: w.stores?.name || "Unknown",
+      amount: w.amount,
+      status: w.status,
+      method: w.method || "Bank Transfer",
+      accountDetails: w.account_details || "",
+      createdAt: w.created_at,
+      updatedAt: w.updated_at,
+    }));
+
+    // Calculate stats
+    const { data: allWithdrawals } = await supabase
+      .from("withdrawals")
+      .select("amount, status");
+
+    const totalWithdrawals = allWithdrawals?.length || 0;
+    const totalAmount = (allWithdrawals || []).reduce(
+      (sum, w) => sum + (w.amount || 0),
+      0
+    );
+    const completedWithdrawals = (allWithdrawals || []).filter(
+      (w) => w.status === "completed"
+    ).length;
+    const pendingWithdrawals = (allWithdrawals || []).filter(
+      (w) => w.status === "pending"
+    ).length;
+    const failedWithdrawals = (allWithdrawals || []).filter(
+      (w) => w.status === "failed"
+    ).length;
+
+    return NextResponse.json({
+      withdrawals: formattedWithdrawals,
+      total: count || 0,
+      totalWithdrawals,
+      totalAmount: Math.round(totalAmount),
+      completedWithdrawals,
+      pendingWithdrawals,
+      failedWithdrawals,
+      page,
+      limit,
+    });
+  } catch (error) {
+    console.error("Error fetching withdrawals:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch withdrawals" },
+      { status: 500 }
+    );
+  }
 }

@@ -14,13 +14,18 @@ export const signinSchema = z.object({
 export const updateProfileSchema = z.object({
   address: z.string().min(10), // Allow both Solana addresses and civic_* placeholders
   name: z.string().min(2),
+  username: z.string().min(3).regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores").optional().nullable(),
+  country: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
   email: z.string().email().optional().nullable(),
   civic_user_id: z.string().optional().nullable(),
   verified_email: z.boolean().optional(),
-  school: z.string().min(2),
-  campus: z.string().min(2),
+  school: z.string().min(2).optional().nullable(),
+  campus: z.string().min(2).optional().nullable(),
   level: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
+  primary_intent: z.enum(["buying", "selling"]).default("buying").optional().nullable(),
   referralCode: z.union([z.string().length(6), z.literal(""), z.undefined()]).optional(),
 });
 
@@ -57,13 +62,13 @@ export const createProductSchema = z.object({
 export const updateProductSchema = createProductSchema.extend({ id: z.string().min(1) });
 
 export const checkoutCreateSchema = z.object({
-  buyer: z.string().min(32),
+  buyer: z.string().min(10),
   storeId: z.string().min(1),
   items: z.array(
     z.object({ productId: z.string().min(1), qty: z.number().int().positive() })
   ).min(1),
-  currency: z.enum(["USDC", "USDT"]),
-  deliveryMethod: z.enum(["shipping", "pickup"]),
+  currency: z.enum(["USDC", "USDT"]).default("USDC"),
+  deliveryMethod: z.enum(["shipping", "pickup"]).default("shipping"),
   deliveryDetails: z.object({
     name: z.string().min(2),
     address: z.string().min(3),
@@ -72,7 +77,7 @@ export const checkoutCreateSchema = z.object({
     fee: z.number().nonnegative().optional(),
     notes: z.string().optional(),
   }),
-  paymentMethod: z.enum(["solana", "pod"]).optional(),
+  paymentMethod: z.enum(["solana", "zend", "passpoint", "wallet"]).optional(),
   buyerEmail: z.string().email(),
 });
 

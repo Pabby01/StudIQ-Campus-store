@@ -24,6 +24,7 @@ interface OrderDetails {
     city: string;
     zip: string;
   };
+  escrowPin?: string;
 }
 
 interface SellerNotification {
@@ -168,6 +169,16 @@ export async function sendOrderConfirmation(details: OrderDetails) {
         <div class="info-label">Order ID</div>
         <div class="info-value">#${details.orderId}</div>
       </div>
+      
+      ${details.escrowPin ? `
+      <div style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 20px; border-radius: 8px; margin: 25px 0;">
+        <div style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: #B45309; letter-spacing: 0.05em; margin-bottom: 4px;">Your Secure Verification PIN</div>
+        <div style="font-size: 24px; font-weight: 800; color: #B45309; letter-spacing: 0.1em;">${details.escrowPin}</div>
+        <p style="margin-top: 8px; font-size: 14px; color: #92400E; font-weight: 500;">
+          ⚠️ <strong>Keep this PIN safe!</strong> To release the escrow funds and finalize your order, verbally provide this 4-digit PIN to the seller when you receive your items.
+        </p>
+      </div>
+      ` : ''}
 
       <h3 style="margin-top: 30px; font-size: 18px; color: #1e293b;">Order Summary</h3>
       <table class="product-table">
@@ -354,7 +365,7 @@ export async function sendWithdrawalAdminNotification(
 ) {
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@studiq.fun';
-    
+
     const content = `
       <p><strong>Seller:</strong> ${sellerName} (${sellerEmail})</p>
       <p><strong>Amount:</strong> ${amount.toFixed(4)} ${currency}</p>
@@ -487,6 +498,214 @@ export async function sendOrderCompleted(
     return { success: true };
   } catch (error) {
     console.error('[Email] Failed to send order completion:', error);
+    return { success: false, error };
+  }
+}
+
+// --- Welcome Emails ---
+
+export async function sendWelcomeBuyerEmail(userName: string, userEmail: string) {
+  try {
+    const content = `
+      <p style="font-size: 16px;">Welcome to StudIQ Campus Store, <strong>${userName}</strong>! 👋</p>
+      <p>We're thrilled to have you here. Since you're looking to buy, we recommend checking out the amazing products your fellow students are selling.</p>
+
+      <div class="info-box" style="background-color: #EEF2FF; border-left-color: #667EEA;">
+        <div class="info-label" style="color: #4338CA;">Get Started</div>
+        <div class="info-value" style="color: #4338CA;">Make Your First Purchase</div>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${APP_URL}/explore" class="btn" style="background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);">Explore the Marketplace</a>
+      </div>
+    `;
+
+    const html = getEmailTemplate('Welcome to StudIQ! 🎉', content, 'primary');
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: 'Welcome to StudIQ! Make your first purchase 🛍️',
+      html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email] Failed to send buyer welcome email:', error);
+    return { success: false, error };
+  }
+}
+
+export async function sendWelcomeSellerEmail(userName: string, userEmail: string) {
+  try {
+    const content = `
+      <p style="font-size: 16px;">Welcome to StudIQ Campus Store, <strong>${userName}</strong>! 🚀</p>
+      <p>We're excited to see what you have to offer. As a seller, your next step is to set up your store and list your first product.</p>
+
+      <div class="info-box" style="background-color: #ECFDF5; border-left-color: #10B981;">
+        <div class="info-label" style="color: #047857;">Get Started</div>
+        <div class="info-value" style="color: #047857;">Make Your First Sale</div>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${APP_URL}/dashboard/store/new" class="btn" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%);">Set Up Your Store</a>
+      </div>
+    `;
+
+    const html = getEmailTemplate('Welcome to StudIQ! 🚀', content, 'success');
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: 'Welcome to StudIQ! Start selling today 📈',
+      html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email] Failed to send seller welcome email:', error);
+    return { success: false, error };
+  }
+}
+
+// --- Webinar Emails ---
+
+export async function sendWebinarRegistrationEmail(
+  name: string,
+  email: string,
+  orderId: string,
+  orderDate: string
+) {
+  try {
+    const meetingLink = "https://calendar.app.google/tRXJw6rLBf5xzfAi9"; // Replace with actual meeting link
+
+  const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Zero-Loss Dapps: Securing Capital on Solana')}&dates=20260717T170000Z/20260717T183000Z&details=${encodeURIComponent('Join us for an exclusive webinar on securing capital on Solana.\\n\\nMeeting link: ' + meetingLink)}&location=${encodeURIComponent(meetingLink)}`;
+
+  const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//StudIQ//Webinar//EN
+BEGIN:VEVENT
+UID:webinar-20260717@studiq.fun
+DTSTAMP:20260714T000000Z
+DTSTART:20260717T170000Z
+DTEND:20260717T183000Z
+SUMMARY:Zero-Loss Dapps: Securing Capital on Solana
+DESCRIPTION:Join us for an exclusive webinar on securing capital on Solana. Meeting link: ${meetingLink}
+LOCATION:${meetingLink}
+END:VEVENT
+END:VCALENDAR`;
+
+  const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { margin: 0; padding: 0; background-color: #121212; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e5e5e5; }
+            .container { max-width: 600px; margin: 0 auto; background-color: #121212; }
+            .banner { width: 100%; height: auto; display: block; }
+            .content { padding: 20px; }
+            .header-links { font-size: 14px; color: #a3a3a3; margin-bottom: 30px; line-height: 1.5; }
+            .header-links a { color: #60a5fa; text-decoration: none; }
+            h2 { color: #ffffff; font-size: 24px; margin-top: 0; margin-bottom: 20px; font-weight: 600; }
+            .order-summary, .ticket-info { background-color: #1a1a1a; padding: 24px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
+            .meta-text { color: #a3a3a3; font-size: 14px; margin: 4px 0; }
+            .meta-link { color: #60a5fa; text-decoration: none; }
+            .row { display: flex; justify-content: space-between; margin-top: 20px; font-size: 15px; color: #d4d4d4; }
+            .row-item { flex: 1; }
+            .divider { height: 1px; background-color: #333; margin: 20px 0; }
+            .footer-text { color: #a3a3a3; font-size: 12px; line-height: 1.6; margin-top: 20px; }
+            .footer-text a { color: #60a5fa; text-decoration: none; }
+            .ticket-title { color: #ffffff; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+            .ticket-detail { color: #a3a3a3; font-size: 15px; margin: 4px 0; }
+            .ticket-detail.email { color: #60a5fa; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <img src="${APP_URL}/webinar.jpg" alt="Webinar Flyer" class="banner" />
+            
+            <div class="content">
+              <div class="header-links">
+                Questions about Zero-Loss Dapps: Securing Capital on Solana? <a href="${APP_URL}/Webinar">View event details</a> or <a href="mailto:support@studiq.fun">Contact the organizer</a>
+              </div>
+
+              <div class="order-summary">
+                <h2>Event Details</h2>
+                <div style="margin-bottom: 20px;">
+                  <p class="meta-text" style="color: #ffffff; font-weight: 600; font-size: 16px;">Date and Time</p>
+                  <p class="meta-text">Friday, July 17, 2026</p>
+                  <p class="meta-text">6:00 PM WAT</p>
+                </div>
+                
+                <div class="divider"></div>
+
+                <h2>Order Summary</h2>
+                <p class="meta-text">Order <a href="#" class="meta-link">#${orderId}</a></p>
+                <p class="meta-text">Order date: ${orderDate}</p>
+                
+                <div style="margin-top: 24px;">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="color: #d4d4d4; font-size: 15px;">${name}</td>
+                      <td style="color: #a3a3a3; font-size: 15px; text-align: center;">1 x Admission</td>
+                      <td style="color: #d4d4d4; font-size: 15px; text-align: right;">Free</td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <p class="meta-text" style="margin-top: 20px;">Free Registration</p>
+                
+                <div class="divider"></div>
+                
+                <p class="meta-text" style="font-size: 13px;">
+                  <a href="mailto:support@studiq.fun" class="meta-link">Contact the organizer</a> for any questions related to this purchase.
+                </p>
+                
+                <p class="footer-text">
+                  This order is subject to StudIQ <a href="${APP_URL}/terms">Terms of Service</a> and <a href="${APP_URL}/privacy">Privacy Policy</a>.
+                </p>
+              </div>
+
+              <div class="ticket-info">
+                <h2>Ticket Information</h2>
+                <div class="ticket-title">Ticket #1: Admission</div>
+                <p class="ticket-detail">${name}</p>
+                <p class="ticket-detail email">${email}</p>
+                
+                <div class="divider"></div>
+                
+                <h2>Meeting Details</h2>
+                <p class="ticket-detail"><strong>Join Link:</strong> <a href="${meetingLink}" style="color: #60a5fa;">${meetingLink}</a></p>
+                
+                <div style="margin-top: 20px;">
+                  <a href="${googleCalendarUrl}" style="background-color: #60a5fa; color: #121212; padding: 10px 16px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;">Add to Google Calendar</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `Your ticket for Zero-Loss Dapps: Securing Capital on Solana`,
+      html,
+      attachments: [
+        {
+          filename: 'invite.ics',
+          content: Buffer.from(icsContent).toString('base64'),
+          contentType: 'text/calendar'
+        }
+      ]
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email] Failed to send webinar registration email:', error);
     return { success: false, error };
   }
 }

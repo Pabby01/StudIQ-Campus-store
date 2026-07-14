@@ -46,11 +46,14 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <CivicAuthProvider
       clientId={civicClientId!}
-      // Enable embedded wallet mode for seamless in-app experience
-      // @ts-ignore - Prop might not be typed in all versions but is supported
-      iframeMode="embedded"
       autoRedirect={false}
       redirectUrl={typeof window !== 'undefined' ? window.location.origin : undefined}
+      chains={[]}
+      endpoints={{
+        rpcs: {
+          84532: { http: ["https://sepolia-preconf.base.org"] }
+        }
+      }}
       onSignIn={async (user) => {
         // Sign in handled
       }}

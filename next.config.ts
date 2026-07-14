@@ -16,7 +16,10 @@ if (supabaseUrl) {
 const nextConfig: NextConfig = {
   turbopack: {},
   images: {
-    domains: imageDomains,
+    remotePatterns: imageDomains.map(domain => ({
+      protocol: 'https',
+      hostname: domain,
+    })),
   },
   webpack: (config) => {
     config.resolve.fallback = {

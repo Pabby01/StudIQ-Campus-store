@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronRight, ChevronLeft, Check, Sparkles } from "lucide-react";
+import { X, ChevronRight, ChevronLeft, Check, Sparkles, ShoppingBag, Store, Gift, Lock, Shield } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useUser } from "@civic/auth-web3/react";
 
@@ -23,27 +23,27 @@ const steps: Step[] = [
   {
     title: "Connect Your Wallet",
     description: "Use your Civic Wallet to sign in instantly. No passwords needed, just secure blockchain authentication.",
-    icon: <div className="text-4xl">🔐</div>,
+    icon: <Lock className="w-12 h-12 text-orange-600" />,
   },
   {
     title: "Browse Campus Stores",
     description: "Find textbooks, gadgets, and services from students on your campus. Filter by location and category.",
-    icon: <div className="text-4xl">🛍️</div>,
+    icon: <ShoppingBag className="w-12 h-12 text-blue-600" />,
   },
   {
     title: "Start Selling Today",
     description: "Create your own store in seconds. Upload products, set prices in SOL/USDC, and reach thousands of students.",
-    icon: <div className="text-4xl">🏪</div>,
+    icon: <Store className="w-12 h-12 text-green-600" />,
   },
   {
     title: "Secure Payments",
     description: "Funds are held in escrow until you confirm delivery. Safe, transparent, and trustless transactions.",
-    icon: <div className="text-4xl">🛡️</div>,
+    icon: <Shield className="w-12 h-12 text-purple-600" />,
   },
   {
     title: "Earn Rewards",
     description: "Get points for every purchase and referral. Climb the leaderboard and unlock exclusive perks.",
-    icon: <div className="text-4xl">🎁</div>,
+    icon: <Gift className="w-12 h-12 text-pink-600" />,
   },
 ];
 

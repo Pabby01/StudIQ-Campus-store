@@ -4,6 +4,16 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+export async function OPTIONS() {
+    return NextResponse.json({}, { headers: corsHeaders })
+}
+
 /**
  * POST /api/sync/profile
  * Receive profile updates from main app
@@ -12,7 +22,7 @@ export async function POST(request: NextRequest) {
     try {
         const authHeader = request.headers.get("Authorization");
         if (authHeader !== `Bearer ${process.env.SYNC_API_KEY}`) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
         }
         const body = await request.json()
         const { walletAddress, displayName, email, phone } = body
@@ -20,7 +30,7 @@ export async function POST(request: NextRequest) {
         if (!walletAddress) {
             return NextResponse.json(
                 { error: 'Wallet address is required' },
-                { status: 400 }
+                { status: 400, headers: corsHeaders }
             )
         }
 
@@ -79,12 +89,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             message: 'Profile synced from main app'
-        })
+        }, { headers: corsHeaders })
     } catch (error) {
         console.error('Profile sync error:', error)
         return NextResponse.json(
             { error: 'Failed to sync profile' },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
         )
     }
 }
@@ -97,7 +107,7 @@ export async function GET(request: NextRequest) {
     try {
         const authHeader = request.headers.get("Authorization");
         if (authHeader !== `Bearer ${process.env.SYNC_API_KEY}`) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
         }
         const { searchParams } = new URL(request.url)
         const walletAddress = searchParams.get('walletAddress')
@@ -105,7 +115,7 @@ export async function GET(request: NextRequest) {
         if (!walletAddress) {
             return NextResponse.json(
                 { error: 'Wallet address is required' },
-                { status: 400 }
+                { status: 400, headers: corsHeaders }
             )
         }
 
@@ -124,12 +134,12 @@ export async function GET(request: NextRequest) {
             school: (profile as any)?.school || null,
             campus: (profile as any)?.campus || null,
             profileData: profile || null
-        })
+        }, { headers: corsHeaders })
     } catch (error) {
         console.error('Profile fetch error:', error)
         return NextResponse.json(
             { error: 'Failed to fetch profile' },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
         )
     }
 }
