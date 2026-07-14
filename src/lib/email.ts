@@ -556,3 +556,109 @@ export async function sendWelcomeSellerEmail(userName: string, userEmail: string
     return { success: false, error };
   }
 }
+
+// --- Webinar Emails ---
+
+export async function sendWebinarRegistrationEmail(
+  name: string,
+  email: string,
+  orderId: string,
+  orderDate: string
+) {
+  try {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { margin: 0; padding: 0; background-color: #121212; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e5e5e5; }
+            .container { max-width: 600px; margin: 0 auto; background-color: #121212; }
+            .banner { width: 100%; height: auto; display: block; }
+            .content { padding: 20px; }
+            .header-links { font-size: 14px; color: #a3a3a3; margin-bottom: 30px; line-height: 1.5; }
+            .header-links a { color: #60a5fa; text-decoration: none; }
+            h2 { color: #ffffff; font-size: 24px; margin-top: 0; margin-bottom: 20px; font-weight: 600; }
+            .order-summary, .ticket-info { background-color: #1a1a1a; padding: 24px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
+            .meta-text { color: #a3a3a3; font-size: 14px; margin: 4px 0; }
+            .meta-link { color: #60a5fa; text-decoration: none; }
+            .row { display: flex; justify-content: space-between; margin-top: 20px; font-size: 15px; color: #d4d4d4; }
+            .row-item { flex: 1; }
+            .divider { height: 1px; background-color: #333; margin: 20px 0; }
+            .footer-text { color: #a3a3a3; font-size: 12px; line-height: 1.6; margin-top: 20px; }
+            .footer-text a { color: #60a5fa; text-decoration: none; }
+            .ticket-title { color: #ffffff; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+            .ticket-detail { color: #a3a3a3; font-size: 15px; margin: 4px 0; }
+            .ticket-detail.email { color: #60a5fa; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <!-- Banner placeholder: gradient representing the Solana/Safestack theme -->
+            <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%); display: flex; align-items: center; justify-content: center; text-align: center;">
+              <div>
+                <div style="color: #60a5fa; font-weight: bold; font-size: 18px; margin-bottom: 8px;">🛡️ StudIQ x Safestack</div>
+                <div style="color: white; font-weight: 900; font-size: 32px; line-height: 1.2;">Zero-Loss Dapps</div>
+                <div style="color: #a78bfa; font-size: 16px; margin-top: 4px;">Securing Capital on Solana</div>
+              </div>
+            </div>
+            
+            <div class="content">
+              <div class="header-links">
+                Questions about Zero-Loss Dapps: Securing Capital on Solana? <a href="${APP_URL}/Webinar">View event details</a> or <a href="mailto:support@studiq.fun">Contact the organizer</a>
+              </div>
+
+              <div class="order-summary">
+                <h2>Order Summary</h2>
+                <p class="meta-text">Order <a href="#" class="meta-link">#${orderId}</a></p>
+                <p class="meta-text">Order date: ${orderDate}</p>
+                
+                <div style="margin-top: 24px;">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="color: #d4d4d4; font-size: 15px;">${name}</td>
+                      <td style="color: #a3a3a3; font-size: 15px; text-align: center;">1 x Admission</td>
+                      <td style="color: #d4d4d4; font-size: 15px; text-align: right;">Free</td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <p class="meta-text" style="margin-top: 20px;">Free Registration</p>
+                
+                <div class="divider"></div>
+                
+                <p class="meta-text" style="font-size: 13px;">
+                  <a href="mailto:support@studiq.fun" class="meta-link">Contact the organizer</a> for any questions related to this purchase.
+                </p>
+                
+                <p class="footer-text">
+                  This order is subject to StudIQ <a href="${APP_URL}/terms">Terms of Service</a> and <a href="${APP_URL}/privacy">Privacy Policy</a>.
+                </p>
+              </div>
+
+              <div class="ticket-info">
+                <h2>Ticket Information</h2>
+                <div class="ticket-title">Ticket #1: Admission</div>
+                <p class="ticket-detail">${name}</p>
+                <p class="ticket-detail email">${email}</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `Your ticket for Zero-Loss Dapps: Securing Capital on Solana`,
+      html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Email] Failed to send webinar registration email:', error);
+    return { success: false, error };
+  }
+}

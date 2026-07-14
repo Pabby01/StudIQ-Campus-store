@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sendWebinarRegistrationEmail } from "@/lib/email";
 
 // Initialize Supabase admin client
 const supabase = createClient(
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     // Insert into database
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from("webinar_registrations")
       .insert([
         {
@@ -28,7 +29,8 @@ export async function POST(req: Request) {
           email,
           wallet_address: wallet_address || null,
         },
-      ]);
+      ])
+      .select();
 
     if (error) {
       // Check for unique constraint violation
@@ -40,6 +42,13 @@ export async function POST(req: Request) {
       }
       throw error;
     }
+
+    // Prepare order details for email
+    const orderId = data?.[0]?.id?.substring(0, 8) || Math.floor(Math.random() * 1000000000).toString();
+    const orderDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Send confirmation email
+    await sendWebinarRegistrationEmail(name, email, orderId, orderDate);
 
     return NextResponse.json({ success: true, message: "Registered successfully!" });
   } catch (error: any) {
