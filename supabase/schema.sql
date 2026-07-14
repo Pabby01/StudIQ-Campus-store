@@ -57,6 +57,7 @@ create table if not exists orders (
   vendor_earnings numeric default 0,
   tx_sig text,
   paid boolean default false,
+  escrow_pin text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

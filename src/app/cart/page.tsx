@@ -197,7 +197,7 @@ export default function CartPage() {
   const availableBalance = 0;
   const showBalanceSection = false; // Zend handles balance checks internally
   const hasInsufficientBalance = false;
-  const finalPaymentMethod = deliveryMethod === "pickup" ? "pod" : paymentMethod;
+  const finalPaymentMethod = paymentMethod;
   const validationPayload = {
     buyer: walletAddress || "",
     storeId: items[0]?.storeId || "",
@@ -229,8 +229,8 @@ export default function CartPage() {
     if (checkoutStatus !== "idle") return;
     setFieldErrors({});
 
-    const activePaymentMethod = deliveryMethod === "pickup" ? "pod" : (methodOverride || paymentMethod);
-    const currentValidationPayload = { ...validationPayload, paymentMethod: activePaymentMethod };
+  const activePaymentMethod = methodOverride || paymentMethod;
+  const currentValidationPayload = { ...validationPayload, paymentMethod: activePaymentMethod };
 
     // Determine final payment method: if pickup, force POD/POP logic
     if (items.length === 0) {
@@ -305,21 +305,7 @@ export default function CartPage() {
       const orderData = await createRes.json();
       setOrderId(orderData.orderId);
 
-      // Handle Pay on Delivery or Free Orders
-      if (deliveryMethod === "pickup" || (orderData.paymentMethod === "pod")) {
-        // Need to pass this intent to backend or just handle success since order is "pending" payment
-        // For this demo, we assume the backend marked it as 'pending_payment' or similar if we sent a flag.
-        // Let's update the checkout-create API to accept a payment method flag? 
-        // Or simply: if we selected "Cash on Delivery", we skip the blockchain part.
-
-        // Wait, we didn't send "paymentMethod" to the create API yet.
-        // Let's assume for now valid POD orders just skip the tx.
-
-        setCheckoutStatus("success");
-        // Open save-details modal to allow user to save these checkout details
-        setShowSaveDetailsModal(true);
-        return;
-      }
+      // Proceed to success and save-details modal for Passpoint (since Passpoint redirects after form or has its own flow handled in API/modal)
 
       // Redirect to Zend Payment Link
       if (activePaymentMethod === "zend") {

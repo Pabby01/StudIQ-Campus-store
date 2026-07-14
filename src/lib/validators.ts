@@ -77,7 +77,7 @@ export const checkoutCreateSchema = z.object({
     fee: z.number().nonnegative().optional(),
     notes: z.string().optional(),
   }),
-  paymentMethod: z.enum(["solana", "pod", "zend", "passpoint"]).optional(),
+  paymentMethod: z.enum(["solana", "zend", "passpoint"]).optional(),
   buyerEmail: z.string().email(),
 });
 

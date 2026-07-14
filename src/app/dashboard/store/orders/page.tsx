@@ -6,7 +6,7 @@ import useSWR from "swr";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { Package, Loader2, MapPin, Mail, User, Phone, Calendar, CreditCard, Truck, Check } from "lucide-react";
+import { Package, Loader2, MapPin, Mail, User, Phone, Calendar, CreditCard, Truck, Check, X } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -42,27 +42,36 @@ type EnhancedOrder = {
 export default function VendorOrdersPage() {
   const auth = useWalletAuth();
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [pinPrompt, setPinPrompt] = useState<string | null>(null);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState("");
 
   const { data, mutate, error, isLoading } = useSWR<EnhancedOrder[]>(
     auth.address ? `/api/vendor/orders?address=${auth.address}` : null,
     async (url: string) => (await fetch(url, { cache: 'no-store' })).json()
   );
 
-  async function update(id: string, status: string) {
+  async function update(id: string, status: string, pin?: string) {
     try {
+      setPinError("");
       const res = await fetch("/api/orders/update-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: id, status, address: auth.address }),
+        body: JSON.stringify({ orderId: id, status, address: auth.address, pin }),
       });
 
       if (res.ok) {
         mutate();
+        setPinPrompt(null);
+        setPinInput("");
       } else {
-        console.error("Failed to update order status");
+        const errorData = await res.json();
+        setPinError(errorData.error || "Failed to update order status");
+        console.error("Failed to update order status", errorData);
       }
     } catch (error) {
       console.error("Error updating order:", error);
+      setPinError("An unexpected error occurred");
     }
   }
 
@@ -299,16 +308,42 @@ export default function VendorOrdersPage() {
                             Mark Shipped
                           </Button>
                         )}
-                        {order.status === 'shipped' && (
+                        {order.status === 'shipped' && pinPrompt !== order.id && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => update(order.id, "completed")}
+                            onClick={() => setPinPrompt(order.id)}
                             className="border-green-200 text-green-600 hover:bg-green-50"
                           >
                             <Check className="w-4 h-4 mr-2" />
                             Mark Completed
                           </Button>
+                        )}
+                        {order.status === 'shipped' && pinPrompt === order.id && (
+                          <div className="flex items-center gap-2 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                            <input
+                              type="text"
+                              maxLength={4}
+                              placeholder="4-Digit PIN"
+                              value={pinInput}
+                              onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
+                              className="w-28 text-center text-sm font-bold tracking-widest px-2 py-1.5 border border-amber-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => update(order.id, "completed", pinInput)}
+                              disabled={pinInput.length !== 4}
+                              className="bg-amber-600 hover:bg-amber-700 text-white"
+                            >
+                              Release Funds
+                            </Button>
+                            <button
+                              onClick={() => { setPinPrompt(null); setPinError(""); setPinInput(""); }}
+                              className="p-1 text-amber-700 hover:text-amber-900 ml-1"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
                         )}
                         <Link href={`/checkout/success/${order.id}`} target="_blank">
                           <Button variant="ghost" size="sm">
@@ -316,6 +351,12 @@ export default function VendorOrdersPage() {
                           </Button>
                         </Link>
                       </div>
+                      
+                      {pinError && pinPrompt === order.id && (
+                        <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                          {pinError}
+                        </div>
+                      )}
                     </div>
                   )}
                 </Card>

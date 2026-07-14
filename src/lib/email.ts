@@ -24,6 +24,7 @@ interface OrderDetails {
     city: string;
     zip: string;
   };
+  escrowPin?: string;
 }
 
 interface SellerNotification {
@@ -168,6 +169,16 @@ export async function sendOrderConfirmation(details: OrderDetails) {
         <div class="info-label">Order ID</div>
         <div class="info-value">#${details.orderId}</div>
       </div>
+      
+      ${details.escrowPin ? `
+      <div style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 20px; border-radius: 8px; margin: 25px 0;">
+        <div style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: #B45309; letter-spacing: 0.05em; margin-bottom: 4px;">Your Secure Verification PIN</div>
+        <div style="font-size: 24px; font-weight: 800; color: #B45309; letter-spacing: 0.1em;">${details.escrowPin}</div>
+        <p style="margin-top: 8px; font-size: 14px; color: #92400E; font-weight: 500;">
+          ⚠️ <strong>Keep this PIN safe!</strong> To release the escrow funds and finalize your order, verbally provide this 4-digit PIN to the seller when you receive your items.
+        </p>
+      </div>
+      ` : ''}
 
       <h3 style="margin-top: 30px; font-size: 18px; color: #1e293b;">Order Summary</h3>
       <table class="product-table">

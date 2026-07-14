@@ -214,6 +214,9 @@ export async function POST(req: Request) {
     const feeAmount = subtotal * (feePercent / 100);
     const vendorEarnings = subtotal - feeAmount + deliveryFee;
 
+    // Generate 4-Digit Secure Verification PIN
+    const escrowPin = Math.floor(1000 + Math.random() * 9000).toString();
+
     // Step 6: Create order
     const { data: newOrder, error: orderError } = await supabase
       .from("orders")
@@ -230,6 +233,7 @@ export async function POST(req: Request) {
         delivery_info: parsed.data.deliveryDetails,
         payment_method: parsed.data.paymentMethod,
         buyer_email: parsed.data.buyerEmail,
+        escrow_pin: escrowPin,
       })
       .select("id")
       .single();
@@ -315,6 +319,7 @@ export async function POST(req: Request) {
             city: parsed.data.deliveryDetails?.city || '',
             zip: parsed.data.deliveryDetails?.zip || '',
           } : undefined,
+          escrowPin,
         };
 
         // Send buyer confirmation (non-blocking)

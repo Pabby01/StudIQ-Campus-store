@@ -24,6 +24,7 @@ export async function GET(req: Request) {
       amount,
       currency,
       store_id,
+      escrow_pin,
       stores(name)
     `)
         .eq("buyer_address", address)
