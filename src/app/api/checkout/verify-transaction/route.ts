@@ -105,7 +105,8 @@ export async function POST(req: Request) {
                 platform_fee: feeAmount,
                 updated_at: new Date().toISOString(),
             })
-            .eq("id", orderId);
+            .eq("id", orderId)
+            .eq("status", "pending"); // Prevent race condition
 
         if (updateError) {
             console.error("Order update error:", updateError);

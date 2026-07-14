@@ -17,11 +17,6 @@ const mapMintForPaj = (mint: string) => {
 
 export async function POST(req: Request) {
   try {
-    const sessionAddress = await getSessionWallet(req);
-    if (!sessionAddress) {
-      return Response.json({ ok: false, error: "Unauthorized: Active wallet session required" }, { status: 401 });
-    }
-
     const body = await req.json();
     const parsed = checkoutCreateSchema.safeParse(body);
 
@@ -33,8 +28,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Override buyer with verified session address
-    const buyerAddress = sessionAddress;
+    const sessionAddress = await getSessionWallet(req);
+    const isGuestCheckout = parsed.data.paymentMethod === 'zend' && !sessionAddress;
+
+    if (!sessionAddress && !isGuestCheckout) {
+      return Response.json({ ok: false, error: "Unauthorized: Active wallet session required for this payment method" }, { status: 401 });
+    }
+
+    // Override buyer with verified session address, or generate guest address
+    const buyerAddress = sessionAddress || `guest_${parsed.data.buyerEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
     if ((!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return Response.json(
@@ -209,7 +211,12 @@ export async function POST(req: Request) {
       return sum + unitPrice * i.qty;
     }, 0);
     const deliveryFee = parsed.data.deliveryMethod === "shipping" ? Number(store.delivery_fee ?? 0) : 0;
-    const amount = subtotal + deliveryFee;
+    
+    // Pass gateway processing fee to buyer to protect 100% of platform margin
+    const isZendFiat = parsed.data.paymentMethod === "zend";
+    const paymentGatewayFee = isZendFiat ? (subtotal + deliveryFee) * 0.015 : 0; // 1.5% Zend fee
+    
+    const amount = subtotal + deliveryFee + paymentGatewayFee;
 
     const feeAmount = subtotal * (feePercent / 100);
     const vendorEarnings = subtotal - feeAmount + deliveryFee;

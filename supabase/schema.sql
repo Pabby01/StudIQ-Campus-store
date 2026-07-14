@@ -63,7 +63,7 @@ create table if not exists orders (
   fee_percent numeric default 0,
   fee_amount numeric default 0,
   vendor_earnings numeric default 0,
-  tx_sig text,
+  tx_sig text unique,
   paid boolean default false,
   escrow_pin text,
   created_at timestamptz default now(),
@@ -151,7 +151,8 @@ drop policy if exists "orders_select_self" on orders;
 create policy "orders_select_self" on orders for select using (buyer_address = current_setting('request.header.sid'));
 
 drop policy if exists "orders_insert_self" on orders;
-create policy "orders_insert_self" on orders for insert with check (buyer_address = current_setting('request.header.sid'));
+-- Intentionally removed orders_insert_self to prevent clients from forging orders.
+-- Order creation MUST be handled by the server (Service Role).
 
 create or replace function enforce_freemium_limits() returns trigger as $$
 declare tier text;

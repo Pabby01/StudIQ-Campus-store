@@ -671,10 +671,10 @@ export default function CartPage() {
                       if (deliveryUnavailable) return;
                       void checkout("zend");
                     }}
-                    disabled={true}
+                    disabled={checkoutStatus !== "idle" && checkoutStatus !== "error"}
                   >
                     <Coins className="w-5 h-5" />
-                    Pay with Zend (Coming Soon)
+                    Pay with Zend (Fiat)
                   </Button>
                   <Button
                     variant="outline"
