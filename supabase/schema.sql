@@ -117,24 +117,40 @@ alter table order_items enable row level security;
 alter table points_log enable row level security;
 alter table wishlists enable row level security;
 
+drop policy if exists "profiles_select" on profiles;
 create policy "profiles_select" on profiles for select using (true);
+
+drop policy if exists "profiles_update_self" on profiles;
 create policy "profiles_update_self" on profiles for update using (auth.uid() is not null) with check (address = current_setting('request.header.sid'));
 
+drop policy if exists "stores_select" on stores;
 create policy "stores_select" on stores for select using (true);
+
+drop policy if exists "stores_modify_owner" on stores;
 create policy "stores_modify_owner" on stores for insert with check (owner_address = current_setting('request.header.sid'));
+
+drop policy if exists "stores_update_owner" on stores;
 create policy "stores_update_owner" on stores for update using (owner_address = current_setting('request.header.sid')) with check (owner_address = current_setting('request.header.sid'));
 
+drop policy if exists "products_select" on products;
 create policy "products_select" on products for select using (true);
+
+drop policy if exists "products_modify_owner" on products;
 create policy "products_modify_owner" on products for insert with check (
   exists (select 1 from stores s where s.id = store_id and s.owner_address = current_setting('request.header.sid'))
 );
+
+drop policy if exists "products_update_owner" on products;
 create policy "products_update_owner" on products for update using (
   exists (select 1 from stores s where s.id = store_id and s.owner_address = current_setting('request.header.sid'))
 ) with check (
   exists (select 1 from stores s where s.id = store_id and s.owner_address = current_setting('request.header.sid'))
 );
 
+drop policy if exists "orders_select_self" on orders;
 create policy "orders_select_self" on orders for select using (buyer_address = current_setting('request.header.sid'));
+
+drop policy if exists "orders_insert_self" on orders;
 create policy "orders_insert_self" on orders for insert with check (buyer_address = current_setting('request.header.sid'));
 
 create or replace function enforce_freemium_limits() returns trigger as $$
