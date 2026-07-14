@@ -13,7 +13,7 @@ import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { ShoppingCart, Trash2, Minus, Plus, Loader2, CheckCircle, XCircle, Truck, MapPin, CreditCard, Coins, Lock, Sparkles, ArrowRight, Wallet } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { checkoutCreateSchema } from "@/lib/validators";
 import { useStore } from "@/hooks/useStore";
 import useSWR from "swr";
@@ -28,6 +28,7 @@ import ReceiveModal from "@/components/wallet/ReceiveModal";
 import RampModal from "@/components/ramp/RampModal";
 
 export default function CartPage() {
+  const router = useRouter();
   const items = useCart((s) => s.items);
   const remove = useCart((s) => s.remove);
   const clear = useCart((s) => s.clear);
@@ -641,7 +642,7 @@ export default function CartPage() {
                       variant="primary"
                       className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white"
                       onClick={() => {
-                        window.location.href = "/dashboard/wallet/deposit";
+                        router.push("/dashboard/wallet?action=deposit");
                       }}
                     >
                       <Wallet className="w-5 h-5" />

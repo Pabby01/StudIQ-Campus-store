@@ -164,7 +164,7 @@ export default function Navbar() {
               )}
             </Link>
 
-            {user && (
+            {(user || address) && (
               <>
                 <div className="hidden sm:flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
                   <Wallet className="w-4 h-4 text-primary-blue" />
@@ -236,7 +236,7 @@ export default function Navbar() {
               </>
             )}
 
-            {!user && (
+            {!user && !address && (
               <div className="pl-2 sm:ml-2 sm:border-l border-slate-200 flex items-center gap-1 sm:gap-2">
                  <Link href="/auth" className="text-sm font-medium text-slate-700 hover:text-primary-blue transition-colors px-3 py-2">
                     Log In
