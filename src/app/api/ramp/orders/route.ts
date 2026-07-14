@@ -77,6 +77,7 @@ export async function POST(req: Request) {
                     currency: (data.currency || 'NGN') as Currency,
                     amount: data.amount,
                     mint: data.mint,
+                    chain: data.chain || 'SOLANA',
                     webhookURL,
                 },
                 token

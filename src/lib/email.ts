@@ -365,7 +365,7 @@ export async function sendWithdrawalAdminNotification(
 ) {
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@studiq.fun';
-    
+
     const content = `
       <p><strong>Seller:</strong> ${sellerName} (${sellerEmail})</p>
       <p><strong>Amount:</strong> ${amount.toFixed(4)} ${currency}</p>
@@ -577,7 +577,25 @@ export async function sendWebinarRegistrationEmail(
   orderDate: string
 ) {
   try {
-    const html = `
+    const meetingLink = "https://calendar.app.google/tRXJw6rLBf5xzfAi9"; // Replace with actual meeting link
+
+  const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Zero-Loss Dapps: Securing Capital on Solana')}&dates=20260717T170000Z/20260717T183000Z&details=${encodeURIComponent('Join us for an exclusive webinar on securing capital on Solana.\\n\\nMeeting link: ' + meetingLink)}&location=${encodeURIComponent(meetingLink)}`;
+
+  const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//StudIQ//Webinar//EN
+BEGIN:VEVENT
+UID:webinar-20260717@studiq.fun
+DTSTAMP:20260714T000000Z
+DTSTART:20260717T170000Z
+DTEND:20260717T183000Z
+SUMMARY:Zero-Loss Dapps: Securing Capital on Solana
+DESCRIPTION:Join us for an exclusive webinar on securing capital on Solana. Meeting link: ${meetingLink}
+LOCATION:${meetingLink}
+END:VEVENT
+END:VCALENDAR`;
+
+  const html = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -655,6 +673,15 @@ export async function sendWebinarRegistrationEmail(
                 <div class="ticket-title">Ticket #1: Admission</div>
                 <p class="ticket-detail">${name}</p>
                 <p class="ticket-detail email">${email}</p>
+                
+                <div class="divider"></div>
+                
+                <h2>Meeting Details</h2>
+                <p class="ticket-detail"><strong>Join Link:</strong> <a href="${meetingLink}" style="color: #60a5fa;">${meetingLink}</a></p>
+                
+                <div style="margin-top: 20px;">
+                  <a href="${googleCalendarUrl}" style="background-color: #60a5fa; color: #121212; padding: 10px 16px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;">Add to Google Calendar</a>
+                </div>
               </div>
             </div>
           </div>
@@ -662,11 +689,18 @@ export async function sendWebinarRegistrationEmail(
       </html>
     `;
 
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: email,
-      subject: `Your ticket for Zero-Loss Dapps: Securing Capital on Solana`,
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: `Your ticket for Zero-Loss Dapps: Securing Capital on Solana`,
       html,
+      attachments: [
+        {
+          filename: 'invite.ics',
+          content: Buffer.from(icsContent).toString('base64'),
+          contentType: 'text/calendar'
+        }
+      ]
     });
 
     return { success: true };
